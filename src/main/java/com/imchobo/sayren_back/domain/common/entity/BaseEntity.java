@@ -17,9 +17,14 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
 
+
+  // DB 컬럼명이 regdate 라서 매핑 지정
   @CreatedDate
   @Column(name = "regdate", updatable = false)
   private LocalDateTime regDate;
+
+
+  // DB 컬럼명이 moddate 라서 매핑 지정
 
   @LastModifiedDate
   @Column(name = "moddate")

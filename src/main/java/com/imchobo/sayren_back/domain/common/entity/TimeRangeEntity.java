@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.domain.common.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -16,10 +17,11 @@ public abstract class TimeRangeEntity {
 
   @CreatedDate
   @Column(updatable = false)
-  private LocalDateTime regdate;
+  private LocalDateTime regdate; //생성일
 
   @Column
-  private LocalDateTime voiddate;
+  private LocalDateTime voiddate;  //만료일
+
 
   // 즉시 만료
   public void expire() {

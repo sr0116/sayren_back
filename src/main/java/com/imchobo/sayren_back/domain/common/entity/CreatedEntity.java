@@ -16,5 +16,6 @@ import java.time.LocalDateTime;
 public abstract class CreatedEntity {
   @CreatedDate
   @Column(updatable = false)
-  private LocalDateTime regDate;
+  private LocalDateTime regDate;  //생성일만 관리
 }
+
