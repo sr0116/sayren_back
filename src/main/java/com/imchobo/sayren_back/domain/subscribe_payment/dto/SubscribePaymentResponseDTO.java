@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.subscribe.dto;
+package com.imchobo.sayren_back.domain.subscribe_payment.dto;
 
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import lombok.Data;

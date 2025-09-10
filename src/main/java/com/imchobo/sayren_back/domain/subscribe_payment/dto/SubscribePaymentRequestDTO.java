@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.subscribe.dto;
+package com.imchobo.sayren_back.domain.subscribe_payment.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

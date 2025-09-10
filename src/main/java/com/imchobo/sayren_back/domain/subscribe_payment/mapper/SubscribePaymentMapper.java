@@ -1,12 +1,12 @@
-package com.imchobo.sayren_back.domain.subscribe.mapper;
+package com.imchobo.sayren_back.domain.subscribe_payment.mapper;
 
 
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribePaymentRequestDTO;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribePaymentResponseDTO;
+import com.imchobo.sayren_back.domain.subscribe_payment.dto.SubscribePaymentRequestDTO;
+import com.imchobo.sayren_back.domain.subscribe_payment.dto.SubscribePaymentResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
-import com.imchobo.sayren_back.domain.subscribe.entity.SubscribePayment;
+import com.imchobo.sayren_back.domain.subscribe_payment.entity.SubscribePayment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

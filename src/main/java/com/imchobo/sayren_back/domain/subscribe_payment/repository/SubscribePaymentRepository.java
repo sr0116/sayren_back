@@ -1,10 +1,10 @@
-package com.imchobo.sayren_back.domain.subscribe.repository;
+package com.imchobo.sayren_back.domain.subscribe_payment.repository;
 
 
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
-import com.imchobo.sayren_back.domain.subscribe.entity.SubscribePayment;
+import com.imchobo.sayren_back.domain.subscribe_payment.entity.SubscribePayment;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
