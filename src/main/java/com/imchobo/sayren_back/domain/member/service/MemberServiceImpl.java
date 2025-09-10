@@ -6,6 +6,7 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,5 +24,10 @@ public class MemberServiceImpl implements MemberService {
     entity.setStatus(MemberStatus.ACTIVE);
 
     memberRepository.save(entity);
+  }
+
+  @Override
+  public Member findByEmail(String email) {
+    return memberRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
   }
 }
