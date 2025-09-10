@@ -4,10 +4,14 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
+@AllArgsConstructor
+@ToString
 public class MemberSignupDTO {
   @NotBlank
   @Email(message="올바른 이메일 형식을 입력하세요")
