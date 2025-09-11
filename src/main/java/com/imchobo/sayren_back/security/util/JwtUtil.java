@@ -47,6 +47,7 @@ public class JwtUtil {
     claims.put("name", member.getRealName());
     claims.put("status", member.getStatus());
     claims.put("roles", member.getRoles());
+    claims.put("emailVerified", member.getEmailVerified());
 
     return generateToken(claims, member.getEmail(), expireSeconds);
   }

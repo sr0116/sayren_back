@@ -22,6 +22,7 @@ public class MemberAuthDTO implements UserDetails, OAuth2User {
   private String realName;
   private String email;
   private String password;
+  private Boolean emailVerified;
   private MemberStatus status;
   private Set<Role> roles;
   private Map<String, Object> attributes;
