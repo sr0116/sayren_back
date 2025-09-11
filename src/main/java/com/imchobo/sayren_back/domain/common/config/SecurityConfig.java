@@ -16,6 +16,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) //  Postman 테스트용 CSRF 해제
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/**").permitAll()  //  구독 API는 누구나 허용
+                    .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // CORS Preflight 허용
                     .anyRequest().authenticated()
             );
 

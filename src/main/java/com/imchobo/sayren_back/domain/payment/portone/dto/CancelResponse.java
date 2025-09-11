@@ -1,8 +1,12 @@
 package com.imchobo.sayren_back.domain.payment.portone.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@AllArgsConstructor
+@NoArgsConstructor
 @Data
 public class CancelResponse {
   //환불 dto
@@ -11,7 +15,6 @@ public class CancelResponse {
   @JsonProperty("merchant_uid")
   private String merchantUid;
 
-  @JsonProperty("amount")
   private Long amount;
 
   private String reason;

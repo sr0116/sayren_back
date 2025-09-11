@@ -18,7 +18,7 @@ import java.util.Map;
 public class PortOnePaymentClient {
   private final PortOneTokenClient tokenClient;
   private final PortOneMapper  portOneMapper;
-  private final RestTemplate restTemplate = new RestTemplate();
+  private final RestTemplate restTemplate;
 
   // 결제 단건 조회
   public PaymentInfoResponse getPaymentInfo(String impUid) {
