@@ -7,6 +7,9 @@ import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Mapper(componentModel = "spring")
 public interface MemberMapper {
 
@@ -18,6 +21,7 @@ public interface MemberMapper {
   @Mapping(target = "tel", ignore = true)
   Member toEntity(MemberSignupDTO memberSignupDTO);
 
+  @Mapping(source = "name", target = "realName")
   @Mapping(target = "attributes", ignore = true)
   MemberAuthDTO toAuthDTO(Member entity);
 }

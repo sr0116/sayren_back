@@ -19,6 +19,7 @@ import java.util.Set;
 @ToString
 public class MemberAuthDTO implements UserDetails, OAuth2User {
   private Long id;
+  private String realName;
   private String email;
   private String password;
   private MemberStatus status;

@@ -58,6 +58,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 .name(oAuth2User.getAttribute("name"))
                 .roles(Set.of(Role.USER))
                 .status(MemberStatus.READY)
+                .emailVerified(true)
                 .build();
         memberRepository.save(member);
 

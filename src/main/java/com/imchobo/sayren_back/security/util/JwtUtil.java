@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.security.util;
 
+import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -9,7 +10,10 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtUtil {
@@ -24,10 +28,11 @@ public class JwtUtil {
   @Value("${jwt.refresh-expiration-days}")
   private long expireDays;
 
-  public String generateToken(String subject, long expireSeconds) {
+  public String generateToken(Map<String, Object> claims, String subject, long expireSeconds) {
     Instant now = Instant.now();
 
     return Jwts.builder()
+            .claims(claims)
             .subject(subject)
             .issuedAt(Date.from(now))
             .expiration(Date.from(now.plusSeconds(expireSeconds)))
@@ -35,14 +40,20 @@ public class JwtUtil {
             .compact();
   }
 
-  public String generateAccessToken(String subject) { // 짧은 시간
+  public String generateAccessToken(MemberAuthDTO member) { // 짧은 시간
     long expireSeconds = expireMinutes * 60;
-    return generateToken(subject, expireSeconds);
+
+    Map<String, Object> claims = new HashMap<>();
+    claims.put("name", member.getRealName());
+    claims.put("status", member.getStatus());
+    claims.put("roles", member.getRoles());
+
+    return generateToken(claims, member.getEmail(), expireSeconds);
   }
 
-  public String generateRefreshToken(String subject) { // 긴 시간
+  public String generateRefreshToken(MemberAuthDTO member) { // 긴 시간
     long expireSeconds = expireDays * 24 * 60 * 60;
-    return generateToken(subject, expireSeconds);
+    return generateToken(Collections.emptyMap(), member.getEmail(), expireSeconds);
   }
 
 
