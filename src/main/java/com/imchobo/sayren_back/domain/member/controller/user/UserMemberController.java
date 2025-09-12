@@ -3,7 +3,7 @@ package com.imchobo.sayren_back.domain.member.controller.user;
 
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
 import com.imchobo.sayren_back.domain.member.service.MemberService;
-import com.imchobo.sayren_back.security.util.JwtUtil;
+import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;

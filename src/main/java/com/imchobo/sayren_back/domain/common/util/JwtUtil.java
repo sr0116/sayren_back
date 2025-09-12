@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.security.util;
+package com.imchobo.sayren_back.domain.common.util;
 
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import io.jsonwebtoken.Claims;

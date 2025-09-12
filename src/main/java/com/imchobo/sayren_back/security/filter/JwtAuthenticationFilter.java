@@ -2,7 +2,7 @@ package com.imchobo.sayren_back.security.filter;
 
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import com.imchobo.sayren_back.security.service.CustomUserDetailsService;
-import com.imchobo.sayren_back.security.util.JwtUtil;
+import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

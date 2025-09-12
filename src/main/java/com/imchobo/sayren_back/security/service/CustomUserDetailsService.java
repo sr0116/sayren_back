@@ -17,20 +17,10 @@ public class CustomUserDetailsService implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    Member member;
-    if (isEmail(username)) {
-      member = memberRepository.findByEmail(username)
+    Member member = memberRepository.findByEmail(username)
               .orElseThrow(() -> new UsernameNotFoundException(username + " - 회원 없음"));
-    }
-    else {
-      member = memberRepository.findByTel(username)
-              .orElseThrow(() -> new UsernameNotFoundException(username + " - 회원 없음"));
-    }
-
     return memberMapper.toAuthDTO(member);
   }
 
-  public boolean isEmail(String username) {
-    return username.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
-  }
+
 }
