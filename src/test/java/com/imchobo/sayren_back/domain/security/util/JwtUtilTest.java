@@ -28,7 +28,7 @@ public class JwtUtilTest {
 
     // when
     String token = jwtUtil.generateAccessToken(memberMapper.toAuthDTO(member));
-    Claims claims = jwtUtil.validateToken(token);
+    Claims claims = jwtUtil.getClaims(token);
 
     log.info(token);
     log.info(claims);
@@ -40,7 +40,7 @@ public class JwtUtilTest {
     MemberAuthDTO member = MemberAuthDTO.builder().email("user@gmail.com").build();
     // when
     String token = jwtUtil.generateRefreshToken(member);
-    Claims claims = jwtUtil.validateToken(token);
+    Claims claims = jwtUtil.getClaims(token);
 
     log.info(token);
     log.info(claims);
