@@ -52,9 +52,10 @@ public class JwtUtil {
     return generateToken(claims, member.getEmail(), expireSeconds);
   }
 
+  // RefreshToken은 멤버 pk 가지고 있음.
   public String generateRefreshToken(MemberAuthDTO member) { // 긴 시간
     long expireSeconds = expireDays * 24 * 60 * 60;
-    return generateToken(Collections.emptyMap(), member.getEmail(), expireSeconds);
+    return generateToken(Collections.emptyMap(), String.valueOf(member.getId()), expireSeconds);
   }
 
 
