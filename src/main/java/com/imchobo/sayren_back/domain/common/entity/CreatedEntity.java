@@ -1,6 +1,5 @@
 package com.imchobo.sayren_back.domain.common.entity;
 
-
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
@@ -16,6 +15,5 @@ import java.time.LocalDateTime;
 public abstract class CreatedEntity {
   @CreatedDate
   @Column(updatable = false)
-  private LocalDateTime regDate;  //생성일만 관리
+  private LocalDateTime regDate;
 }
-
