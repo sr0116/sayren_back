@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.delivery.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
+import com.imchobo.sayren_back.domain.common.entity.BaseEntity; // regdate/moddate 공통 상속
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,33 +8,47 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "tbl_delivery")  // DB 테이블 이름
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(name = "tbl_delivery")                // 스키마: tbl_delivery
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
 @Builder
-public class Delivery extends BaseEntity {
+public class Delivery extends BaseEntity {   // regdate/moddate 포함
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long deliveryId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO_INCREMENT
+    @Column(name = "delivery_id")
+    private Long deliveryId;                   // PK
 
-  @Column(nullable = false)
-  private String type;  // DELIVERY / RETURN
+    @Column(nullable = false, length = 20)
+    private String type;                       // DELIVERY / RETURN
 
-  @Column(nullable = false)
-  private Long memberId; // 주문자 ID (FK → tbl_member)
+    @Column(nullable = false)
+    private Long memberId;                     // FK -> tbl_member.member_id (숫자만 스냅샷)
 
-  @Column(nullable = false)
-  private Long addrId;   // 배송지 ID (FK → tbl_address)
+    @Column(nullable = false)
+    private Long addrId;                       // FK -> tbl_address.addr_id (숫자만 스냅샷)
 
-  private String shipperCode;  // 택배사 코드
-  private String trackingNo;   // 송장번호
-  private String status;       // READY / PREPARING / SHIPPING / DELIVERED
+    @Column(name = "shipper_code", length = 50)
+    private String shipperCode;                // 택배사 코드
 
-  // 배송 ↔ 배송아이템 (1:N 관계)
-  @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
-  private List<DeliveryItem> items = new ArrayList<>();
+    @Column(name = "tracking_no", length = 100, unique = false)
+    private String trackingNo;                 // 송장번호 (UQ(shipper_code,tracking_no)는 DB 인덱스로 구성 권장)
+
+    @Column(nullable = false, length = 20)
+    private String status;                     // READY / PREPARING / SHIPPING / DELIVERED / PICKUP_READY / PICKED_UP
+
+    // Delivery(1) - DeliveryItem(N)
+    @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<DeliveryItem> items = new ArrayList<>();
+
+    // 편의 메서드: item 연결/해제
+    public void addItem(DeliveryItem item) {
+        items.add(item);
+        item.setDelivery(this);
+    }
+    public void removeItem(DeliveryItem item) {
+        items.remove(item);
+        item.setDelivery(null);
+    }
 }

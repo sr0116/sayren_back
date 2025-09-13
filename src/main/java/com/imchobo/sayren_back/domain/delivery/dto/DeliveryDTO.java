@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.delivery.dto;
+package com.imchobo.sayren_back.domain.delivery.dto; // 배송 DTO 패키지
 
 import lombok.*;
 import java.util.List;
@@ -8,12 +8,12 @@ import java.util.List;
 @Builder
 public class DeliveryDTO {
 
-  private Long deliveryId;
-  private String type;
-  private Long memberId;
-  private Long addrId;
-  private String shipperCode;
-  private String trackingNo;
-  private String status;
-  private List<Long> orderItemIds; //  배송에 속한 주문아이템 ID 목록
+    private Long deliveryId;        // 배송 PK
+    private String type;            // DELIVERY / RETURN
+    private Long memberId;          // 회원 ID
+    private Long addrId;            // 주소 ID
+    private String shipperCode;     // 택배사 코드
+    private String trackingNo;      // 송장번호
+    private String status;          // READY / PREPARING / SHIPPING / DELIVERED / PICKUP_READY / PICKED_UP
+    private List<Long> orderItemIds;// 배송에 포함된 주문아이템 ID 목록
 }
