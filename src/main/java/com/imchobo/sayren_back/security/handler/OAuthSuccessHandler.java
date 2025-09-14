@@ -2,8 +2,10 @@ package com.imchobo.sayren_back.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
+import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,20 +29,17 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-    MemberAuthDTO member = (MemberAuthDTO) authentication.getPrincipal();
+    MemberAuthDTO memberAuthDTO = SecurityUtil.getMemberAuthDTO();
 
-    String accessToken = jwtUtil.generateAccessToken(member);
-    String refreshToken = jwtUtil.generateRefreshToken(member);
+    String accessToken = jwtUtil.generateAccessToken(memberAuthDTO);
+    String refreshToken = jwtUtil.generateRefreshToken(memberAuthDTO);
 
-    boolean rememberMe = Boolean.parseBoolean(request.getParameter("rememberMe"));
+    cookieUtil.addRefreshTokenCookie(response, refreshToken, true);
+    cookieUtil.addLoginCookie(response, true);
 
-    cookieUtil.addRefreshTokenCookie(response, refreshToken, rememberMe);
+    MemberLoginResponseDTO loginResponseDTO = new MemberLoginResponseDTO(accessToken, "로그인 성공");
 
     response.setContentType("application/json;charset=UTF-8");
-    response.getWriter().write(
-      objectMapper.writeValueAsString(Map.of(
-        "SR_ACCESS", accessToken
-      ))
-    );
+    objectMapper.writeValue(response.getWriter(), loginResponseDTO);
   }
 }
