@@ -8,7 +8,7 @@ spring:
       - optional:classpath:secret/oauth.yml
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     properties:
       hibernate:
         format_sql: true
