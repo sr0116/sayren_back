@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
           // Access Token 정상 → Claims 추출
-          email = jwtUtil.validateToken(accessToken).getSubject();
+          email = jwtUtil.getClaims(accessToken).getSubject();
         } catch (io.jsonwebtoken.ExpiredJwtException ex) {
           // 만료된 토큰 → Claims는 남아있음
           email = ex.getClaims().getSubject();

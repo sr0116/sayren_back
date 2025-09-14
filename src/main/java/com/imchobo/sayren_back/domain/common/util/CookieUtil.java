@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class CookieUtil {
   @Value("${jwt.refresh-expiration-days}")
   private long expireDays;
-
+  // 리프레쉬 쿠키 생성
   public void addRefreshTokenCookie(HttpServletResponse response,
                                     String refreshToken,
                                     boolean rememberMe) {
@@ -30,4 +30,48 @@ public class CookieUtil {
 
     response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString());
   }
+  // 리프레쉬 쿠키 삭제
+  public void deleteRefreshTokenCookie(HttpServletResponse response) {
+    ResponseCookie cookie = ResponseCookie
+      .from("SR_REFRESH", "")
+      .httpOnly(true)
+      .secure(false)
+      .path("/")
+      .sameSite("Lax")
+      .maxAge(0)
+      .build();
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+  }
+  // 로그인 확인용 쿠키 생성
+  public void addLoginCookie(HttpServletResponse response, boolean rememberMe) {
+    ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie
+      .from("SR_ACTIVE", "")
+      .httpOnly(false)
+      .secure(false)
+      .path("/")
+      .sameSite("Lax");
+
+    if (rememberMe) {
+      cookieBuilder.maxAge(expireDays * 24 * 60 * 60);
+    } else {
+      cookieBuilder.maxAge(-1);
+    }
+
+    response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString());
+  }
+
+  // 로그인 확인용 쿠키 삭제
+  public void deleteLoginCookie(HttpServletResponse response) {
+    ResponseCookie cookie = ResponseCookie
+      .from("SR_ACTIVE", "")
+      .httpOnly(false)
+      .secure(false)
+      .path("/")
+      .sameSite("Lax")
+      .maxAge(0)
+      .build();
+
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+  }
+
 }

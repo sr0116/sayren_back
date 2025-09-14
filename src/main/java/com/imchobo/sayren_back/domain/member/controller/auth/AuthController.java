@@ -1,11 +1,9 @@
 package com.imchobo.sayren_back.domain.member.controller.auth;
 
-import com.imchobo.sayren_back.domain.common.util.JwtUtil;
+
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.TokenResponseDTO;
 import com.imchobo.sayren_back.domain.member.service.AuthService;
-import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,4 +30,13 @@ public class AuthController {
     }
     return ResponseEntity.ok(accessToken);
   }
+
+  @PostMapping("logout")
+  public ResponseEntity<?> logout(HttpServletResponse response) {
+    authService.logout(response);
+    return ResponseEntity.ok().build();
+  }
+
+
+
 }

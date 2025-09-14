@@ -8,6 +8,6 @@ import org.springframework.http.ResponseEntity;
 
 public interface AuthService {
   MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response);
-
+  void logout(HttpServletResponse response);
   TokenResponseDTO accessToken(String refreshToken);
 }

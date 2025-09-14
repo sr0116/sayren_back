@@ -58,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
 
     // 리프레쉬 토큰 쿠키에 저장
     cookieUtil.addRefreshTokenCookie(response, refreshToken, memberLoginRequestDTO.isRememberMe());
+    cookieUtil.addLoginCookie(response, memberLoginRequestDTO.isRememberMe());
 
 
     return new MemberLoginResponseDTO(accessToken, "로그인 성공");
@@ -67,6 +68,11 @@ public class AuthServiceImpl implements AuthService {
     return username.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
   }
 
+  @Override
+  public void logout(HttpServletResponse response) {
+    cookieUtil.deleteRefreshTokenCookie(response);
+    cookieUtil.deleteLoginCookie(response);
+  }
 
   @Override
   public TokenResponseDTO accessToken(String refreshToken) {
@@ -84,4 +90,7 @@ public class AuthServiceImpl implements AuthService {
 
     return new TokenResponseDTO(jwtUtil.generateAccessToken(memberMapper.toAuthDTO(member)));
   }
+
+
+
 }
