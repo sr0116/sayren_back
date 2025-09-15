@@ -25,7 +25,7 @@ public class Order {
   /** 주문 회원 (FK → tbl_member) */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "member_id", nullable = false)
-  private Member member;
+  private MemberEx memberEx;
 
   /** 주문 상태 (PENDING/PAID/SHIPPED/DELIVERED/CANCELED) */
   @Column(name = "status", nullable = false, length = 20)

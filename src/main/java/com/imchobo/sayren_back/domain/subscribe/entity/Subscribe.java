@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.subscribe.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
-import com.imchobo.sayren_back.domain.exentity.Member;
+import com.imchobo.sayren_back.domain.common.entity.BaseEntityEx;
+import com.imchobo.sayren_back.domain.exentity.MemberEx;
 import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import jakarta.persistence.*;
@@ -16,7 +16,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Subscribe extends BaseEntity {
+public class Subscribe extends BaseEntityEx {
 
   // 구독 아이디
   @Id
@@ -31,7 +31,7 @@ public class Subscribe extends BaseEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "member_id", nullable = false)
-  private Member member;
+  private MemberEx memberEx;
 
   // enum 사용
   @Column(nullable = false)

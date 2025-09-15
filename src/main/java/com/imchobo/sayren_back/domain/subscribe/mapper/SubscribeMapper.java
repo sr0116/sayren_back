@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.subscribe.mapper;
 
-import com.imchobo.sayren_back.domain.exentity.Member;
+import com.imchobo.sayren_back.domain.exentity.MemberEx;
 import com.imchobo.sayren_back.domain.exentity.Order;
 import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.exentity.OrderPlan;
@@ -57,8 +57,8 @@ public interface SubscribeMapper {
   }
 
   @Named("mapMember")
-  default Member mapMember(Long memberId) {
+  default MemberEx mapMember(Long memberId) {
     if (memberId == null) return null;
-    return Member.builder().memberId(memberId).build();
+    return MemberEx.builder().memberId(memberId).build();
   }
 }

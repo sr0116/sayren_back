@@ -1,9 +1,8 @@
 package com.imchobo.sayren_back.domain.payment.mapper;
 
 
-import com.imchobo.sayren_back.domain.exentity.Member;
+import com.imchobo.sayren_back.domain.exentity.MemberEx;
 import com.imchobo.sayren_back.domain.exentity.Order;
-import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.exentity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
@@ -56,9 +55,9 @@ public interface PaymentMapper {
 
   // 멤버는 나중에 삭제 예정
   @Named("mapMember")
-  default Member mapMember(Long memberId) {
+  default MemberEx mapMember(Long memberId) {
     if (memberId == null) return null;
-    return Member.builder().memberId(memberId).build();
+    return MemberEx.builder().memberId(memberId).build();
   }
 
   @Named("mapPlan")

@@ -8,7 +8,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig {
+public class SecurityConfigEx {
 // 포트원 테스트용 config
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

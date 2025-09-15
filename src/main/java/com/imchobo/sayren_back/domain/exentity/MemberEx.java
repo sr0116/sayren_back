@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Member {
+public class MemberEx {
   /// ////////////   임시 //////////////////
 
   /** 회원 PK */

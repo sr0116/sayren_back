@@ -6,7 +6,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfigEx implements WebMvcConfigurer {
 
   // nnext 연동
   @Value("${app.cors.allowed-origins:http://localhost:3000}")
