@@ -34,6 +34,11 @@ dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-validation'
   implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
+  implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+  annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+// AssertJ (선택적으로 최신버전 직접 명시하고 싶을 때)
+  testImplementation 'org.assertj:assertj-core:3.26.0'
+
   compileOnly 'org.projectlombok:lombok'
   annotationProcessor 'org.projectlombok:lombok'
   testCompileOnly 'org.projectlombok:lombok'
