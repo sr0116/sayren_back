@@ -2,6 +2,8 @@ package com.imchobo.sayren_back.domain.common.util;
 
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,13 +54,14 @@ public class JwtUtil {
     return generateToken(claims, member.getEmail(), expireSeconds);
   }
 
+  // RefreshToken은 멤버 pk 가지고 있음.
   public String generateRefreshToken(MemberAuthDTO member) { // 긴 시간
     long expireSeconds = expireDays * 24 * 60 * 60;
-    return generateToken(Collections.emptyMap(), member.getEmail(), expireSeconds);
+    return generateToken(Collections.emptyMap(), String.valueOf(member.getId()), expireSeconds);
   }
 
 
-  public Claims validateToken(String token) {
+  public Claims getClaims(String token) {
     return Jwts.parser()
             .verifyWith(key)
             .build()
@@ -73,4 +76,21 @@ public class JwtUtil {
     }
     return null;
   }
+
+  public boolean isValidToken(String token) {
+    try {
+      Jwts.parser()
+        .verifyWith(key)
+        .build()
+        .parseSignedClaims(token);
+      return true;
+    } catch (ExpiredJwtException e) {
+      // 토큰 만료됨
+      return false;
+    } catch (JwtException | IllegalArgumentException e) {
+      // 잘못된 서명 or 다른 문제
+      return false;
+    }
+  }
+
 }
