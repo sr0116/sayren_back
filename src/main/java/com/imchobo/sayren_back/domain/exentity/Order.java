@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "tbl_order")
@@ -40,6 +42,9 @@ public class Order {
   /** 주문 수정 시각 */
   @Column(name = "moddate")
   private LocalDateTime moddate;
+
+  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<OrderItem> orderItems = new ArrayList<>();
 
   // === JPA 라이프사이클 ===
   @PrePersist

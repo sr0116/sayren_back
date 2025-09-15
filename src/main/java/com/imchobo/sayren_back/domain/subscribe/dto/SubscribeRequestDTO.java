@@ -1,17 +1,20 @@
 package com.imchobo.sayren_back.domain.subscribe.dto;
 
 import jakarta.validation.constraints.*;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
 
 @Data
+@Builder
 public class SubscribeRequestDTO {
   // 구독 신청 시 클라이언트에게 보내는 데이터
   // 나중에 수정 예정
   @NotNull(message = "주문 아이템 ID는 필수입니다.")
   private Long orderItemId;
 
+  // 나중에 jwt 나 context에서 받아올거라 지워야 함
   @NotNull(message = "회원 ID는 필수입니다.")
   private Long memberId;
 

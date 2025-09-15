@@ -6,18 +6,14 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
+
 public class SubscribeResponseDTO {
   // 구독 신청/조회 응답에 내려줄 데이터
   // 나중에 수정 예정
   private Long subscribeId;
   private Long orderItemId;
-  private Long memberId;
   private SubscribeStatus status;
   private Integer monthlyFeeSnapshot;
   private Integer depositSnapshot;

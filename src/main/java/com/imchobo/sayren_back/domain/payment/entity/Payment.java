@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.domain.payment.entity;
 import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
 import com.imchobo.sayren_back.domain.exentity.Member;
 import com.imchobo.sayren_back.domain.exentity.Order;
+import com.imchobo.sayren_back.domain.exentity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,6 +29,7 @@ public class Payment extends TimeRangeEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "order_id", nullable = false)
   private Order order;
+
 
   // PortOne 고유 결제 식별자
   @Column(name = "merchant_uid", nullable = false, unique = true)

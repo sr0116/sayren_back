@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.subscribe.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import com.imchobo.sayren_back.domain.exentity.Member;
+import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,14 +25,16 @@ public class Subscribe extends BaseEntity {
   private Long subscribeId;
 
   // 나중에 이것도 조인 컬럼
-  @Column(name = "order_item_id")
-  private Long orderItemId;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "order_item_id", nullable = false)
+  private OrderItem orderItem;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "member_id", nullable = false)
   private Member member;
 
   // enum 사용
+  @Column(nullable = false)
   @Enumerated(EnumType.STRING)// 디비에 문자열로 저장
   private SubscribeStatus status;
 
@@ -43,8 +46,11 @@ public class Subscribe extends BaseEntity {
 // 구독 총 개월수
   private Integer totalMonths;
 // 구독 시작일, 종료일
-  private LocalDate startDate;
-  private LocalDate endDate;
 // BaseEntity에서 사용해서 따로 정의 안 해도 됨
 
+  @Column(name = "start_date", nullable = false)
+  private LocalDate startDate;
+
+  @Column(name = "end_date", nullable = false)
+  private LocalDate endDate;
 }

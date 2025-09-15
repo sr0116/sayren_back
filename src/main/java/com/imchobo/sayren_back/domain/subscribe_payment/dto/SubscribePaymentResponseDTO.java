@@ -13,6 +13,6 @@ public class SubscribePaymentResponseDTO {
   private Long paymentId;
   private Long amount;
   private PaymentStatus status;
-  private Integer payMonth;
+  private Integer roundNo;
   private LocalDateTime regDate;
 }

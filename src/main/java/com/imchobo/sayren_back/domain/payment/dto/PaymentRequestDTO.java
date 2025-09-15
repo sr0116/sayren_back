@@ -20,6 +20,7 @@ public class PaymentRequestDTO {
   @Positive(message = "결제 금액은 0보다 커야 합니다.")
   private Long amount;
 
+
   @NotBlank(message = "결제 타입은 필수 입니다.")
   private String payType;
 }

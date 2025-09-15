@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class CreatedEntity {
   @CreatedDate
-  @Column(updatable = false)
+  @Column(updatable = false , name = "regdate")
   private LocalDateTime regDate;  //생성일만 관리
 }
 

@@ -9,6 +9,7 @@ import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,11 +32,11 @@ public class SubscribePayment extends CreatedEntity {
 
   // 결제 테이블(fk관계)
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "payment_id")
+  @JoinColumn(name = "payment_id", nullable = false)
   private Payment payment;
 
   // 회차 번호(n개 생김)
-  @Column(name = "round_no")
+  @Column(name = "round_no" , nullable = false)
   private Integer roundNo;
 
   // enum
@@ -53,7 +54,7 @@ public class SubscribePayment extends CreatedEntity {
 
   // 납부 예정일(스케줄링 처리에 필요)
   @Column(name = "due_date")
-  private LocalDateTime dueDate;
+  private LocalDate dueDate;
 
   // 실제 결제 완료일
   @Column(name = "paid_date")

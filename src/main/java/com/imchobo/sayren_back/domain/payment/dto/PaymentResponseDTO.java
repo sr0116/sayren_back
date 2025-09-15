@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class PaymentResponseDTO {
   private Long paymentId;
   private Long orderId;
-  private Long memberId;
+  private Long memberId; // 지우기 나중에 context에서 갖고 오는게 맞음
   private String merchantUid;
   private String impUid;
   private Long amount;

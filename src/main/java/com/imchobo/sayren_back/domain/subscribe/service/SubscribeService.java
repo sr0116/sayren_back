@@ -11,6 +11,8 @@ import java.util.List;
 public interface SubscribeService {
   // 구독 신청
   SubscribeResponseDTO create(SubscribeRequestDTO dto);
+  // 배송 완료시 상태 변경
+  void  activateAfterDelivery(Long subscribeId);
 
   // 구독 단건 조회
   SubscribeResponseDTO getById(Long subscribeId);
