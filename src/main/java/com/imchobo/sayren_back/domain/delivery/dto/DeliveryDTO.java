@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.delivery.dto; // 배송 DTO 패키지
+package com.imchobo.sayren_back.domain.delivery.dto;
 
 import lombok.*;
 import java.util.List;

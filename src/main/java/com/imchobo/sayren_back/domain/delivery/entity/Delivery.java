@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.delivery.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.BaseEntity; // regdate/moddate 공통 상속
+import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

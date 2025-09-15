@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:mariadb://np.imchobo.com:3306/rental?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
+    username: rental
+    password: user123
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none   # ?? ???? ??? ????? none
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MariaDBDialect
+    open-in-view: false

@@ -1,15 +1,14 @@
 package com.imchobo.sayren_back.domain.delivery.service;
 
-import com.imchobo.sayren_back.domain.delivery.dto.DeliveryDTO;          // DTO
-import com.imchobo.sayren_back.domain.delivery.entity.Delivery;          // 엔티티
-import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;      // 하위 엔티티
-import com.imchobo.sayren_back.domain.delivery.mapper.DeliveryMapper;    // MapStruct
-import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository; // 저장소
-import lombok.RequiredArgsConstructor;                                   // 생성자 주입
-import org.springframework.stereotype.Service;                           // 서비스 컴포넌트
-import org.springframework.transaction.annotation.Transactional;         // 트랜잭션
+import com.imchobo.sayren_back.domain.delivery.dto.DeliveryDTO;
+import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
+import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
+import com.imchobo.sayren_back.domain.delivery.mapper.DeliveryMapper;
+import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

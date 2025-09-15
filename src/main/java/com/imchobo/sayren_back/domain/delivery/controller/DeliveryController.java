@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.delivery.controller;
 
-import com.imchobo.sayren_back.domain.delivery.dto.DeliveryDTO;   // DTO
-import com.imchobo.sayren_back.domain.delivery.service.DeliveryService; // 서비스
+import com.imchobo.sayren_back.domain.delivery.dto.DeliveryDTO;
+import com.imchobo.sayren_back.domain.delivery.service.DeliveryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
