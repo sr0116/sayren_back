@@ -108,62 +108,6 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   public MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response) {
-    // 1. 약관 동의 검증
-    if (!socialSignupRequestDTO.isServiceAgree() || !socialSignupRequestDTO.isPrivacyAgree()) {
-      throw new IllegalArgumentException("약관에 모두 동의해야 합니다.");
-    }
-
-    try {
-      // 2. 구글 id_token 검증
-      GoogleIdToken idToken = googleIdTokenVerifier.verify(socialSignupRequestDTO.getIdToken());
-      if (idToken == null) {
-        throw new IllegalArgumentException("유효하지 않은 ID Token입니다.");
-      }
-
-      GoogleIdToken.Payload payload = idToken.getPayload();
-
-      String email = payload.getEmail();
-      if (memberRepository.existsByEmail(email)) {
-        throw new SocialLinkException(); // 이미 가입된 경우
-      }
-
-      String name = (String) payload.get("name");
-      String providerUid = payload.getSubject(); // sub
-      boolean emailVerified = Boolean.TRUE.equals(payload.getEmailVerified());
-
-      // 3. 멤버 생성
-      Member member = Member.builder()
-        .email(email)
-        .name(name)
-        .roles(Set.of(Role.USER))
-        .status(MemberStatus.READY)
-        .emailVerified(emailVerified)
-        .build();
-      memberRepository.save(member);
-
-      // 4. 소셜 계정 연동 정보 저장
-      memberProviderRepository.save(MemberProvider.builder()
-        .member(member)
-        .email(email)
-        .provider(Provider.GOOGLE)
-        .providerUid(providerUid)
-        .build());
-
-      MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
-
-      // 5. JWT 발급
-      String accessToken = jwtUtil.generateAccessToken(memberAuthDTO);
-      String refreshToken = jwtUtil.generateRefreshToken(memberAuthDTO);
-
-      // 6. Refresh Token → HttpOnly 쿠키 저장
-      // 리프레쉬 토큰 쿠키에 저장
-      cookieUtil.addRefreshTokenCookie(response, refreshToken, true);
-      cookieUtil.addLoginCookie(response, true);
-
-      return new MemberLoginResponseDTO(accessToken, "로그인 성공");
-
-    } catch (Exception e) {
-      throw new IllegalArgumentException("ID Token 검증 중 오류 발생", e);
-    }
+    return null;
   }
 }

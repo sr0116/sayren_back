@@ -39,7 +39,14 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     MemberLoginResponseDTO loginResponseDTO = new MemberLoginResponseDTO(accessToken, "로그인 성공");
 
-    response.setContentType("application/json;charset=UTF-8");
-    objectMapper.writeValue(response.getWriter(), loginResponseDTO);
+    String json = objectMapper.writeValueAsString(loginResponseDTO);
+
+    response.setContentType("text/html;charset=UTF-8");
+    response.getWriter().write(
+            "<script>" +
+                    "window.opener.postMessage(" + json + ", 'http://localhost:3000');" +
+                    "window.close();" +
+                    "</script>"
+    );
   }
 }

@@ -47,10 +47,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     Optional<Member> originMember = memberRepository.findByEmail(email);
     if (originMember.isPresent()) {
       // 기존 멤버는 있는데 provider 연동 안 된 상태 → 연동 필요
-      throw new SocialLinkException();
+      throw new SocialLinkException(oAuth2User.getAttributes(), provider);
     } else {
       // 기존 멤버도 없음 → 소셜 신규 가입 필요
-      throw new SocialSignupException();
+      throw new SocialSignupException(oAuth2User.getAttributes(), provider);
     }
   }
 }

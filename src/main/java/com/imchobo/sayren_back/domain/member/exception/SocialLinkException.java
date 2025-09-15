@@ -1,9 +1,21 @@
 package com.imchobo.sayren_back.domain.member.exception;
 
-import com.imchobo.sayren_back.domain.common.exception.SayrenException;
+import com.imchobo.sayren_back.domain.member.en.Provider;
+import lombok.Getter;
+import org.springframework.security.core.AuthenticationException;
 
-public class SocialLinkException extends SayrenException {
-  public SocialLinkException() {
-    super("SOCIAL_NEEDS_LINK", "기존 계정과 소셜 연동이 필요합니다.");
+import java.util.Map;
+
+public class SocialLinkException extends AuthenticationException {
+  @Getter
+  private final Map<String, Object> attributes;
+  @Getter
+  private final Provider provider;
+
+  public SocialLinkException(Map<String, Object> attributes, Provider provider) {
+    super("LINK_REQUIRED");
+    this.attributes = attributes;
+    this.provider = provider;
   }
+
 }

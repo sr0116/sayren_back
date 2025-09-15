@@ -1,11 +1,21 @@
 package com.imchobo.sayren_back.domain.member.exception;
 
-import com.imchobo.sayren_back.domain.common.exception.SayrenException;
 import com.imchobo.sayren_back.domain.member.en.Provider;
+import lombok.Getter;
+import org.springframework.security.core.AuthenticationException;
 
-public class SocialSignupException extends SayrenException {
+import java.util.Map;
 
-  public SocialSignupException() {
-    super("SOCIAL_NEEDS_SIGNUP", "소셜 계정 신규 가입이 필요합니다.");
+public class SocialSignupException extends AuthenticationException {
+  @Getter
+  private final Map<String, Object> attributes;
+
+  @Getter
+  private final Provider provider;
+
+  public SocialSignupException(Map<String, Object> attributes, Provider provider) {
+    super("SIGNUP_REQUIRED");
+    this.attributes = attributes;
+    this.provider = provider;
   }
 }

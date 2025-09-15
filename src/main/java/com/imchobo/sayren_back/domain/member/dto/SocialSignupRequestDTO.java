@@ -1,13 +1,22 @@
 package com.imchobo.sayren_back.domain.member.dto;
 
+import com.imchobo.sayren_back.domain.member.en.Provider;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.Map;
 
 @Getter
 @Setter
 public class SocialSignupRequestDTO {
-  private String idToken; // 구글 token
+  @NotEmpty(message = "소셜 프로필 정보가 필요합니다")
+  private Map<String, Object> attributes;
+
+  @NotNull(message = "소셜 로그인 제공자 정보가 필요합니다")
+  private Provider provider;
 
   @AssertTrue(message = "서비스 이용약관에 동의해야 합니다")
   private boolean serviceAgree;
