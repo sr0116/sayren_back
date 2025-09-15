@@ -8,12 +8,14 @@ import com.imchobo.sayren_back.domain.member.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/auth")
 @RequiredArgsConstructor
+@Log4j2
 public class AuthController {
   private final AuthService authService;
 
@@ -40,6 +42,7 @@ public class AuthController {
 
   @PostMapping("social-signup")
   public ResponseEntity<?> socialSignup(@RequestBody @Valid SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response) {
+    log.info(socialSignupRequestDTO.toString());
     return ResponseEntity.ok(authService.socialSignup(socialSignupRequestDTO, response));
   }
 }
