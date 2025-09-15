@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.product.entity;
 
+import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,7 +16,8 @@ public class ProductTag {
     // 상품 태그 번호
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long productTagId;
+    @Column(name = "product_tag_id")
+    private Long id;
 
     // 태그명
     @Column(nullable = false)
