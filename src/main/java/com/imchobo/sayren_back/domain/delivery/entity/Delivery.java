@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.delivery.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
+import com.imchobo.sayren_back.domain.common.entity.BaseEntityEx;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Delivery extends BaseEntity {
+public class Delivery extends BaseEntityEx {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
