@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,6 @@ public class MailUtil {
 
   @Value("${spring.mail.username}")
   private String from;
-
   private final JavaMailSender mailSender;
 
   public void sendMail(String email, String title, String content) {
@@ -39,7 +39,6 @@ public class MailUtil {
   public void emailVerification(String email){
     String token = UUID.randomUUID().toString();
 
-
     String verificationUrl = "http://localhost:8080/api/auth/verify?token=" + token;
 
     String title = "귀하의 세이렌 계정 이메일 주소를 확인해 주십시오.";
@@ -49,9 +48,7 @@ public class MailUtil {
             + "<a href=\"" + verificationUrl + "\" "
             + "style=\"display:inline-block;padding:10px 20px;"
             + "background-color:#4CAF50;color:#fff;text-decoration:none;"
-            + "border-radius:5px;\">이메일 인증하기</a>"
-            + "<p>버튼이 동작하지 않을 경우, 아래 링크를 복사해서 브라우저 주소창에 붙여넣기 하세요:</p>"
-            + "<p>" + verificationUrl + "</p>";
+            + "border-radius:5px;\">이메일 인증하기</a>";
 
     sendMail(email, title, content);
   }
