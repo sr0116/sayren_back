@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
 
-import com.imchobo.sayren_back.domain.common.config.ApiResponseEx;
+import com.imchobo.sayren_back.domain.common.config.ApiResponse;
 import com.imchobo.sayren_back.domain.exentity.Order;
 import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.exentity.OrderPlan;
@@ -12,9 +12,9 @@ import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
-import com.imchobo.sayren_back.domain.payment.portone.dto.CancelRequest;
-import com.imchobo.sayren_back.domain.payment.portone.dto.CancelResponse;
-import com.imchobo.sayren_back.domain.payment.portone.dto.PaymentInfoResponse;
+import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelRequest;
+import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelResponse;
+import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -51,14 +51,14 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Transactional
   @Override
-  public ApiResponseEx<PaymentResponseDTO> prepare(PaymentRequestDTO dto) {
+  public ApiResponse<PaymentResponseDTO> prepare(PaymentRequestDTO dto) {
     Payment payment = paymentMapper.toEntity(dto);
 
     // 주문 연결
     Order order = payment.getOrder();
     if (order == null) {
       order = Order.builder()
-              .orderId(dto.getOrderId())
+              .id(dto.getOrderId())
               .build();
       payment.setOrder(order);
     }
@@ -69,12 +69,12 @@ public class PaymentServiceImpl implements PaymentService {
 
     paymentRepository.save(payment);
 
-    return ApiResponseEx.ok(paymentMapper.toResponseDTO(payment));
+    return ApiResponse.ok(paymentMapper.toResponseDTO(payment));
   }
 
   @Transactional
   @Override
-  public ApiResponseEx<PaymentResponseDTO> complete(Long paymentId, String impUid) {
+  public ApiResponse<PaymentResponseDTO> complete(Long paymentId, String impUid) {
     // Payment + Order + OrderItems + Plan까지 조인해서 가져오기
     Payment payment = paymentRepository.findWithOrderAndPlan(paymentId)
             .orElseThrow(() -> new RuntimeException("결제에 연결된 주문/플랜 정보를 찾을 수 없습니다."));
@@ -94,7 +94,7 @@ public class PaymentServiceImpl implements PaymentService {
     // 금액 검증
     if (!paymentInfo.getAmount().equals(payment.getAmount())) {
       log.warn("결제 금액 불일치: 요청 금액={}, PortOne 금액={}", payment.getAmount(), paymentInfo.getAmount());
-      return ApiResponseEx.fail("결제 금액이 일치하지 않습니다.");
+      return ApiResponse.fail("결제 금액이 일치하지 않습니다.");
     }
 
     // 결제 완료 처리
@@ -122,7 +122,7 @@ public class PaymentServiceImpl implements PaymentService {
       subscribePaymentService.generateRounds(subscribe, payment);
     }
 
-    return ApiResponseEx.ok(paymentMapper.toResponseDTO(payment));
+    return ApiResponse.ok(paymentMapper.toResponseDTO(payment));
   }
 
 
@@ -130,7 +130,7 @@ public class PaymentServiceImpl implements PaymentService {
   // 환불 처리 (아직 반영 안됨)
   @Override
   @Transactional
-  public ApiResponseEx<Void> refund(Long paymentId, Long amount, String reason) {
+  public ApiResponse<Void> refund(Long paymentId, Long amount, String reason) {
 
     Payment payment = paymentRepository.findById(paymentId)
             .orElseThrow(() -> new RuntimeException("결제 아이디를 찾을 수 없습니다."));
@@ -147,18 +147,18 @@ public class PaymentServiceImpl implements PaymentService {
     payment.setPayStatus(PaymentStatus.REFUNDED);
     paymentRepository.save(payment);
 
-    return ApiResponseEx.ok(null);
+    return ApiResponse.ok(null);
   }
 
 //  조회 리스트 (JPA)
 
 
   @Override
-  public ApiResponseEx<List<PaymentResponseDTO>> getAll() {
+  public ApiResponse<List<PaymentResponseDTO>> getAll() {
     List<PaymentResponseDTO> list = paymentRepository.findAll(Sort.by(Sort.Direction.DESC, "regdate"))
             .stream()
             .map(paymentMapper::toResponseDTO)
             .toList();
-    return ApiResponseEx.ok(list);
+    return ApiResponse.ok(list);
   }
 }

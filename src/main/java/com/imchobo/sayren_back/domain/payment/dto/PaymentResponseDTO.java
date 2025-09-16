@@ -8,15 +8,12 @@ import java.time.LocalDateTime;
 
 @Data
 public class PaymentResponseDTO {
-  private Long paymentId;
-  private Long orderId;
-  private Long memberId; // 지우기 나중에 context에서 갖고 오는게 맞음
+  // 결제 응답 DTO
   private String merchantUid;
   private String impUid;
   private Long amount;
-  private String payType;
-  private PaymentStatus payStatus;   // PENDING, PAID, FAILED, REFUNDED, 부분환불까디
-  private String receiptUrl;
+  private String payType; // 결제 수단
+  private PaymentStatus payStatus;
+  private String receiptUrl; // 영수증 url
   private LocalDateTime regDate;
-  private LocalDateTime modDate;
 }

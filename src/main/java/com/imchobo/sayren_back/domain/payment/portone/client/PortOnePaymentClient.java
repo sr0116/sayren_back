@@ -1,8 +1,9 @@
 package com.imchobo.sayren_back.domain.payment.portone.client;
 
-import com.imchobo.sayren_back.domain.payment.portone.dto.CancelRequest;
-import com.imchobo.sayren_back.domain.payment.portone.dto.CancelResponse;
-import com.imchobo.sayren_back.domain.payment.portone.dto.PaymentInfoResponse;
+import com.imchobo.sayren_back.domain.common.util.MappingUtil;
+import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelRequest;
+import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelResponse;
+import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
 import com.imchobo.sayren_back.domain.payment.portone.mapper.PortOneMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -56,7 +57,7 @@ public class PortOnePaymentClient {
     if (res.getBody() == null || res.getBody().get("response") == null) {
       throw  new RuntimeException("PortOne 환불 실패 : " + res);
     }
-    Map<String, Object> response =(Map<String, Object>) res.getBody().get("response");
+    Map<String, Object> response = (Map<String, Object>) res.getBody().get("response");
     return portOneMapper.toCancelResponse(response);
   }
 }

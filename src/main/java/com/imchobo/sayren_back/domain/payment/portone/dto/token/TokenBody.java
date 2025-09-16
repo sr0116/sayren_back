@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.payment.portone.dto;
+package com.imchobo.sayren_back.domain.payment.portone.dto.token;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

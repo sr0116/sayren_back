@@ -29,7 +29,7 @@ public class SubscribePaymentServiceImpl implements SubscribePaymentService {
   public void generateRounds(SubscribeResponseDTO subscribeDTO, Payment payment) {
     // DTO → 엔티티 변환 (subscribeId 로 Proxy 생성)
     Subscribe subscribeRef = Subscribe.builder()
-            .subscribeId(subscribeDTO.getSubscribeId())
+            .id(subscribeDTO.getSubscribeId())
             .build();
 
     List<SubscribePayment> rounds = new ArrayList<>();

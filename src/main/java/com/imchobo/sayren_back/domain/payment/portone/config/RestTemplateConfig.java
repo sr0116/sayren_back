@@ -32,16 +32,21 @@ public class RestTemplateConfig {
             // 로깅 인터셉터 추가
             .additionalInterceptors(loggingInterceptor())
             // Buffering 처리로 body 여러 번 읽을 수 있게
-            .requestFactory(() -> new BufferingClientHttpRequestFactory(new SimpleClientHttpRequestFactory()))
+            .requestFactory(() -> {
+              SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+              factory.setConnectTimeout(5000); // 타임아웃
+              factory.setReadTimeout(10000);
+              return new BufferingClientHttpRequestFactory(factory);
+            })
             .build();
   }
 
   private ClientHttpRequestInterceptor loggingInterceptor() {
     return (request, body, execution) -> {
-      log.info("=== RestTemplate Request ===");
-      log.info("{} {}", request.getMethod(), request.getURI());
-      log.info("Headers: {}", request.getHeaders());
-      log.info("Request Body: {}", new String(body, StandardCharsets.UTF_8));
+//      log.info("=== RestTemplate Request ===");
+//      log.info("{} {}", request.getMethod(), request.getURI());
+//      log.info("Headers: {}", request.getHeaders());
+//      log.info("Request Body: {}", new String(body, StandardCharsets.UTF_8));
 
       ClientHttpResponse response = execution.execute(request, body);
 
@@ -49,13 +54,11 @@ public class RestTemplateConfig {
               new InputStreamReader(response.getBody(), StandardCharsets.UTF_8))
               .lines()
               .collect(Collectors.joining("\n"));
-
-      log.info("=== RestTemplate Response ===");
-      log.info("Status: {} {}", response.getStatusCode(), response.getStatusText());
-      log.info("Headers: {}", response.getHeaders());
-      log.info("Response Body: {}", responseBody);
-
-      return response; // Buffering 덕분에 body를 다시 읽을 수 있음
+//      log.info("=== RestTemplate Response ===");
+//      log.info("Status: {} {}", response.getStatusCode(), response.getStatusText());
+//      log.info("Headers: {}", response.getHeaders());
+//      log.info("Response Body: {}", responseBody);
+      return response;
     };
   }
 }

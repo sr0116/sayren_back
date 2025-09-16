@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.exentity;
 
+import com.imchobo.sayren_back.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -7,7 +8,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
 @Table(name = "tbl_order")
 @Getter
 @Setter
@@ -20,12 +20,12 @@ public class Order {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "order_id")
-  private Long orderId;
+  private Long id;
 
   /** 주문 회원 (FK → tbl_member) */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "member_id", nullable = false)
-  private MemberEx memberEx;
+  private Member member;
 
   /** 주문 상태 (PENDING/PAID/SHIPPED/DELIVERED/CANCELED) */
   @Column(name = "status", nullable = false, length = 20)

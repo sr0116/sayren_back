@@ -16,29 +16,25 @@ import org.springframework.context.annotation.Configuration;
 @Log4j2
 public class PortOneClientConfig {
 
-
    // PortOne REST API Key
   @Value("${portone.api-key}")
   private String apiKey;
 
-
 //  PortOne secret API Key
   @Value("${portone.api-secret}")
   private String apiSecret;
-
 
    //  상점 코드 (merchant code, MID)
   @Value("${portone.merchant-code}")
   private String merchantCode;
 
   //  콘솔에서 값 들어가 있는지 확인용 (나중에 지워도 됨)
-  @PostConstruct
-  public void init() {
-    log.info("PortOne 설정 확인 → apiKey={}, apiSecret={}, merchantCode={}",
-            apiKey, apiSecret, merchantCode);
-
-
-  }
+//  @PostConstruct
+//  public void init() {
+//    log.info("PortOne 설정 확인 → apiKey={}, apiSecret={}, merchantCode={}",
+//            apiKey, apiSecret, merchantCode);
+//
+//  }
 
 
 }

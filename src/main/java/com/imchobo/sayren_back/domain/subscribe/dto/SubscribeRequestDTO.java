@@ -14,9 +14,7 @@ public class SubscribeRequestDTO {
   @NotNull(message = "주문 아이템 ID는 필수입니다.")
   private Long orderItemId;
 
-  // 나중에 jwt 나 context에서 받아올거라 지워야 함
-  @NotNull(message = "회원 ID는 필수입니다.")
-  private Long memberId;
+  // 멤버 나중에 jwt 나 context에서 받아올거라 지워야 함
 
   @NotNull(message = "월 렌탈료는 필수입니다.")
   @PositiveOrZero(message = "월 렌탈료는 0 이상이어야 합니다.")
@@ -27,7 +25,7 @@ public class SubscribeRequestDTO {
   private Integer depositSnapshot;
 
   @NotNull(message = "구독 개월 수는 필수입니다.")
-  @Min(value = 1, message = "구독 개월 수는 1 이상이어야 합니다.")
+  @Min(value = 12, message = "구독 개월 수는 1년 이상이어야 합니다.")
   private Integer totalMonths;
 
   @NotNull(message = "구독 시작일은 필수입니다.")

@@ -1,11 +1,8 @@
 package com.imchobo.sayren_back.domain.delivery.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.BaseEntityEx;
+import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "tbl_delivery")  // DB 테이블 이름
@@ -14,7 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Delivery extends BaseEntityEx {
+public class Delivery extends BaseEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,8 +30,8 @@ public class Delivery extends BaseEntityEx {
   private String trackingNo;   // 송장번호
   private String status;       // READY / PREPARING / SHIPPING / DELIVERED
 
-  // 배송 ↔ 배송아이템 (1:N 관계)
-  @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
-  private List<DeliveryItem> items = new ArrayList<>();
+//  // 배송 ↔ 배송아이템 (1:N 관계)
+//  @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
+//  @Builder.Default
+//  private List<DeliveryItem> items = new ArrayList<>();
 }

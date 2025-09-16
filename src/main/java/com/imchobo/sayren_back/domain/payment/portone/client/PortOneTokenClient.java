@@ -2,8 +2,8 @@ package com.imchobo.sayren_back.domain.payment.portone.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imchobo.sayren_back.domain.payment.portone.config.PortOneClientConfig;
-import com.imchobo.sayren_back.domain.payment.portone.dto.TokenRequest;
-import com.imchobo.sayren_back.domain.payment.portone.dto.TokenResponse;
+import com.imchobo.sayren_back.domain.payment.portone.dto.token.TokenRequest;
+import com.imchobo.sayren_back.domain.payment.portone.dto.token.TokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -20,9 +20,8 @@ public class PortOneTokenClient {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  /**
-   * PortOne 액세스 토큰 발급
-   */
+
+//    PortOne 액세스 토큰 발급
   public String getAccessToken() {
     String url = "https://api.iamport.kr/users/getToken";
 
@@ -35,7 +34,7 @@ public class PortOneTokenClient {
 
     HttpEntity<TokenRequest> entity = new HttpEntity<>(body, headers);
 
-    log.info("보내는 JSON = {}", toJson(body));
+//    log.info("보내는 JSON = {}", toJson(body));
 
     // API 호출
     ResponseEntity<TokenResponse> res = restTemplate.exchange(
@@ -45,7 +44,7 @@ public class PortOneTokenClient {
             TokenResponse.class
     );
 
-    log.info("PortOne 토큰 응답 객체 = {}", toJson(res.getBody()));
+//    log.info("PortOne 토큰 응답 객체 = {}", toJson(res.getBody()));
 
     // --- 응답 검증 ---
     if (res.getBody() == null) {

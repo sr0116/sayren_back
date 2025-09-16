@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.subscribe_payment.entity;
 
 
-import com.imchobo.sayren_back.domain.common.entity.CreatedEntityEx;
+import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.subscribe_payment.en.SubscribePaymentType;
@@ -19,41 +19,43 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubscribePayment extends CreatedEntityEx {
+public class SubscribePayment extends CreatedEntity {
   // 구독 결제 pk
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "subscribe_payment_id")
-  private Long subscribePaymentId;
+  private Long id;
+
 // 구독 테이블 (fk 관계)
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "subscribe_id", nullable = false)
   private Subscribe subscribe;
 
-  // 결제 테이블(fk관계)
+  // 결제 FK (성공 시 매핑, 예정 상태일 땐 null)
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "payment_id", nullable = false)
+  @JoinColumn(name = "payment_id")
   private Payment payment;
 
-  // 회차 번호(n개 생김)
-  @Column(name = "round_no" , nullable = false)
+// 회차 번호
+  @Column(name = "round_no", nullable = false)
   private Integer roundNo;
 
-  // enum
+  // 구독 결제 유형 (MONTHLY / DEPOSIT)
   @Enumerated(EnumType.STRING)
   @Column(name = "type")
   private SubscribePaymentType type;
 
   // 결제 금액
+  @Column(nullable = false)
   private Long amount;
 
-  // 결제 상태 (결제 상태 enum이랑 같이 사용)
+  // 결제 상태
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private PaymentStatus payStatus;
 
   // 납부 예정일(스케줄링 처리에 필요)
-  @Column(name = "due_date")
+  @Column(name = "due_date", nullable = false)
   private LocalDate dueDate;
 
   // 실제 결제 완료일

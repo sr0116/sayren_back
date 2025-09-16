@@ -6,7 +6,6 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
 @Table(name = "tbl_order_plan")
 @Getter
 @Setter
@@ -19,7 +18,7 @@ public class OrderPlan {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "plan_id")
-  private Long planId;
+  private Long id;
 
   @Column(nullable = false)
   private String type; // PURCHASE / RENTAL 두개 상태

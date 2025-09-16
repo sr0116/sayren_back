@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.payment.portone.dto;
+package com.imchobo.sayren_back.domain.payment.portone.dto.payment;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -10,12 +10,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class PaymentInfoResponse {
-  // 정보 dto
+  // 포트원 결제 정보 조회 응답 dto
   @JsonProperty("imp_uid")
   private String impUid;
+
   @JsonProperty("merchant_uid")
   private String merchantUid;
+
   private Long amount;
   private String status;
-
 }

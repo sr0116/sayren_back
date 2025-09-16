@@ -1,8 +1,8 @@
 package com.imchobo.sayren_back.domain.payment.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntityEx;
-import com.imchobo.sayren_back.domain.exentity.MemberEx;
+import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
 import com.imchobo.sayren_back.domain.exentity.Order;
+import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -14,22 +14,20 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Payment extends TimeRangeEntityEx {
+public class Payment extends TimeRangeEntity {
   // 결제 아이디
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "payment_id")
-  private Long paymentId;
+  private Long id;
   // 멤버 아이디
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "member_id", nullable = false)
-  private MemberEx memberEx;
+  private Member member;
   // 주문 아이디
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "order_id", nullable = false)
   private Order order;
-
-
   // PortOne 고유 결제 식별자
   @Column(name = "merchant_uid", nullable = false, unique = true)
   private String merchantUid;
@@ -55,15 +53,5 @@ public class Payment extends TimeRangeEntityEx {
 
   // 결제 생성 시각, 취소 시각은 TimeRangeEntity
   // voidDate, regDate
-
-// 기본 값
-
-  @PrePersist
-  public void onCreate() {
-    if(this.payStatus == null) {
-      this.payStatus = PaymentStatus.PENDING; // 결제 준비 상태
-    }
-  }
-
 
 }

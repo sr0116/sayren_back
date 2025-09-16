@@ -1,43 +1,46 @@
 package com.imchobo.sayren_back.domain.payment.portone.mapper;
 
 
-import com.imchobo.sayren_back.domain.payment.portone.dto.CancelResponse;
-import com.imchobo.sayren_back.domain.payment.portone.dto.PaymentInfoResponse;
+import com.imchobo.sayren_back.domain.common.util.MappingUtil;
+import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelResponse;
+import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
+import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentVerifyResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.util.List;
 import java.util.Map;
 
-@Mapper(componentModel = "spring")
+
+@Mapper(componentModel = "spring", uses = {MappingUtil.class})
 public interface PortOneMapper {
 
   // Map → DTO 변환 (결제 조회 응답)
-  @Mapping(target = "impUid", expression = "java(mapToString(response.get(\"imp_uid\")))")
-  @Mapping(target = "merchantUid", expression = "java(mapToString(response.get(\"merchant_uid\")))")
-  @Mapping(target = "amount", expression = "java(mapToLong(response.get(\"amount\")))")
-  @Mapping(target = "status", expression = "java(mapToString(response.get(\"status\")))")
+  @Mapping(source = "imp_uid", target = "impUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
+  @Mapping(source = "status", target = "status", qualifiedByName = "toStringSafe")
   PaymentInfoResponse toPaymentInfoResponse(Map<String, Object> response);
 
+  // Map → DTO 변환 (결제 검증 응답)
+  @Mapping(source = "imp_uid", target = "impUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
+  @Mapping(source = "status", target = "status", qualifiedByName = "toStringSafe")
+  @Mapping(source = "pay_method", target = "payMethod", qualifiedByName = "toStringSafe")
+  @Mapping(source = "buyer_name", target = "buyerName", qualifiedByName = "toStringSafe")
+  @Mapping(source = "buyer_email", target = "buyerEmail", qualifiedByName = "toStringSafe")
+  PaymentVerifyResponse toPaymentVerifyResponse(Map<String, Object> response);
+
   // Map → DTO 변환 (환불 응답)
-  @Mapping(target = "impUid", expression = "java(mapToString(response.get(\"imp_uid\")))")
-  @Mapping(target = "merchantUid", expression = "java(mapToString(response.get(\"merchant_uid\")))")
-  @Mapping(target = "amount", expression = "java(mapToLong(response.get(\"amount\")))")
-  @Mapping(target = "reason", expression = "java(mapToString(response.get(\"reason\")))")
+  @Mapping(source = "imp_uid", target = "impUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
+  @Mapping(source = "reason", target = "reason", qualifiedByName = "toStringSafe")
   CancelResponse toCancelResponse(Map<String, Object> response);
 
-  // 리스트 변환 (여러 건 응답 시)
+  // 리스트 변환
   List<PaymentInfoResponse> toPaymentInfoResponses(List<Map<String, Object>> responses);
+  List<PaymentVerifyResponse> toPaymentVerifyResponses(List<Map<String, Object>> responses);
   List<CancelResponse> toCancelResponses(List<Map<String, Object>> responses);
-
-  // ====== 메서드 ======
-  default String mapToString(Object value) {
-    return value != null ? value.toString() : null;
-  }
-
-  default Long mapToLong(Object value) {
-    if (value instanceof Number num) return num.longValue();
-    if (value != null) return Long.parseLong(value.toString());
-    return null;
-  }
 }
