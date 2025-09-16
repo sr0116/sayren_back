@@ -64,6 +64,23 @@ dependencies {
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
   testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+  // Selenium (크롤링- 브라우저 제어)
+  implementation 'org.seleniumhq.selenium:selenium-java:4.22.0'
+  // Jsoup (크롤링 - HTML 파싱)
+  implementation 'org.jsoup:jsoup:1.18.1'
+
+  // WebDriverManager (드라이버 자동관리)
+  implementation 'io.github.bonigarcia:webdrivermanager:5.9.2'
+
+  // S3 업로드
+  implementation 'software.amazon.awssdk:s3:2.25.46'   // S3 클라이언트
+  implementation 'software.amazon.awssdk:auth:2.25.46' // 인증
+  implementation 'software.amazon.awssdk:core:2.25.46' // AWS SDK Core
+
+  // 썸네일/ webp
+  implementation 'net.coobird:thumbnailator:0.4.20'
+  implementation 'org.sejda.imageio:webp-imageio:0.1.6'
+
   // ======================================
   implementation 'org.springframework.boot:spring-boot-starter-validation'
 }
