@@ -4,10 +4,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
-import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.TokenResponseDTO;
+import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Provider;
 import com.imchobo.sayren_back.domain.member.en.Role;
@@ -112,9 +109,32 @@ public class AuthServiceImpl implements AuthService {
     return tokensAndLoginResponse(member, response, true);
   }
 
+  @Override
+  @Transactional
+  public MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
+    Map<String, Object> attributes = socialLinkRequestDTO.getAttributes();
+    Provider provider = socialLinkRequestDTO.getProvider();
+    String uid = (String) attributes.get("sub");
+
+    String email = (String) attributes.get("email");
+
+    Member member = memberRepository.findByEmail(email)
+            .orElseThrow(EmailNotFoundException::new);
+
+    if(!passwordEncoder.matches(socialLinkRequestDTO.getPassword(), member.getPassword())){
+      throw new InvalidPasswordException();
+    }
+
+    memberProviderRepository.save(MemberProvider.builder().providerUid(uid).member(member).provider(provider).email(email).build());
+    member.setEmailVerified(true);
+
+
+    return tokensAndLoginResponse(member, response, true);
+  }
+
   private MemberLoginResponseDTO tokensAndLoginResponse(Member member,
-                                                             HttpServletResponse response,
-                                                             boolean rememberMe) {
+                                                        HttpServletResponse response,
+                                                        boolean rememberMe) {
     // 멤버 매핑
     MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
 
@@ -128,4 +148,5 @@ public class AuthServiceImpl implements AuthService {
 
     return new MemberLoginResponseDTO(accessToken, "로그인 성공");
   }
+
 }
