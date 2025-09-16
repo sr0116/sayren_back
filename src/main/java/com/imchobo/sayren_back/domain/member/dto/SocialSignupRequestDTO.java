@@ -6,11 +6,13 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.Map;
 
 @Getter
 @Setter
+@ToString
 public class SocialSignupRequestDTO {
   @NotEmpty(message = "소셜 프로필 정보가 필요합니다")
   private Map<String, Object> attributes;

@@ -23,14 +23,13 @@ import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Set;
+import java.util.Map;
+
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +40,8 @@ public class AuthServiceImpl implements AuthService {
   private final JwtUtil jwtUtil;
   private final CookieUtil cookieUtil;
   private final MemberMapper memberMapper;
-  private final GoogleIdTokenVerifier googleIdTokenVerifier;
   private final MemberProviderRepository memberProviderRepository;
+
 
   @Override
   public MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response) {
@@ -64,19 +63,7 @@ public class AuthServiceImpl implements AuthService {
       throw new InvalidPasswordException();
     }
 
-    // 멤버 매핑
-    MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
-
-    // jwt 토큰 생성
-    String accessToken = jwtUtil.generateAccessToken(memberAuthDTO);
-    String refreshToken = jwtUtil.generateRefreshToken(memberAuthDTO);
-
-    // 리프레쉬 토큰 쿠키에 저장
-    cookieUtil.addRefreshTokenCookie(response, refreshToken, memberLoginRequestDTO.isRememberMe());
-    cookieUtil.addLoginCookie(response, memberLoginRequestDTO.isRememberMe());
-
-
-    return new MemberLoginResponseDTO(accessToken, "로그인 성공");
+    return tokensAndLoginResponse(member, response, memberLoginRequestDTO.isRememberMe());
   }
 
   private boolean isEmail(String username) {
@@ -107,7 +94,38 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
+  @Transactional
   public MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response) {
-    return null;
+    Map<String, Object> attributes = socialSignupRequestDTO.getAttributes();
+    Provider provider = socialSignupRequestDTO.getProvider();
+
+    String email = (String) attributes.get("email");
+    String name = (String) attributes.get("name");
+    String uid = (String) attributes.get("sub");
+
+    Member member = Member.builder().name(name).email(email).status(MemberStatus.READY).emailVerified(true).build();
+
+    memberRepository.save(member);
+    memberProviderRepository.save(MemberProvider.builder().providerUid(uid).member(member).provider(provider).email(email).build());
+
+
+    return tokensAndLoginResponse(member, response, true);
+  }
+
+  private MemberLoginResponseDTO tokensAndLoginResponse(Member member,
+                                                             HttpServletResponse response,
+                                                             boolean rememberMe) {
+    // 멤버 매핑
+    MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
+
+    // jwt 토큰 생성
+    String accessToken = jwtUtil.generateAccessToken(memberAuthDTO);
+    String refreshToken = jwtUtil.generateRefreshToken(memberAuthDTO);
+
+    // 리프레쉬 토큰 쿠키에 저장
+    cookieUtil.addRefreshTokenCookie(response, refreshToken, rememberMe);
+    cookieUtil.addLoginCookie(response, rememberMe);
+
+    return new MemberLoginResponseDTO(accessToken, "로그인 성공");
   }
 }
