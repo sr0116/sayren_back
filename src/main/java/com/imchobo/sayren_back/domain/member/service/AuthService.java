@@ -1,9 +1,6 @@
 package com.imchobo.sayren_back.domain.member.service;
 
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
-import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.TokenResponseDTO;
+import com.imchobo.sayren_back.domain.member.dto.*;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 
@@ -12,4 +9,5 @@ public interface AuthService {
   void logout(HttpServletResponse response);
   TokenResponseDTO accessToken(String refreshToken);
   MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response);
+  MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response);
 }
