@@ -1,9 +1,8 @@
 package com.imchobo.sayren_back.domain.payment.mapper;
 
 
-import com.imchobo.sayren_back.domain.exentity.Member;
+import com.imchobo.sayren_back.domain.exentity.MemberEx;
 import com.imchobo.sayren_back.domain.exentity.Order;
-import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.exentity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
@@ -25,7 +24,7 @@ public interface PaymentMapper {
   @Mapping(target = "paymentId", ignore = true)
   @Mapping(target = "payStatus", expression = "java(defaultStatus())")
   @Mapping(source = "orderId", target = "order", qualifiedByName = "mapOrder")
-  @Mapping(source = "memberId", target = "member", qualifiedByName = "mapMember")
+  @Mapping(source = "memberId", target = "memberEx", qualifiedByName = "mapMember")
   @Mapping(target = "receipt", ignore = true)
   @Mapping(target = "merchantUid", ignore = true)
   @Mapping(target = "impUid", ignore = true)
@@ -34,7 +33,7 @@ public interface PaymentMapper {
 
   // 엔티티 → ResponseDTO
   @Mapping(source = "order.orderId", target = "orderId")
-  @Mapping(source = "member.memberId", target = "memberId")
+  @Mapping(source = "memberEx.memberId", target = "memberId")
   @Mapping(source = "receipt", target = "receiptUrl")
   PaymentResponseDTO toResponseDTO(Payment entity);
 
@@ -56,9 +55,9 @@ public interface PaymentMapper {
 
   // 멤버는 나중에 삭제 예정
   @Named("mapMember")
-  default Member mapMember(Long memberId) {
+  default MemberEx mapMember(Long memberId) {
     if (memberId == null) return null;
-    return Member.builder().memberId(memberId).build();
+    return MemberEx.builder().memberId(memberId).build();
   }
 
   @Named("mapPlan")

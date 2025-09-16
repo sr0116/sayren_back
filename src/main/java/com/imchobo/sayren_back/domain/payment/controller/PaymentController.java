@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.payment.controller;
 
-import com.imchobo.sayren_back.domain.common.config.ApiResponse;
+import com.imchobo.sayren_back.domain.common.config.ApiResponseEx;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
@@ -24,24 +24,24 @@ public class PaymentController {
 
   // 결제 준비
   @PostMapping("/prepare")
-  public ApiResponse<PaymentResponseDTO> prepare(@RequestBody PaymentRequestDTO dto) {
+  public ApiResponseEx<PaymentResponseDTO> prepare(@RequestBody PaymentRequestDTO dto) {
     return paymentService.prepare(dto);
   }
 
   // 결제 완료시 상태 변경
   @PostMapping("/{paymentId}/complete")
-  public ApiResponse<PaymentResponseDTO> complete(@PathVariable Long paymentId, @RequestParam("imp_uid") String impUid) {
+  public ApiResponseEx<PaymentResponseDTO> complete(@PathVariable Long paymentId, @RequestParam("imp_uid") String impUid) {
 
     return paymentService.complete(paymentId, impUid);
   }
 // 결제 환불
   @PostMapping("/{paymentId}/refund")
-  public ApiResponse<Void> refund(@PathVariable Long paymentId, @RequestParam(required = false) Long amount, @RequestParam String reason) {
+  public ApiResponseEx<Void> refund(@PathVariable Long paymentId, @RequestParam(required = false) Long amount, @RequestParam String reason) {
     return paymentService.refund(paymentId, amount, reason);
   }
 
   @GetMapping
-  public ApiResponse <List<PaymentResponseDTO> > getAll() {
+  public ApiResponseEx<List<PaymentResponseDTO> > getAll() {
     return paymentService.getAll();
   }
 }

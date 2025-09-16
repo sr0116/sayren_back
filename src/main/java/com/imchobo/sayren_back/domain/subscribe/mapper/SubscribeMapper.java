@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.subscribe.mapper;
 
-import com.imchobo.sayren_back.domain.exentity.Member;
+import com.imchobo.sayren_back.domain.exentity.MemberEx;
 import com.imchobo.sayren_back.domain.exentity.Order;
 import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.exentity.OrderPlan;
@@ -21,13 +21,13 @@ public interface SubscribeMapper {
   // 클라이언트 요청 -> 엔티티
   // 기본 상태 (서비스 로직에서 pending)
   @Mapping(source = "orderItemId", target = "orderItem", qualifiedByName = "mapOrderItem")
-  @Mapping(source = "memberId", target = "member", qualifiedByName = "mapMember")
+  @Mapping(source = "memberId", target = "memberEx", qualifiedByName = "mapMember")
   @Mapping(target = "status", ignore = true)
   Subscribe toEntity(SubscribeRequestDTO dto);
 
   // 주문 + 주문 아이템 + 플랜 → 구독 신청 DTO
   @Mapping(source = "orderItem.orderItemId", target = "orderItemId")
-  @Mapping(source = "order.member.memberId", target = "memberId")
+  @Mapping(source = "order.memberEx.memberId", target = "memberId")
   @Mapping(source = "orderItem.productPriceSnapshot", target = "monthlyFeeSnapshot")
   @Mapping(source = "plan.month", target = "totalMonths")
   @Mapping(target = "depositSnapshot", constant = "0")
@@ -57,8 +57,8 @@ public interface SubscribeMapper {
   }
 
   @Named("mapMember")
-  default Member mapMember(Long memberId) {
+  default MemberEx mapMember(Long memberId) {
     if (memberId == null) return null;
-    return Member.builder().memberId(memberId).build();
+    return MemberEx.builder().memberId(memberId).build();
   }
 }

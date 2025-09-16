@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
 
-import com.imchobo.sayren_back.domain.common.config.ApiResponse;
+import com.imchobo.sayren_back.domain.common.config.ApiResponseEx;
 import com.imchobo.sayren_back.domain.exentity.Order;
 import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.exentity.OrderPlan;
@@ -21,7 +21,6 @@ import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
 import com.imchobo.sayren_back.domain.subscribe_payment.service.SubscribePaymentService;
-import com.imchobo.sayren_back.domain.subscribe_payment.service.SubscribePaymentServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Sort;
@@ -52,7 +51,7 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Transactional
   @Override
-  public ApiResponse<PaymentResponseDTO> prepare(PaymentRequestDTO dto) {
+  public ApiResponseEx<PaymentResponseDTO> prepare(PaymentRequestDTO dto) {
     Payment payment = paymentMapper.toEntity(dto);
 
     // 주문 연결
@@ -70,12 +69,12 @@ public class PaymentServiceImpl implements PaymentService {
 
     paymentRepository.save(payment);
 
-    return ApiResponse.ok(paymentMapper.toResponseDTO(payment));
+    return ApiResponseEx.ok(paymentMapper.toResponseDTO(payment));
   }
 
   @Transactional
   @Override
-  public ApiResponse<PaymentResponseDTO> complete(Long paymentId, String impUid) {
+  public ApiResponseEx<PaymentResponseDTO> complete(Long paymentId, String impUid) {
     // Payment + Order + OrderItems + Plan까지 조인해서 가져오기
     Payment payment = paymentRepository.findWithOrderAndPlan(paymentId)
             .orElseThrow(() -> new RuntimeException("결제에 연결된 주문/플랜 정보를 찾을 수 없습니다."));
@@ -95,7 +94,7 @@ public class PaymentServiceImpl implements PaymentService {
     // 금액 검증
     if (!paymentInfo.getAmount().equals(payment.getAmount())) {
       log.warn("결제 금액 불일치: 요청 금액={}, PortOne 금액={}", payment.getAmount(), paymentInfo.getAmount());
-      return ApiResponse.fail("결제 금액이 일치하지 않습니다.");
+      return ApiResponseEx.fail("결제 금액이 일치하지 않습니다.");
     }
 
     // 결제 완료 처리
@@ -123,7 +122,7 @@ public class PaymentServiceImpl implements PaymentService {
       subscribePaymentService.generateRounds(subscribe, payment);
     }
 
-    return ApiResponse.ok(paymentMapper.toResponseDTO(payment));
+    return ApiResponseEx.ok(paymentMapper.toResponseDTO(payment));
   }
 
 
@@ -131,7 +130,7 @@ public class PaymentServiceImpl implements PaymentService {
   // 환불 처리 (아직 반영 안됨)
   @Override
   @Transactional
-  public ApiResponse<Void> refund(Long paymentId, Long amount, String reason) {
+  public ApiResponseEx<Void> refund(Long paymentId, Long amount, String reason) {
 
     Payment payment = paymentRepository.findById(paymentId)
             .orElseThrow(() -> new RuntimeException("결제 아이디를 찾을 수 없습니다."));
@@ -148,18 +147,18 @@ public class PaymentServiceImpl implements PaymentService {
     payment.setPayStatus(PaymentStatus.REFUNDED);
     paymentRepository.save(payment);
 
-    return ApiResponse.ok(null);
+    return ApiResponseEx.ok(null);
   }
 
 //  조회 리스트 (JPA)
 
 
   @Override
-  public ApiResponse<List<PaymentResponseDTO>> getAll() {
+  public ApiResponseEx<List<PaymentResponseDTO>> getAll() {
     List<PaymentResponseDTO> list = paymentRepository.findAll(Sort.by(Sort.Direction.DESC, "regdate"))
             .stream()
             .map(paymentMapper::toResponseDTO)
             .toList();
-    return ApiResponse.ok(list);
+    return ApiResponseEx.ok(list);
   }
 }

@@ -1,9 +1,8 @@
 package com.imchobo.sayren_back.domain.payment.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
-import com.imchobo.sayren_back.domain.exentity.Member;
+import com.imchobo.sayren_back.domain.exentity.MemberEx;
 import com.imchobo.sayren_back.domain.exentity.Order;
-import com.imchobo.sayren_back.domain.exentity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,7 +23,7 @@ public class Payment extends TimeRangeEntity {
   // 멤버 아이디
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "member_id", nullable = false)
-  private Member member;
+  private MemberEx memberEx;
   // 주문 아이디
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "order_id", nullable = false)
