@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.member.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.BaseEntityEx;
+import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Role;
 import jakarta.persistence.*;
@@ -17,7 +17,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @ToString
-public class Member extends BaseEntityEx {
+public class Member extends BaseEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "member_id")

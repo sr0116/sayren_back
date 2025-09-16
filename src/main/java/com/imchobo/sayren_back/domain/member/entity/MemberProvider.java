@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.member.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.BaseEntityEx;
+import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import com.imchobo.sayren_back.domain.member.en.Provider;
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,7 +13,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @ToString
-public class MemberProvider extends BaseEntityEx {
+public class MemberProvider extends BaseEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

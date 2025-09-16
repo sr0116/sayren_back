@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.member.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.CreatedEntityEx;
+import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,7 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DeletedMember extends CreatedEntityEx {
+public class DeletedMember extends CreatedEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "deleted_member_id")
