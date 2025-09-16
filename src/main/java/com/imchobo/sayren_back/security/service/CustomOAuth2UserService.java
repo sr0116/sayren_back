@@ -5,6 +5,8 @@ import com.imchobo.sayren_back.domain.member.en.Provider;
 import com.imchobo.sayren_back.domain.member.en.Role;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberProvider;
+import com.imchobo.sayren_back.domain.member.exception.SocialLinkException;
+import com.imchobo.sayren_back.domain.member.exception.SocialSignupException;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
@@ -33,39 +35,22 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     Provider provider = Provider.valueOf(userRequest.getClientRegistration().getRegistrationId().toUpperCase());
     String email = oAuth2User.getAttribute("email");
     String providerUid = oAuth2User.getName();
-    Member member;
 
+    // 1. provider + providerUid 로 먼저 조회
     Optional<MemberProvider> providerOpt = memberProviderRepository.findByProviderAndProviderUid(provider, providerUid);
-    // 이미 연동된 계정이면 해당 멤버로 반환
     if (providerOpt.isPresent()) {
-
-      member = providerOpt.get().getMember();
-
-    }
-    // 연동되지않은 계정이면
-    else {
-      // 기존 멤버에서 이메일로 찾음
-      Optional<Member> originMember = memberRepository.findByEmail(email);
-
-      // 기존멤버 테이블 이메일과 일치하는게 있을 때
-      if (originMember.isPresent()) {
-        throw new OAuth2AuthenticationException("연동 여부 묻기");
-      }
-      // 기존 멤버 테이블에 이메일이 없을때 멤버 생성
-      else {
-        member = Member.builder()
-                .email(email)
-                .name(oAuth2User.getAttribute("name"))
-                .roles(Set.of(Role.USER))
-                .status(MemberStatus.READY)
-                .emailVerified(true)
-                .build();
-        memberRepository.save(member);
-
-        memberProviderRepository.save(MemberProvider.builder().member(member).providerUid(oAuth2User.getName()).provider(provider).build());
-      }
+      Member member = providerOpt.get().getMember();
+      return memberMapper.toAuthDTO(member);
     }
 
-    return memberMapper.toAuthDTO(member);
+    // 2. 연동 안 되어있으면 이메일로 기존 멤버 조회
+    Optional<Member> originMember = memberRepository.findByEmail(email);
+    if (originMember.isPresent()) {
+      // 기존 멤버는 있는데 provider 연동 안 된 상태 → 연동 필요
+      throw new SocialLinkException(oAuth2User.getAttributes(), provider);
+    } else {
+      // 기존 멤버도 없음 → 소셜 신규 가입 필요
+      throw new SocialSignupException(oAuth2User.getAttributes(), provider);
+    }
   }
 }

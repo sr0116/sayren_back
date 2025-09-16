@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.member.mapper;
 
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
+import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import org.mapstruct.Mapper;

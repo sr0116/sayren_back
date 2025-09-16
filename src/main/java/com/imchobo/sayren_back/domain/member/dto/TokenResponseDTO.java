@@ -1,0 +1,10 @@
+package com.imchobo.sayren_back.domain.member.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public class TokenResponseDTO {
+  private String accessToken;
+}

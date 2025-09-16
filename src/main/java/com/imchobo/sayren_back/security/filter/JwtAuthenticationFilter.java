@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.security.filter;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import com.imchobo.sayren_back.security.service.CustomUserDetailsService;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,48 +33,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     String accessToken = jwtUtil.resolveToken(request);
 
-    try {
-      if (accessToken != null) {
-        String email = null;
 
-        try {
-          // Access Token 정상 → Claims 추출
-          email = jwtUtil.validateToken(accessToken).getSubject();
-        } catch (io.jsonwebtoken.ExpiredJwtException ex) {
-          // 만료된 토큰 → Claims는 남아있음
-          email = ex.getClaims().getSubject();
+    if (accessToken != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+      String email = null;
 
-          log.info("만료된 Access Token 감지, email: {}", email);
+      try {
+        email = jwtUtil.getClaims(accessToken).getSubject();
+        setAuthentication(email, request);
+        log.info("JWT 인증 성공 : {}", email);
 
-          // 여기서 Refresh Token 확인 후 Access Token 재발급 로직을 태울 수 있음
-          // ex) redis/db 조회 → 유효하면 새 Access Token 만들어서 response에 넣기
-        }
-
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-          MemberAuthDTO member =
-                  (MemberAuthDTO) customUserDetailsService.loadUserByUsername(email);
-
-          UsernamePasswordAuthenticationToken authentication =
-                  new UsernamePasswordAuthenticationToken(
-                          member,
-                          null,
-                          member.getAuthorities()
-                  );
-
-          authentication.setDetails(
-                  new WebAuthenticationDetailsSource().buildDetails(request)
-          );
-
-          // 시큐리티 컨텍스트에 저장
-          SecurityContextHolder.getContext().setAuthentication(authentication);
-
-          log.info("JWT 인증 성공 : {}", email);
-        }
+      } catch (ExpiredJwtException ex) {
+        // 프론트가 새 Access Token 받도록 유도
+        email = ex.getClaims().getSubject();
+        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access Token Expired");
+        return;
+      } catch (Exception e) {
+        log.error("JWT 파싱/검증 실패", e);
       }
-    } catch (Exception e) {
-      log.error("JWT 인증 필터 오류", e);
     }
 
     filterChain.doFilter(request, response);
+  }
+
+
+  private void setAuthentication(String email, HttpServletRequest request) {
+    MemberAuthDTO member =
+      (MemberAuthDTO) customUserDetailsService.loadUserByUsername(email);
+
+    UsernamePasswordAuthenticationToken authentication =
+      new UsernamePasswordAuthenticationToken(
+        member,
+        null,
+        member.getAuthorities()
+      );
+
+    authentication.setDetails(
+      new WebAuthenticationDetailsSource().buildDetails(request)
+    );
+
+    SecurityContextHolder.getContext().setAuthentication(authentication);
   }
 }
