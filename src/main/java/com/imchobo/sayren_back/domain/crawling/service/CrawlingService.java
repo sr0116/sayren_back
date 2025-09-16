@@ -4,8 +4,10 @@ import com.imchobo.sayren_back.domain.attach.entity.Attach;
 import com.imchobo.sayren_back.domain.attach.repository.AttachRepository;
 import com.imchobo.sayren_back.domain.crawling.util.CrawlingUtil;
 import com.imchobo.sayren_back.domain.product.entity.Product;
+import com.imchobo.sayren_back.domain.product.entity.ProductStock;
 import com.imchobo.sayren_back.domain.product.entity.ProductTag;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
+import com.imchobo.sayren_back.domain.product.repository.ProductStockRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductTagRepository;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +35,7 @@ public class CrawlingService {
   private final AttachRepository attachRepository;
   private final CrawlingUtil crawlingUtil;
   private final ProductTagRepository productTagRepository;
-//  private final ProductOptionRepository productOptionRepository;
+  private final ProductStockRepository  productStockRepository;
 
 
   /**
@@ -143,6 +145,13 @@ public class CrawlingService {
                 .productCategory(category)
                 .modelName(modelName)
                 .isUse(false)
+                .build());
+
+        // 재고 랜덤값
+        int addStock = (int)(Math.random() * 100);
+        productStockRepository.save(ProductStock.builder()
+                .product(product)
+                .stock(addStock)
                 .build());
       }
 
