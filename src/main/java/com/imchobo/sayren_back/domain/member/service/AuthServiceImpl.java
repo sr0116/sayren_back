@@ -1,7 +1,5 @@
 package com.imchobo.sayren_back.domain.member.service;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
