@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.member.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
+import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntityEx;
 import com.imchobo.sayren_back.domain.member.en.TokenStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -12,7 +12,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MemberToken extends TimeRangeEntity {
+public class MemberToken extends TimeRangeEntityEx {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "member_token_id")

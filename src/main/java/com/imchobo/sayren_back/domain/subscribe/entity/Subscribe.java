@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.subscribe.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.BaseEntityEx;
+import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import com.imchobo.sayren_back.domain.exentity.MemberEx;
 import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
@@ -16,7 +16,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Subscribe extends BaseEntityEx {
+public class Subscribe extends BaseEntity {
 
   // 구독 아이디
   @Id

@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.subscribe_payment.entity;
 
 
-import com.imchobo.sayren_back.domain.common.entity.CreatedEntityEx;
+import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.subscribe_payment.en.SubscribePaymentType;
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubscribePayment extends CreatedEntityEx {
+public class SubscribePayment extends CreatedEntity {
   // 구독 결제 pk
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.member.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
+import com.imchobo.sayren_back.domain.common.entity.CreatedEntityEx;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,7 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MemberLoginHistory extends CreatedEntity {
+public class MemberLoginHistory extends CreatedEntityEx {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "login_history_id")

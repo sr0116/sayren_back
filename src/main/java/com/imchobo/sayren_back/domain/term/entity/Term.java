@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.term.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
+import com.imchobo.sayren_back.domain.common.entity.CreatedEntityEx;
 import com.imchobo.sayren_back.domain.term.en.TermStatus;
 import com.imchobo.sayren_back.domain.term.en.TermType;
 import jakarta.persistence.*;
@@ -13,7 +13,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Term extends CreatedEntity {
+public class Term extends CreatedEntityEx {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "term_id")

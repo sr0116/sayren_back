@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.payment.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntityEx;
+import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
 import com.imchobo.sayren_back.domain.exentity.MemberEx;
 import com.imchobo.sayren_back.domain.exentity.Order;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
@@ -14,7 +14,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Payment extends TimeRangeEntityEx {
+public class Payment extends TimeRangeEntity {
   // 결제 아이디
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
