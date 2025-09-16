@@ -1,18 +1,14 @@
 package com.imchobo.sayren_back.domain.member.service;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Provider;
-import com.imchobo.sayren_back.domain.member.en.Role;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberProvider;
 import com.imchobo.sayren_back.domain.member.exception.EmailNotFoundException;
 import com.imchobo.sayren_back.domain.member.exception.InvalidPasswordException;
-import com.imchobo.sayren_back.domain.member.exception.SocialLinkException;
 import com.imchobo.sayren_back.domain.member.exception.TelNotFoundException;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
