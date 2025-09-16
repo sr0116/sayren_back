@@ -18,7 +18,7 @@ public class SubscribeResponseDTO {
   private Integer depositSnapshot;
   private Integer totalMonths;
 
-  private LocalDateTime regdate; // 신청일
+  private LocalDateTime regDate; // 신청일
   private LocalDate startDate; // 구독 시작일
   private LocalDate endDate;
 
