@@ -10,6 +10,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
 import java.util.UUID;
 
 @Component
@@ -28,11 +29,13 @@ public class MailUtil {
       helper.setTo(email);
       helper.setSubject(title);
       helper.setText(content, true);
-      helper.setFrom(from);
+      helper.setFrom(from, "Sayren Team");
 
       mailSender.send(mimeMessage);
     } catch (MessagingException e) {
       throw new RuntimeException("메일 전송 실패", e);
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException(e);
     }
   }
 
