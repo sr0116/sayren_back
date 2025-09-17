@@ -2,7 +2,6 @@ package com.imchobo.sayren_back.domain.member.controller.auth;
 
 
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.SocialLinkRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.TokenResponseDTO;
 import com.imchobo.sayren_back.domain.member.service.AuthService;
@@ -43,11 +42,7 @@ public class AuthController {
 
   @PostMapping("social-signup")
   public ResponseEntity<?> socialSignup(@RequestBody @Valid SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response) {
+    log.info(socialSignupRequestDTO.toString());
     return ResponseEntity.ok(authService.socialSignup(socialSignupRequestDTO, response));
-  }
-
-  @PostMapping("social-link")
-  public ResponseEntity<?> socialLink(@RequestBody @Valid SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
-    return ResponseEntity.ok(authService.socialLink(socialLinkRequestDTO, response));
   }
 }
