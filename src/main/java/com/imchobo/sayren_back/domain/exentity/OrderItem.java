@@ -3,6 +3,8 @@ package com.imchobo.sayren_back.domain.exentity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+@Entity
 @Table(name = "tbl_order_item")
 @Getter
 @Setter
