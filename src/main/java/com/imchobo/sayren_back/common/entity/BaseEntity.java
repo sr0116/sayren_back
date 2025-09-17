@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.common.entity;
+package com.imchobo.sayren_back.common.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
