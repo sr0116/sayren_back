@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.board.entity;
 
+import com.imchobo.sayren_back.domain.board.en.CategoryType;
 import com.imchobo.sayren_back.domain.common.en.CommonStatus;
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -29,10 +30,10 @@ public class Category extends BaseEntity {
     @Column(nullable = false) // 제약조건: Not null
     private String name;
 
-//    // 카테고리 타입
-//    @Enumerated(EnumType.STRING)
-//    @Column(nullable = false) // 제약조건: Not null
-//    private CategoryType type;
+    // 카테고리 타입
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false) // 제약조건: Not null
+    private CategoryType type;
 
     // 상태 (ACTIVE/ DISABLE/ DELETE)
     @Enumerated(EnumType.STRING)
