@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.subscribe_payment.entity;
 
 
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
+import com.imchobo.sayren_back.domain.exentity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.subscribe_payment.en.SubscribePaymentType;
@@ -30,6 +31,10 @@ public class SubscribePayment extends CreatedEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "subscribe_id", nullable = false)
   private Subscribe subscribe;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "plan_id", nullable = false)
+  private OrderPlan plan;
 
   // 결제 FK (성공 시 매핑, 예정 상태일 땐 null)
   @ManyToOne(fetch = FetchType.LAZY)
@@ -64,11 +69,4 @@ public class SubscribePayment extends CreatedEntity {
 
   // 구독 결제 신청 생성일은 createEntity 사용(regDate)
 
-
-  @PrePersist
-  public void onCreate() {
-    if(this.payStatus == null) {
-      this.payStatus = PaymentStatus.PENDING;
-    }
-  }
 }

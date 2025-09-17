@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.subscribe.subscribe_cancel.dto;
+package com.imchobo.sayren_back.domain.payment.refund_request.dto;
 
 
 import lombok.*;

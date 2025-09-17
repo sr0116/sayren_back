@@ -26,8 +26,10 @@ public class Refund extends CreatedEntity {
   private Payment payment;
 
   @Column(nullable = false)
-  private Long amount;
+  private Long amount; // 환불 금액
 
+  @Column(nullable = false, length = 50)
+  private String reasonCode; // 환불 사유 코드 (Enum 기반)
   private String reason; // 환불 사유
   // 환불일시 regdate는 상속
 
