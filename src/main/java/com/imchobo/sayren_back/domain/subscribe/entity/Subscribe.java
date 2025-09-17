@@ -1,8 +1,8 @@
 package com.imchobo.sayren_back.domain.subscribe.entity;
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
-import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.member.entity.Member;
-import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.payment.en.SubscribeStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

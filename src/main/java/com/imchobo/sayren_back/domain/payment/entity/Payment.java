@@ -1,9 +1,9 @@
 package com.imchobo.sayren_back.domain.payment.entity;
 
-import com.imchobo.sayren_back.common.entity.TimeRangeEntity;
-import com.imchobo.sayren_back.domain.exentity.Order;
-import com.imchobo.sayren_back.domain.exentity.OrderItem;
+
+import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.en.PaymentType;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
@@ -18,6 +18,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Payment extends TimeRangeEntity {
+
 
   // 기본 키
   @Id

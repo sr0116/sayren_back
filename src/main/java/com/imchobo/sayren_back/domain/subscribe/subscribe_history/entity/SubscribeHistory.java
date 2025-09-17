@@ -1,9 +1,10 @@
 package com.imchobo.sayren_back.domain.subscribe.subscribe_history.entity;
 
-import com.imchobo.sayren_back.common.entity.CreatedEntity;
-import com.imchobo.sayren_back.domain.payment.payment_history.en.ActorType;
-import com.imchobo.sayren_back.domain.subscribe.en.ReasonCode;
-import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.common.en.ActorType;
+import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
+
+import com.imchobo.sayren_back.domain.payment.en.ReasonCode;
+import com.imchobo.sayren_back.domain.payment.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
