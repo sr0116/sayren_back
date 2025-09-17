@@ -1,8 +1,8 @@
-package com.imchobo.sayren_back.domain.delivery.entity;
+package com.imchobo.sayren_back.entity;
 
-import com.imchobo.sayren_back.domain.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 
 @Entity
 @Table(name = "tbl_address")

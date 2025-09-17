@@ -1,10 +1,6 @@
-package com.imchobo.sayren_back.domain.payment.refund_request.entity;
-
+package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
-import com.imchobo.sayren_back.domain.member.entity.Member;
-import com.imchobo.sayren_back.domain.payment.entity.Payment;
-import com.imchobo.sayren_back.domain.payment.refund_request.en.RefundRequestStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

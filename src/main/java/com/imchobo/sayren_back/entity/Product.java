@@ -1,16 +1,10 @@
-package com.imchobo.sayren_back.domain.product.entity;
+package com.imchobo.sayren_back.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
-import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
-import com.sun.source.tree.CaseTree;
+import com.imchobo.sayren_back.common.entity.CreatedEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+
 
 @Entity
 @Table(name = "tbl_product")
