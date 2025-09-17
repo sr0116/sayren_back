@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
-import com.imchobo.sayren_back.domain.member.en.Provider;
+import com.imchobo.sayren_back.en.Provider;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,7 +26,7 @@ public class MemberProvider extends BaseEntity {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
-  private Provider provider;
+  private com.imchobo.sayren_back.en.Provider provider;
 
   @Column(nullable = false, unique = true, length = 255)
   private String providerUid;

@@ -1,8 +1,8 @@
 package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.common.entity.CreatedEntity;
-import com.imchobo.sayren_back.domain.term.en.TermStatus;
-import com.imchobo.sayren_back.domain.term.en.TermType;
+import com.imchobo.sayren_back.en.TermStatus;
+import com.imchobo.sayren_back.en.TermType;
 import jakarta.persistence.*;
 import lombok.*;
 

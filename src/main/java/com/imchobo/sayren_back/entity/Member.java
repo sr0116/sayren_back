@@ -1,8 +1,8 @@
 package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
-import com.imchobo.sayren_back.domain.member.en.MemberStatus;
-import com.imchobo.sayren_back.domain.member.en.Role;
+import com.imchobo.sayren_back.en.MemberStatus;
+import com.imchobo.sayren_back.en.Role;
 import jakarta.persistence.*;
 import lombok.*;
 

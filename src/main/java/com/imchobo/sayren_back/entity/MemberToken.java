@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
-import com.imchobo.sayren_back.domain.member.en.TokenStatus;
+import com.imchobo.sayren_back.common.entity.TimeRangeEntity;
+import com.imchobo.sayren_back.en.TokenStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
