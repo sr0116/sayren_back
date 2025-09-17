@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.payment.payment_history.dto;
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -13,10 +15,9 @@ public class PaymentResponseDTO {
 
   private Long historyId;
   private Long paymentId;
-  private String status;
+  private PaymentStatus status;
   private String reasonCode;
   private String reasonMessage;
-  private String actorType;
-  private Long actorId;
+  private ActorType actorType;
   private LocalDateTime regDate;
 }

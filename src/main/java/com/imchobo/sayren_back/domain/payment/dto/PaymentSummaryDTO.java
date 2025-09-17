@@ -11,7 +11,7 @@ public class PaymentSummaryDTO {
   // 결제 요약 DTO (결제 내역 리스트 조회)
   private Long paymentId;
   private Long amount;
-  private PaymentStatus status;
+  private PaymentStatus paymentStatus;
   private LocalDateTime regDate;
 
 }

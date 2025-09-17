@@ -3,7 +3,7 @@ package com.imchobo.sayren_back.domain.subscribe.subscribe_history.entity;
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 
-import com.imchobo.sayren_back.domain.payment.en.ReasonCode;
+import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.payment.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import jakarta.persistence.*;

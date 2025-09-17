@@ -2,10 +2,6 @@ package com.imchobo.sayren_back.domain.payment.service;
 
 
 import com.imchobo.sayren_back.domain.common.config.ApiResponse;
-import com.imchobo.sayren_back.domain.exentity.Order;
-import com.imchobo.sayren_back.domain.exentity.OrderItem;
-import com.imchobo.sayren_back.domain.exentity.OrderPlan;
-import com.imchobo.sayren_back.domain.exentity.OrderPlanRepository;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;

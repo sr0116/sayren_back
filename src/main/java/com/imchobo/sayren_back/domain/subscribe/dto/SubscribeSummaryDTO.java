@@ -14,7 +14,7 @@ import java.time.LocalDate;
 public class SubscribeSummaryDTO {
   // 이후에 마이페이지에서 구독 현황 리스트 조회시
   private Long subscribeId;
-  private SubscribeStatus payStatus;
+  private SubscribeStatus status;
   private LocalDate startDate;
   private LocalDate endDate;
   private Integer monthlyFeeSnapshot;

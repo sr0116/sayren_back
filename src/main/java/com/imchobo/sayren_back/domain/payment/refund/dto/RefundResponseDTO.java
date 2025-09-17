@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.payment.refund.dto;
 
 
+import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -15,6 +16,6 @@ public class RefundResponseDTO {
   private Long refundId;
   private Long paymentId;
   private Long amount;
-  private String reason;
+  private ReasonCode reasonCode;
   private LocalDateTime regDate;
 }
