@@ -44,7 +44,7 @@ public class PortOneTokenClient {
             TokenResponse.class
     );
 
-//    log.info("PortOne 토큰 응답 객체 = {}", toJson(res.getBody()));
+    log.info("PortOne 토큰 응답 객체 = {}", toJson(res.getBody()));
 
     // --- 응답 검증 ---
     if (res.getBody() == null) {

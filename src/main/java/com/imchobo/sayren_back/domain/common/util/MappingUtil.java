@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.domain.common.util;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
@@ -11,8 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class MappingUtil {
-  // 필수 fk 매핑 매서드
-
+  // 필수 fk  → 엔티티 매핑 매서드
   @Named("mapPayment")
   public Payment paymentIdToEntity(Long paymentId) {
     if (paymentId == null) throw new IllegalArgumentException("paymentId가 null입니다.");
@@ -49,6 +49,47 @@ public class MappingUtil {
   public OrderPlan orderPlanIdToEntity(Long planId) {
     return planId != null ? OrderPlan.builder().id(planId).build() : null;
   }
+  //  엔티티 → ID 변환 (DTO 응답용)
+  @Named("mapPaymentId")
+  public Long paymentEntityToId(Payment payment) {
+    return payment != null ? payment.getId() : null;
+  }
+
+  @Named("mapOrderId")
+  public Long orderEntityToId(Order order) {
+    return order != null ? order.getId() : null;
+  }
+
+  @Named("mapOrderItemId")
+  public Long orderItemEntityToId(OrderItem orderItem) {
+    return orderItem != null ? orderItem.getId() : null;
+  }
+
+  @Named("mapSubscribeId")
+  public Long subscribeEntityToId(Subscribe subscribe) {
+    return subscribe != null ? subscribe.getId() : null;
+  }
+
+  @Named("mapSubscribeRoundId")
+  public Long subscribeRoundEntityToId(SubscribeRound subscribeRound) {
+    return subscribeRound != null ? subscribeRound.getId() : null;
+  }
+
+  @Named("mapOrderPlanId")
+  public Long orderPlanEntityToId(OrderPlan orderPlan) {
+    return orderPlan != null ? orderPlan.getId() : null;
+  }
+
+  @Named("mapPaymentStatus")
+  public PaymentStatus mapPaymentStatus(String status) {
+    if (status == null) return null;
+    try {
+      return PaymentStatus.valueOf(status.toUpperCase()); // PortOne 응답이 소문자일 수도 있으니 보정
+    } catch (IllegalArgumentException e) {
+      return PaymentStatus.PENDING; // 기본값 or 예외처리
+    }
+  }
+
 
   // === 공통 변환 ===
   @Named("toStringSafe")
