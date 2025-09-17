@@ -29,18 +29,6 @@ public class SubscribeRound extends CreatedEntity {
   @JoinColumn(name = "subscribe_id", nullable = false)
   private Subscribe subscribe;
 
-  // 요금제(plan) FK (필수)
-  // NOT NULL
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "order_plan_id", nullable = false)
-  private OrderPlan plan;
-
-  // 결제 FK (성공 시 매핑, 예정 상태일 땐 NULL 허용)
-  // NULL 허용
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "payment_id")
-  private Payment payment;
-
   // 회차 번호 (1, 2, 3 …)
   // NOT NULL
   @Column(nullable = false)
