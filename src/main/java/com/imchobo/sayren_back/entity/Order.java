@@ -1,10 +1,8 @@
-package com.imchobo.sayren_back.domain.order.entity;
-import com.imchobo.sayren_back.domain.common.BaseEntity;
-import com.imchobo.sayren_back.domain.member.entity.Member;
-import com.imchobo.sayren_back.domain.delivery.entity.Address;
+package com.imchobo.sayren_back.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import java.util.ArrayList;
 import java.util.List;
 

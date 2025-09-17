@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.order.entity;
+package com.imchobo.sayren_back.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

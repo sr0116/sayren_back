@@ -1,12 +1,6 @@
-package com.imchobo.sayren_back.domain.subscribe_payment.entity;
+package com.imchobo.sayren_back.entity;
 
-
-import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
-import com.imchobo.sayren_back.domain.exentity.OrderPlan;
-import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.payment.entity.Payment;
-import com.imchobo.sayren_back.domain.subscribe_payment.en.SubscribePaymentType;
-import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.common.entity.CreatedEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

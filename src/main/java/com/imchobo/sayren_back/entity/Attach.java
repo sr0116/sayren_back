@@ -1,7 +1,5 @@
-package com.imchobo.sayren_back.domain.attach.entity;
+package com.imchobo.sayren_back.entity;
 
-import com.imchobo.sayren_back.domain.board.entity.Board;
-import com.imchobo.sayren_back.domain.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
