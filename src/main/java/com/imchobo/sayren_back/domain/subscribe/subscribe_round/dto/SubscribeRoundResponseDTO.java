@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
-public class SubscribePaymentResponseDTO {
+public class SubscribeRoundResponseDTO {
 
   private Long subscribePaymentId;
   private Long subscribeId;

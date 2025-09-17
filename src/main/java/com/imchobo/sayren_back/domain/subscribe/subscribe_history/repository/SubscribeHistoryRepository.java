@@ -1,0 +1,15 @@
+package com.imchobo.sayren_back.domain.subscribe.subscribe_history.repository;
+
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_history.entity.SubscribeHistory;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface SubscribeHistoryRepository  extends JpaRepository<SubscribeHistory, Long> {
+  // 특정 구독 히스토리 전체 조회
+  List<SubscribeHistory> findBySubscribe_Id(Long subscribeId);
+
+  // 상태 기준으로 조회
+  List<SubscribeHistory> findByStatus(SubscribeStatus status);
+}
