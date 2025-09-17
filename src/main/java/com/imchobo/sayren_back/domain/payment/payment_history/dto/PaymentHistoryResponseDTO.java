@@ -11,13 +11,12 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentResponseDTO {
+public class PaymentHistoryResponseDTO {
 
   private Long historyId;
   private Long paymentId;
   private PaymentStatus status;
   private String reasonCode;
-  private String reasonMessage;
   private ActorType actorType;
   private LocalDateTime regDate;
 }

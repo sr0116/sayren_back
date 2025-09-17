@@ -16,31 +16,31 @@ import java.util.Map;
 public interface PortOneMapper {
 
   // Map → DTO 변환 (결제 조회 응답)
-//  @Mapping(source = "imp_uid", target = "impUid", qualifiedByName = "toStringSafe")
-//  @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
-//  @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
-//  @Mapping(source = "status", target = "status", qualifiedByName = "toStringSafe")
-//  PaymentInfoResponse toPaymentInfoResponse(Map<String, Object> response);
-//
-//  // Map → DTO 변환 (결제 검증 응답)
-//  @Mapping(source = "imp_uid", target = "impUid", qualifiedByName = "toStringSafe")
-//  @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
-//  @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
-//  @Mapping(source = "status", target = "status", qualifiedByName = "toStringSafe")
-//  @Mapping(source = "pay_method", target = "payMethod", qualifiedByName = "toStringSafe")
-//  @Mapping(source = "buyer_name", target = "buyerName", qualifiedByName = "toStringSafe")
-//  @Mapping(source = "buyer_email", target = "buyerEmail", qualifiedByName = "toStringSafe")
-//  PaymentVerifyResponse toPaymentVerifyResponse(Map<String, Object> response);
-//
-//  // Map → DTO 변환 (환불 응답)
-//  @Mapping(source = "imp_uid", target = "impUid", qualifiedByName = "toStringSafe")
-//  @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
-//  @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
-//  @Mapping(source = "reason", target = "reason", qualifiedByName = "toStringSafe")
-//  CancelResponse toCancelResponse(Map<String, Object> response);
-//
-//  // 리스트 변환
-//  List<PaymentInfoResponse> toPaymentInfoResponses(List<Map<String, Object>> responses);
-//  List<PaymentVerifyResponse> toPaymentVerifyResponses(List<Map<String, Object>> responses);
-//  List<CancelResponse> toCancelResponses(List<Map<String, Object>> responses);
+  @Mapping(source = "imp_uid", target = "impUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
+  @Mapping(source = "status", target = "status", qualifiedByName = "toStringSafe")
+  PaymentInfoResponse toPaymentInfoResponse(Map<String, Object> response);
+
+  // Map → DTO 변환 (결제 검증 응답)
+  @Mapping(source = "imp_uid", target = "impUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
+  @Mapping(source = "status", target = "status", qualifiedByName = "toStringSafe")
+  @Mapping(source = "pay_method", target = "payMethod", qualifiedByName = "toStringSafe")
+  @Mapping(source = "buyer_name", target = "buyerName", qualifiedByName = "toStringSafe")
+  @Mapping(source = "buyer_email", target = "buyerEmail", qualifiedByName = "toStringSafe")
+  PaymentVerifyResponse toPaymentVerifyResponse(Map<String, Object> response);
+
+  // Map → DTO 변환 (환불 응답)
+  @Mapping(source = "imp_uid", target = "impUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
+  @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
+  @Mapping(source = "reason", target = "reason", qualifiedByName = "toStringSafe")
+  CancelResponse toCancelResponse(Map<String, Object> response);
+
+  // 리스트 변환
+  List<PaymentInfoResponse> toPaymentInfoResponses(List<Map<String, Object>> responses);
+  List<PaymentVerifyResponse> toPaymentVerifyResponses(List<Map<String, Object>> responses);
+  List<CancelResponse> toCancelResponses(List<Map<String, Object>> responses);
 }
