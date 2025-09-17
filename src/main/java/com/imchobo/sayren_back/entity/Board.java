@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 
+import com.imchobo.sayren_back.en.CommonStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -35,18 +36,19 @@ public class Board extends BaseEntity {
   private Product product; // 객체 매핑
 
   // 게시글 제목
-  @Column(nullable = false)  // 제약조건: Not null
   private String title;
 
   // 게시글 본문
-  @Column(nullable = false) // 제약조건: Not null
   private String content;
 
   // 비밀글 여부
-  @Column(nullable = false) // 제약조건: Not null / default=false
+  @Column(nullable = false)
+  @Builder.Default
   private boolean isSecret = false;
 
   // 게시글 상태
   @Column(nullable = false) // 제약조건: Not null /  default='ACTIVE'
-  private String status = "ACTIVE";
+  @Builder.Default
+  @Enumerated(EnumType.STRING)
+  private CommonStatus status = CommonStatus.ACTIVE;
 }

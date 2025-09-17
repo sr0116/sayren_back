@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.term.en;
+package com.imchobo.sayren_back.en;
 
 public enum TermType {
   SERVICE,   // 서비스 이용약관

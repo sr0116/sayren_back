@@ -26,8 +26,8 @@ public class OrderItem {
   private Product product; // FK → tbl_product.product_id (NOT NULL)
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "plan_id")
-  private OrderPlan plan; // FK → tbl_order_plan.plan_id (NULL 허용 → 일반구매는 NULL)
+  @JoinColumn(name = "order_plan_id", nullable = false)
+  private OrderPlan orderPlan;
 
   @Column(nullable = false)
   private Integer productPriceSnapshot; // 주문 시점 상품 가격 (NOT NULL)

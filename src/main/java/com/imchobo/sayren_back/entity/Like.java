@@ -32,7 +32,4 @@ public class Like extends CreatedEntity {
   @ManyToOne(fetch = FetchType.LAZY) // 제약조건: FK
   @JoinColumn (name = "reply_id")
   private Reply reply;
-
-  // 좋아요 누른 시간
-  // (createdEntity 만들어둔거)
 }

@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
+import com.imchobo.sayren_back.en.CommonStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -40,5 +41,6 @@ public class Reply extends BaseEntity {
   // 댓글 상태
   @Column(nullable = false) // 제약조건: Not null / default='ACTIVE'
   @Builder.Default
-  private String status = "ACTIVE";
+  @Enumerated(EnumType.STRING)
+  private CommonStatus status = CommonStatus.ACTIVE;
 }
