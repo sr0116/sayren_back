@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.board.entity;
 
+import com.imchobo.sayren_back.domain.board.en.CategoryType;
 import com.imchobo.sayren_back.domain.common.en.CommonStatus;
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import jakarta.persistence.*;
