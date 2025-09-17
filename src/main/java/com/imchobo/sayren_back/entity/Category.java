@@ -16,23 +16,23 @@ public class Category extends BaseEntity {
     // 카테고리 번호
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "category_id")
+    @Column(name = "category_id") // 제약조건: PK / auto_increment
     private Long id;
 
     // 대분류 카테고리 번호
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY) // 제약조건: FK
     @JoinColumn(name = "parent_category_id")
     private Category parentCategory;
 
     // 카테고리명
-    @Column(nullable = false)
+    @Column(nullable = false) // 제약조건: Not null
     private String name;
 
     // 카테고리 타입
-    @Column(nullable = false)
+    @Column(nullable = false) // 제약조건: Not null
     private String type;
 
     // 상태 (ACTIVE/ DISABLE/ DELETE)
-    @Column(nullable = false)
+    @Column(nullable = false) // 제약조건: Not null / default='ACTIVE'
     private String status = "ACTIVE";
 }
