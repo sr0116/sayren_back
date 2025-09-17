@@ -4,7 +4,7 @@ import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
-import com.imchobo.sayren_back.domain.payment.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -41,7 +41,7 @@ public class SubscribeHistory extends CreatedEntity {
   @Enumerated(EnumType.STRING)
   private ReasonCode reasonCode;
 
-  // 변경자 (SYSTEM)
+  // 변경자
   @Column(nullable = false)
   private ActorType changedBy;
 

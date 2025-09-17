@@ -9,7 +9,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
-public class SubscribePaymentRequestDTO {
+public class SubscribeRoundRequestDTO {
 
   @NotNull(message = "구독 ID는 필수입니다.")
   private Long subscribeId;
