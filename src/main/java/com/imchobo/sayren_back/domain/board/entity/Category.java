@@ -29,10 +29,10 @@ public class Category extends BaseEntity {
     @Column(nullable = false) // 제약조건: Not null
     private String name;
 
-//    // 카테고리 타입
-//    @Enumerated(EnumType.STRING)
-//    @Column(nullable = false) // 제약조건: Not null
-//    private CategoryType type;
+    // 카테고리 타입
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false) // 제약조건: Not null
+    private CategoryType type;
 
     // 상태 (ACTIVE/ DISABLE/ DELETE)
     @Enumerated(EnumType.STRING)
