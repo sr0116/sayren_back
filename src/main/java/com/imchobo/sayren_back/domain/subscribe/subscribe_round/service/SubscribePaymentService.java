@@ -5,5 +5,5 @@ import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 
 public interface SubscribePaymentService {
 
-  void  generateRounds(SubscribeResponseDTO subscribe, Payment payment);
+//  void  generateRounds(SubscribeResponseDTO subscribe, Payment payment);
 }

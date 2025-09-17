@@ -1,11 +1,11 @@
 package com.imchobo.sayren_back.domain.common.util;
 
-import com.imchobo.sayren_back.domain.exentity.Order;
-import com.imchobo.sayren_back.domain.exentity.OrderItem;
-import com.imchobo.sayren_back.domain.exentity.OrderPlan;
+import com.imchobo.sayren_back.domain.order.entity.Order;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
-import com.imchobo.sayren_back.domain.subscribe_round.entity.SubscribePayment;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 
@@ -40,9 +40,9 @@ public class MappingUtil {
   }
 
   @Named("mapSubscribePayment")
-  public SubscribePayment subscribePaymentIdToEntity(Long subscribePaymentId) {
-    if (subscribePaymentId == null) throw new IllegalArgumentException("subscribePaymentId가 null입니다.");
-    return SubscribePayment.builder().id(subscribePaymentId).build();
+  public SubscribeRound subscribePaymentIdToEntity(Long SubscribeRoundId) {
+    if (SubscribeRoundId == null) throw new IllegalArgumentException("subscribePaymentId가 null입니다.");
+    return SubscribeRound.builder().id(SubscribeRoundId).build();
   }
 
   @Named("mapOrderPlan")
