@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.subscribe.subscribe_history.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.en.SubscribeHistoryStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,23 +14,30 @@ import lombok.*;
 @NoArgsConstructor
 public class SubscribeHistory extends CreatedEntity {
 
+  // 구독 히스토리 PK
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "subscribe_history_id")
   private Long subscribeHistoryId;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  // 구독 FK (필수)
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "subscribe_id", nullable = false)
   private Subscribe subscribe;
 
+  // 구독 상태 (Enum)
+  // NOT NULL, VARCHAR(20)
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private String status; // 변경 상태
+  private SubscribeHistoryStatus status;
 
+  // 상태 변경 사유 (상세 설명)
+  @Column(columnDefinition = "TEXT")
   private String reason;
 
-  private String changeBy; // 변경자(기본값 시스템)
+  // 변경자 (SYSTEM)
+  @Column(name = "changed_by")
+  private String changedBy = "SYSTEM";
 
-  // regdate 상속 생략(나중에 주석 지우기)
-
-
+  // 생성일시는 CreatedEntity에서 상속
 }
