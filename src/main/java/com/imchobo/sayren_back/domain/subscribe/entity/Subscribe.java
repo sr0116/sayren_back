@@ -29,7 +29,7 @@ public class Subscribe extends BaseEntity {
   @JoinColumn(name = "order_item_id", nullable = false)
   private OrderItem orderItem;
 
-  // 구독자 회원 FK (필수)
+  // 구독자 회원 FK (필수):
   // NOT NULL
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "member_id", nullable = false)

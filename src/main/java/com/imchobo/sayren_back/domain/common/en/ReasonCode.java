@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.payment.en;
+package com.imchobo.sayren_back.domain.common.en;
 
 public enum ReasonCode {
   USER_REQUEST,     // 회원 요청 환불
