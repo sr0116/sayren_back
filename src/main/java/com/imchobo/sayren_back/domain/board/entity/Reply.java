@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.board.entity;
-import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
+
 import com.imchobo.sayren_back.domain.common.en.CommonStatus;
+import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;

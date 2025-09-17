@@ -1,4 +1,5 @@
 package com.imchobo.sayren_back.domain.board.entity;
+
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import jakarta.persistence.*;
@@ -11,7 +12,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Like extends CreatedEntity {
+public class Like extends com.imchobo.sayren_back.domain.common.entity.CreatedEntity {
   // 좋아요 번호
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
