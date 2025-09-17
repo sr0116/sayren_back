@@ -20,6 +20,7 @@ public class MailUtil {
   @Value("${spring.mail.username}")
   private String from;
   private final JavaMailSender mailSender;
+  private final RedisUtil redisUtil;
 
   public void sendMail(String email, String title, String content) {
     try {
@@ -42,7 +43,9 @@ public class MailUtil {
   public void emailVerification(String email){
     String token = UUID.randomUUID().toString();
 
-    String verificationUrl = "http://localhost:8080/api/auth/verify?token=" + token;
+    redisUtil.emailVerification(token, email);
+
+    String verificationUrl = "http://localhost:8080/api/auth/email-verify?token=" + token;
 
     String title = "귀하의 세이렌 계정 이메일 주소를 확인해 주십시오.";
     String content =

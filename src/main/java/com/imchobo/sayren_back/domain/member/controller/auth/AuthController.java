@@ -50,4 +50,16 @@ public class AuthController {
   public ResponseEntity<?> socialLink(@RequestBody @Valid SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
     return ResponseEntity.ok(authService.socialLink(socialLinkRequestDTO, response));
   }
+
+  @GetMapping("email-verify")
+  public ResponseEntity<?> emailVerification(@RequestParam("token") String token) {
+    System.out.println("받은 토큰: " + token);
+
+    // 여기서 Redis 조회 → 이메일 검증 로직 처리
+
+    // 예: redisUtil.get("EMAIL_VERIFY:" + token)
+
+    return ResponseEntity.ok("이메일 인증 성공");
+  }
+
 }
