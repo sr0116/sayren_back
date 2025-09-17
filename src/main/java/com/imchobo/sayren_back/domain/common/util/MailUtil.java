@@ -45,7 +45,7 @@ public class MailUtil {
 
     redisUtil.emailVerification(token, email);
 
-    String verificationUrl = "http://localhost:8080/api/auth/email-verify?token=" + token;
+    String verificationUrl = "http://localhost:8080/api/auth/email-verify/" + token;
 
     String title = "귀하의 세이렌 계정 이메일 주소를 확인해 주십시오.";
     String content =

@@ -6,12 +6,14 @@ import com.imchobo.sayren_back.domain.member.dto.SocialLinkRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.TokenResponseDTO;
 import com.imchobo.sayren_back.domain.member.service.AuthService;
+import com.imchobo.sayren_back.domain.member.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 @RequestMapping("api/auth")
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @Log4j2
 public class AuthController {
   private final AuthService authService;
+  private final MemberService memberService;
 
   @PostMapping("login")
   public ResponseEntity<?> login(@RequestBody @Valid MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response) {
@@ -51,15 +54,13 @@ public class AuthController {
     return ResponseEntity.ok(authService.socialLink(socialLinkRequestDTO, response));
   }
 
-  @GetMapping("email-verify")
-  public ResponseEntity<?> emailVerification(@RequestParam("token") String token) {
+  @GetMapping("email-verify/{token}")
+  public RedirectView emailVerification(@PathVariable String token) {
     System.out.println("받은 토큰: " + token);
 
-    // 여기서 Redis 조회 → 이메일 검증 로직 처리
+    boolean success = memberService.emailVerify(token);
 
-    // 예: redisUtil.get("EMAIL_VERIFY:" + token)
-
-    return ResponseEntity.ok("이메일 인증 성공");
+    return new RedirectView("http://localhost:3000/email-verified?success=" + success);
   }
 
 }

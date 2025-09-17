@@ -52,6 +52,15 @@ public class RedisUtil {
     set("EMAIL_VERIFY:" +  token, email, 5, TimeUnit.MINUTES);
   }
 
+  public String getEmailByToken(String token) {
+    return get("EMAIL_VERIFY:" +  token);
+  }
+
+  public void deleteEmailToken(String token) {
+    delete("EMAIL_VERIFY:" +  token);
+  }
+
+
   public void saveRefreshToken(RedisTokenDTO dto) throws JsonProcessingException {
 
     String json = objectMapper.writeValueAsString(dto);
