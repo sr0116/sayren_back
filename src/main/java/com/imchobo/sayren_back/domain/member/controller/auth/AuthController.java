@@ -1,19 +1,24 @@
 package com.imchobo.sayren_back.domain.member.controller.auth;
 
 
+import com.imchobo.sayren_back.domain.common.util.MailUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.SocialLinkRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.TokenResponseDTO;
 import com.imchobo.sayren_back.domain.member.service.AuthService;
 import com.imchobo.sayren_back.domain.member.service.MemberService;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("api/auth")
@@ -22,6 +27,8 @@ import org.springframework.web.servlet.view.RedirectView;
 public class AuthController {
   private final AuthService authService;
   private final MemberService memberService;
+  private final MailUtil mailUtil;
+
 
   @PostMapping("login")
   public ResponseEntity<?> login(@RequestBody @Valid MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response) {
@@ -55,12 +62,20 @@ public class AuthController {
   }
 
   @GetMapping("email-verify/{token}")
-  public RedirectView emailVerification(@PathVariable String token) {
+  public RedirectView verificationEmail(@PathVariable String token) {
     System.out.println("받은 토큰: " + token);
+    String url = "http://localhost:3000/";
+    if(!memberService.emailVerify(token)){
+     url += "mypage";
+    }
 
-    boolean success = memberService.emailVerify(token);
-
-    return new RedirectView("http://localhost:3000/email-verified?success=" + success);
+    return new RedirectView(url);
   }
 
+  @PostMapping("email-verify")
+  @PreAuthorize("!principal.emailVerified")
+  public ResponseEntity<?> resendVerificationEmail() {
+    mailUtil.emailVerification(SecurityUtil.getMemberAuthDTO().getEmail());
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
 }

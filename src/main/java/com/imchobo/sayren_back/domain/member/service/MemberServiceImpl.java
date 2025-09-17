@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.member.service;
 
+import com.imchobo.sayren_back.domain.common.util.MailUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
@@ -30,7 +31,7 @@ public class MemberServiceImpl implements MemberService {
   private final PasswordEncoder passwordEncoder;
   private final MemberProviderRepository memberProviderRepository;
   private final RedisUtil redisUtil;
-
+  private final MailUtil mailUtil;
 
   @Override
   @Transactional
@@ -52,6 +53,7 @@ public class MemberServiceImpl implements MemberService {
 
 
     memberRepository.save(entity);
+    mailUtil.emailVerification(entity.getEmail());
   }
 
   @Override
@@ -60,6 +62,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
 
+  // 이메일 인증 체크하기
   @Transactional
   @Override
   public boolean emailVerify(String token) {
