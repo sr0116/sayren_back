@@ -1,8 +1,6 @@
-package com.imchobo.sayren_back.domain.payment.entity;
+package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
-import com.imchobo.sayren_back.domain.exentity.Order;
-import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.en.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;

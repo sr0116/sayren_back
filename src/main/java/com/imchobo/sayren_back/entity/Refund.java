@@ -1,8 +1,6 @@
-package com.imchobo.sayren_back.domain.payment.refund.entity;
+package com.imchobo.sayren_back.entity;
 
-
-import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
-import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.common.entity.CreatedEntity;
 import com.imchobo.sayren_back.en.RefundReasonCode;
 import jakarta.persistence.*;
 import lombok.*;
