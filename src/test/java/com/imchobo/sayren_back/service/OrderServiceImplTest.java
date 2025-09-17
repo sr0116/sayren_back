@@ -1,8 +1,7 @@
 package com.imchobo.sayren_back.service;
 
 
-import com.imchobo.sayren_back.domain.order.dto.OrderDTO;
-import com.imchobo.sayren_back.domain.order.dto.OrderItemDTO;
+import com.imchobo.sayren_back.domain.order.dto.OrderItemResponseDTO;
 import com.imchobo.sayren_back.domain.order.service.OrderService;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -32,7 +31,7 @@ public class OrderServiceImplTest {
   @Order(1) // 제일 먼저 실행
   void 주문등록() {
     // 주문 아이템 DTO 생성 (상품 1개 담았다고 가정)
-    OrderItemDTO item = OrderItemDTO.builder()
+    OrderItemResponseDTO item = OrderItemResponseDTO.builder()
       .productId(1L) // 테스트용 상품 ID
       .planId(null) // 일반 구매라면 NULL
       .productPriceSnapshot(10000) // 주문 시점 가격

@@ -1,9 +1,7 @@
 package com.imchobo.sayren_back.domain.order.service;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
-import com.imchobo.sayren_back.domain.order.dto.OrderDTO;
-import com.imchobo.sayren_back.domain.order.entity.Order;
-import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.order.dto.OrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.mapper.OrderMapper;
 import com.imchobo.sayren_back.domain.order.repository.OrderRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -12,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,12 +23,12 @@ public class OrderServiceImpl implements OrderService {
   private final OrderMapper orderMapper;
 
   @Override
-  public OrderDTO getOrderById(Long orderId) {
+  public OrderRequestDTO getOrderById(Long orderId) {
     return null;
   }
 
   @Override
-  public List<OrderDTO> getOrdersByMemberId(Long memberId) {
+  public List<OrderRequestDTO> getOrdersByMemberId(Long memberId) {
     return List.of();
   }
 
@@ -39,7 +36,7 @@ public class OrderServiceImpl implements OrderService {
    * 장바구니 → 주문 생성
    */
   @Override
-  public OrderDTO createOrderFromCart(Long memberId, Long addressId) {
+  public OrderRequestDTO createOrderFromCart(Long memberId, Long addressId) {
     // 1. 회원 조회
     Member member = memberRepository.findById(memberId)
       .orElseThrow(() -> new EntityNotFoundException("회원 없음: id=" + memberId));
