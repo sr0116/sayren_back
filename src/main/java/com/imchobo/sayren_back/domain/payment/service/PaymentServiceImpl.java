@@ -20,7 +20,7 @@ import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
-import com.imchobo.sayren_back.domain.subscribe_payment.service.SubscribePaymentService;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribePaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Sort;

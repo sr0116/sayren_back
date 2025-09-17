@@ -5,7 +5,7 @@ import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.exentity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
-import com.imchobo.sayren_back.domain.subscribe_payment.entity.SubscribePayment;
+import com.imchobo.sayren_back.domain.subscribe_round.entity.SubscribePayment;
 import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 

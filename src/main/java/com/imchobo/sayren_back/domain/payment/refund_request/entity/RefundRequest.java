@@ -1,15 +1,15 @@
 package com.imchobo.sayren_back.domain.payment.refund_request.entity;
 
-
-import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
+import com.imchobo.sayren_back.common.entity.TimeRangeEntity;
+import com.imchobo.sayren_back.domain.exentity.OrderItem;
 import com.imchobo.sayren_back.domain.member.entity.Member;
-import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.refund_request.en.RefundRequestStatus;
+import com.imchobo.sayren_back.domain.subscribe.en.ReasonCode;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "tbl_subscribe_cancel")
+@Table(name = "tbl_refund_request")
 @Getter
 @Setter
 @Builder
@@ -22,24 +22,26 @@ public class RefundRequest extends TimeRangeEntity {
   @Column(name = "refund_request_id")
   private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "payment_id", nullable = false)
-  private Payment payment;
+  // 주문 아이템
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "order_item_id", nullable = false)
+  private OrderItem orderItem;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  // 환불 요청 회원 FK (필수)
+  // NOT NULL
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "member_id", nullable = false)
   private Member member;
 
+  // 환불 요청 상태 (REQUESTED / APPROVED / REJECTED / CANCELED)
+  // NOT NULL
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private RefundRequestStatus status; // REQUESTED / APPROVED / REJECTED / CANCELED
+  @Column(nullable = false)
+  private RefundRequestStatus status;
 
-  @Column(nullable = false, length = 50)
-  private String reasonCode; // 공통 사유 코드 (Enum으로 관리)
-
-  @Column(columnDefinition = "TEXT")
-  private String reason; // 상세 사유 (회원 입력)
-
-  private String processedBy; // 처리자 (SYSTEM/ADMIN/USER)
-
+  // 환불 사유 코드 (Enum 관리)
+  //  NOT NULL
+  @Enumerated(EnumType.STRING)
+  @Column(name = "reason_code", nullable = false)
+  private ReasonCode reasonCode;
 }
