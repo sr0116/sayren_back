@@ -13,14 +13,16 @@ public class DeliveryItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "delivery_item_id")
-    private Long deliveryItemId;    // PK (NOT NULL(null이되면안됨), AUTO_INCREMENT(DB에서 자동 증가))
+    private Long Id;
 
-    // N:1 - 배송 헤더
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "delivery_id", nullable = false)
-    private Delivery delivery;   // FK → tbl_delivery.delivery_id (NOT NULL)
+    private Delivery delivery;
 
-    // 주문아이템 ID만 매핑(숫자 스냅샷)
-    @Column(name = "order_item_id", nullable = false)
-    private Long orderItemId;    // FK → tbl_order_item.order_item_id (NOT NULL)
+
+    // 주문아이템
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_item_id", nullable = false)
+    private OrderItem orderItem;
 }
