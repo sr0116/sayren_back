@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.en;
 
-public enum RefundReasonCode {
+public enum ReasonCode {
   USER_REQUEST,     // 회원 요청 환불
   PRODUCT_DEFECT,   // 상품 불량
   SERVICE_ERROR,    // 서비스 오류

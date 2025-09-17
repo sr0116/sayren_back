@@ -39,20 +39,15 @@ public class Subscribe extends BaseEntity {
   @Enumerated(EnumType.STRING)
   private SubscribeStatus status;
 
-// 월 렌탈료 스냅샷
-// NOT NULL, 기본값 0
-@Column(name = "monthly_fee_snapshot", nullable = false)
-private Integer monthlyFeeSnapshot;
+  // 월 렌탈료 스냅샷
+  // NOT NULL, 기본값 0
+  @Column(name = "monthly_fee_snapshot", nullable = false)
+  private Integer monthlyFeeSnapshot;
 
-// 보증금 스냅샷
-// NOT NULL, 기본값 0
-@Column(name = "deposit_snapshot", nullable = false)
+  // 보증금 스냅샷
+  // NOT NULL, 기본값 0
+  @Column(name = "deposit_snapshot", nullable = false)
   private Integer depositSnapshot;
-// 구독 총 개월수
-@Column(name = "total_months")
-  private Integer totalMonths;
-
-// BaseEntity에서 사용해서 따로 정의 안 해도 됨 (구독 기간)
 
   // 구독 시작일
   // NOT NULL
@@ -63,5 +58,6 @@ private Integer monthlyFeeSnapshot;
   // NOT NULL
   @Column(name = "end_date", nullable = false)
   private LocalDate endDate;
+
   // 생성일(regDate), 수정일(modDate)은 BaseEntity 상속
 }

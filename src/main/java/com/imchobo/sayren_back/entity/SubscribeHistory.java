@@ -1,6 +1,8 @@
 package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.common.entity.CreatedEntity;
+import com.imchobo.sayren_back.en.ActorType;
+import com.imchobo.sayren_back.en.ReasonCode;
 import com.imchobo.sayren_back.en.SubscribeHistoryStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,7 +19,7 @@ public class SubscribeHistory extends CreatedEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "subscribe_history_id")
-  private Long subscribeHistoryId;
+  private Long id;
 
   // 구독 FK (필수)
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -31,12 +33,13 @@ public class SubscribeHistory extends CreatedEntity {
   private SubscribeHistoryStatus status;
 
   // 상태 변경 사유 (상세 설명)
-  @Column(columnDefinition = "TEXT")
-  private String reason;
+  @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
+  private ReasonCode reasonCode;
 
   // 변경자 (SYSTEM)
-  @Column(name = "changed_by")
-  private String changedBy = "SYSTEM";
+  @Column(nullable = false)
+  private ActorType changedBy;
 
   // 생성일시는 CreatedEntity에서 상속
 }

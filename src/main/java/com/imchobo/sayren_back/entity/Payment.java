@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.entity;
 
-import com.imchobo.sayren_back.domain.common.entity.TimeRangeEntity;
+import com.imchobo.sayren_back.common.entity.TimeRangeEntity;
+import com.imchobo.sayren_back.en.PaymentType;
 import com.imchobo.sayren_back.en.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -27,34 +28,37 @@ public class Payment extends TimeRangeEntity {
 
   // 주문 (FK: tbl_order.order_id)
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "order_id", nullable = false)
-  private Order order;
+  @JoinColumn(name = "order_item_id", nullable = false)
+  private OrderItem orderItem;
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "subscribe_round_id", unique = true)
+  private SubscribeRound subscribeRound;
 
   // PortOne 고유 결제 식별자 (Not Null, Unique)
-  @Column(name = "merchant_uid", nullable = false, length = 100)
+  @Column(nullable = false, length = 100, unique = true)
   private String merchantUid;
 
   // PortOne 결제 응답 ID (Nullable)
-  @Column(name = "imp_uid", length = 100)
+  @Column(length = 100)
   private String impUid;
 
   // 결제 수단 (TOSS, KAKAO 등) (Nullable)
-  @Column(name = "paytype", length = 50)
-  private String payType;
+  @Enumerated(EnumType.STRING)
+  private PaymentType paymentType;
 
   // 총 결제 금액 (Not Null)
-  @Column(name = "amount", nullable = false)
+  @Column(nullable = false)
   private Long amount;
 
   // 결제 상태 (Not Null, Enum 매핑)
   @Enumerated(EnumType.STRING)
-  @Column(name = "paystatus", nullable = false, length = 20)
-  private PaymentStatus payStatus;
+  @Column(name = "payment_status", nullable = false, length = 20)
+  @Builder.Default
+  private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
   // 영수증 URL (Nullable)
-  @Column(name = "receipt", length = 255)
   private String receipt;
 
   // 생성 시각(regDate), 취소 시각(voidDate)은 TimeRangeEntity 상속
-
 }

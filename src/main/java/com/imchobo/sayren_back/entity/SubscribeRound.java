@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.common.entity.CreatedEntity;
-import com.imchobo.sayren_back.en.SubscribePaymentType;
+import com.imchobo.sayren_back.en.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,18 +9,18 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tbl_subscribe_payment")
+@Table(name = "tbl_subscribe_round")
 @Builder
 @Setter
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubscribePayment extends CreatedEntity {
+public class SubscribeRound extends CreatedEntity {
 
   // 구독 결제 PK
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "subscribe_payment_id")
+  @Column(name = "subscribe_round_id")
   private Long id;
 
   // 구독 FK (필수)
@@ -32,7 +32,7 @@ public class SubscribePayment extends CreatedEntity {
   // 요금제(plan) FK (필수)
   // NOT NULL
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "plan_id", nullable = false)
+  @JoinColumn(name = "order_plan_id", nullable = false)
   private OrderPlan plan;
 
   // 결제 FK (성공 시 매핑, 예정 상태일 땐 NULL 허용)
@@ -43,14 +43,8 @@ public class SubscribePayment extends CreatedEntity {
 
   // 회차 번호 (1, 2, 3 …)
   // NOT NULL
-  @Column(name = "round_no", nullable = false)
-  private Integer roundNo;
-
-  // 구독 결제 유형 (MONTHLY / DEPOSIT)
-  // Enum,  NOT NULL
-  @Enumerated(EnumType.STRING)
-  @Column(name = "type", nullable = false)
-  private SubscribePaymentType type;
+  @Column(nullable = false)
+  private int roundNo;
 
   // 결제 금액
   // NOT NULL
@@ -61,7 +55,8 @@ public class SubscribePayment extends CreatedEntity {
   // Enum, VARCHAR(20), NOT NULL
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
-  private PaymentStatus payStatus;
+  @Builder.Default
+  private PaymentStatus payStatus = PaymentStatus.PENDING;
 
   // 납부 예정일 (스케줄링에 필요)
   // NOT NULL

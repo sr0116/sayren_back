@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.entity;
 
 import com.imchobo.sayren_back.common.entity.CreatedEntity;
-import com.imchobo.sayren_back.en.RefundReasonCode;
+import com.imchobo.sayren_back.en.ReasonCode;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,7 +25,6 @@ public class Refund extends CreatedEntity {
   private Payment payment;
 
   // 환불 금액
-  // DECIMAL(12,2)
   // NOT NULL
   @Column(nullable = false)
   private Long amount;
@@ -34,12 +33,7 @@ public class Refund extends CreatedEntity {
   // NOT NULL, enum
   @Enumerated(EnumType.STRING)
   @Column(name = "reason_code", nullable = false)
-  private RefundReasonCode reasonCode;
-
-  // 상세 사유 , TEXT
-  @Column(name = "reason", columnDefinition = "TEXT")
-  private String reason;
-
+  private ReasonCode reasonCode;
 
   // regDate는 CreatedEntity에서 자동 세팅
 }
