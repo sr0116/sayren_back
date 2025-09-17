@@ -7,6 +7,7 @@ spring:
       - optional:classpath:secret/jwt.yml
       - optional:classpath:secret/oauth.yml
       - optional:classpath:secret/mail.yml
+      - optional:classpath:secret/redis.yml
   jpa:
     hibernate:
       ddl-auto: none
