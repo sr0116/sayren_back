@@ -8,6 +8,7 @@ import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Provider;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberProvider;
+import com.imchobo.sayren_back.domain.member.exception.AlreadyLinkedProviderException;
 import com.imchobo.sayren_back.domain.member.exception.EmailNotFoundException;
 import com.imchobo.sayren_back.domain.member.exception.InvalidPasswordException;
 import com.imchobo.sayren_back.domain.member.exception.TelNotFoundException;
@@ -121,7 +122,9 @@ public class AuthServiceImpl implements AuthService {
     if(socialUser.email().equals(member.getEmail())){
       member.setEmailVerified(true);
     }
-
+    if(!memberProviderRepository.findByMemberAndProvider(member, socialUser.provider()).isEmpty()){
+      throw new AlreadyLinkedProviderException(socialUser.provider());
+    }
     memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
     return tokensAndLoginResponse(member, response, true);
