@@ -1,7 +1,7 @@
-package com.imchobo.sayren_back.domain.subscribe.subscribe_history.repository;
+package com.imchobo.sayren_back.domain.subscribe.repository;
 
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
-import com.imchobo.sayren_back.domain.subscribe.subscribe_history.entity.SubscribeHistory;
+import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

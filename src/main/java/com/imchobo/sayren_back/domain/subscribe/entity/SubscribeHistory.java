@@ -1,11 +1,10 @@
-package com.imchobo.sayren_back.domain.subscribe.subscribe_history.entity;
+package com.imchobo.sayren_back.domain.subscribe.entity;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
-import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

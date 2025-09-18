@@ -4,8 +4,6 @@ import com.imchobo.sayren_back.domain.common.util.MappingUtil;
 import com.imchobo.sayren_back.domain.payment.refund.dto.RefundCreateDTO;
 import com.imchobo.sayren_back.domain.payment.refund.dto.RefundResponseDTO;
 import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
-import com.imchobo.sayren_back.domain.payment.refund_request.dto.RefundRequestDTO;
-import com.imchobo.sayren_back.domain.payment.refund_request.entity.RefundRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

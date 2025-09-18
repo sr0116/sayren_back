@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.payment.payment_history.dto;
+package com.imchobo.sayren_back.domain.payment.dto;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;

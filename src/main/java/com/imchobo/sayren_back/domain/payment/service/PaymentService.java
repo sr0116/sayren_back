@@ -1,6 +1,5 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
-import com.imchobo.sayren_back.domain.common.config.ApiResponse;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 

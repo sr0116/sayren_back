@@ -1,8 +1,11 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
 
-import com.imchobo.sayren_back.domain.common.config.ApiResponse;
+import com.imchobo.sayren_back.domain.order.entity.Order;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.order.repository.OrderPlanRepository;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
@@ -13,6 +16,7 @@ import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoRes
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
+import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribePaymentService;
 import lombok.RequiredArgsConstructor;
@@ -49,10 +53,10 @@ public class PaymentServiceImpl implements PaymentService {
 //    Payment payment = paymentMapper.toEntity(dto);
 //
 //    // 주문 연결
-//    Order order = payment.getOrder();
+//    OrderItem order = payment.getOrderItem();
 //    if (order == null) {
 //      order = Order.builder()
-//              .id(dto.getOrderId())
+//              .id(dto.getOrderItem())
 //              .build();
 //      payment.setOrder(order);
 //    }

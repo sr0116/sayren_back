@@ -1,9 +1,9 @@
-package com.imchobo.sayren_back.domain.payment.refund_request.mapper;
+package com.imchobo.sayren_back.domain.payment.refund.mapper;
 
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
-import com.imchobo.sayren_back.domain.payment.refund_request.dto.RefundRequestDTO;
-import com.imchobo.sayren_back.domain.payment.refund_request.dto.RefundRequestResponseDTO;
-import com.imchobo.sayren_back.domain.payment.refund_request.entity.RefundRequest;
+import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestDTO;
+import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestResponseDTO;
+import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
