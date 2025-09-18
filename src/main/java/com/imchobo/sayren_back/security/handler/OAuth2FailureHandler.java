@@ -28,12 +28,10 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
 
     if (exception instanceof SocialSignupException ex) {
       result.put("error", "SIGNUP_REQUIRED");
-      result.put("attributes", ex.getAttributes());
-      result.put("provider", ex.getProvider());
+      result.put("socialUser", ex.getSocialUser());
     } else if (exception instanceof SocialLinkException ex) {
       result.put("error", "LINK_REQUIRED");
-      result.put("attributes", ex.getAttributes());
-      result.put("provider", ex.getProvider());
+      result.put("socialUser", ex.getSocialUser());
     } else {
       result.put("error", "OAUTH2_LOGIN_FAILED");
     }

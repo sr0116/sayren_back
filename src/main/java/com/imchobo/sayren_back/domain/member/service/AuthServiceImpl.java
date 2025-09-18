@@ -11,6 +11,7 @@ import com.imchobo.sayren_back.domain.member.exception.EmailNotFoundException;
 import com.imchobo.sayren_back.domain.member.exception.InvalidPasswordException;
 import com.imchobo.sayren_back.domain.member.exception.TelNotFoundException;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
+import com.imchobo.sayren_back.domain.member.recode.SocialUser;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
@@ -89,17 +90,13 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional
   public MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response) {
-    Map<String, Object> attributes = socialSignupRequestDTO.getAttributes();
-    Provider provider = socialSignupRequestDTO.getProvider();
+    SocialUser socialUser = socialSignupRequestDTO.getSocialUser();
 
-    String email = (String) attributes.get("email");
-    String name = (String) attributes.get("name");
-    String uid = (String) attributes.get("sub");
 
-    Member member = Member.builder().name(name).email(email).status(MemberStatus.READY).emailVerified(true).build();
+    Member member = Member.builder().name(socialUser.name()).email(socialUser.email()).status(MemberStatus.READY).emailVerified(true).build();
 
     memberRepository.save(member);
-    memberProviderRepository.save(MemberProvider.builder().providerUid(uid).member(member).provider(provider).email(email).build());
+    memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
 
     return tokensAndLoginResponse(member, response, true);
@@ -108,20 +105,16 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional
   public MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
-    Map<String, Object> attributes = socialLinkRequestDTO.getAttributes();
-    Provider provider = socialLinkRequestDTO.getProvider();
-    String uid = (String) attributes.get("sub");
+    SocialUser socialUser = socialLinkRequestDTO.getSocialUser();
 
-    String email = (String) attributes.get("email");
-
-    Member member = memberRepository.findByEmail(email)
+    Member member = memberRepository.findByEmail(socialUser.email())
             .orElseThrow(EmailNotFoundException::new);
 
     if(!passwordEncoder.matches(socialLinkRequestDTO.getPassword(), member.getPassword())){
       throw new InvalidPasswordException();
     }
 
-    memberProviderRepository.save(MemberProvider.builder().providerUid(uid).member(member).provider(provider).email(email).build());
+    memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
     member.setEmailVerified(true);
 
 
