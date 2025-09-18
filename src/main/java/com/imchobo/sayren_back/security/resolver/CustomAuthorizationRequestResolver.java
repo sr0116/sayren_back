@@ -37,8 +37,7 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
 
     String springState = req.getState();
     String myState = request.getParameter("state");
-    log.info("springState: " + springState);
-    log.info("myState: " + myState);
+
     if (myState != null) {
       redisUtil.setState(springState, myState);
     }

@@ -43,24 +43,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     Provider provider = Provider.valueOf(userRequest.getClientRegistration().getRegistrationId().toUpperCase());
     SocialUser socialUser = socialUtil.getSocialUser(provider, oAuth2User);
-    log.info(userRequest.getAdditionalParameters().get("state"));
-
-
-//    if (springState != null) {
-//    Long memberId = getMemberId(springState);
-//
-//      MemberProvider memberProvider = MemberProvider.builder()
-//              .provider(socialUser.provider())
-//              .providerUid(socialUser.providerUid())
-//              .member(Member.builder().id(memberId).build())
-//              .email(socialUser.email())
-//              .build();
-//      memberProviderRepository.save(memberProvider);
-//
-//      log.info(memberProvider);
-//      Member member = memberRepository.findById(memberId).orElseThrow(EmailNotFoundException::new);
-//      return memberMapper.toAuthDTO(member);
-//    }
 
     // 1. provider + providerUid 로 먼저 조회
     Optional<MemberProvider> providerOpt = memberProviderRepository.findByProviderAndProviderUid(socialUser.provider(), socialUser.providerUid());

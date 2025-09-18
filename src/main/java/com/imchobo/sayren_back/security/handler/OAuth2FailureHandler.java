@@ -30,22 +30,33 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     response.setContentType("application/json;charset=UTF-8");
 
-    Long memberId = getMemberId(request);
-    if(memberId != null) {
-
-    }
-
     Map<String, Object> result = new HashMap<>();
 
+    String springState = request.getParameter("state");
+    Long memberId = null;
+    if(springState != null) {
+      String state = redisUtil.getState(springState);
+      if(state != null) {
+       memberId = Long.valueOf(redisUtil.getSocialLink(state));
+      }
+    }
+
     if (exception instanceof SocialSignupException ex) {
-      result.put("error", "SIGNUP_REQUIRED");
-      result.put("socialUser", ex.getSocialUser());
+      if (memberId != null) {
+        result.put("error", "LINK_REQUIRED");
+      } else {
+        result.put("error", "SIGNUP_REQUIRED");
+      }
+        result.put("socialUser", ex.getSocialUser());
     } else if (exception instanceof SocialLinkException ex) {
       result.put("error", "LINK_REQUIRED");
       result.put("socialUser", ex.getSocialUser());
     } else {
       result.put("error", "OAUTH2_LOGIN_FAILED");
     }
+
+
+
 
     String json = objectMapper.writeValueAsString(result);
 
@@ -56,21 +67,5 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
                     "window.close();" +
                     "</script>"
     );
-  }
-
-  private String getSpringState(OAuth2UserRequest userRequest){
-    return userRequest.getAdditionalParameters().get("state") != null
-            ? (String) userRequest.getAdditionalParameters().get("state")
-            : null;
-  }
-
-  private Long getMemberId(HttpServletRequest request){
-    String springState = request.getParameter("state");
-    String myState = redisUtil.getState(springState);
-    redisUtil.deleteState(springState);
-    Long memberId = Long.valueOf(redisUtil.getSocialLink(myState));
-    redisUtil.deleteSocialLink(myState);
-
-    return memberId;
   }
 }

@@ -65,7 +65,9 @@ public class RedisUtil {
   }
 
   public String getState(String springState){
-    return get("STATE:" +  springState);
+    String state = get("STATE:" +  springState);
+    deleteState(springState);
+    return state;
   }
 
   public void deleteState(String springState){
@@ -78,7 +80,9 @@ public class RedisUtil {
   }
 
   public String getSocialLink(String state) {
-    return get("SOCIAL_LINK:" + state);
+    String socialLink = get("SOCIAL_LINK:" + state);
+    deleteSocialLink(state);
+    return socialLink;
   }
 
   public void deleteSocialLink(String state) {
