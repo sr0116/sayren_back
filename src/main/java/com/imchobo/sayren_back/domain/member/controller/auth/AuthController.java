@@ -30,6 +30,7 @@ public class AuthController {
   private final MailUtil mailUtil;
 
 
+
   @PostMapping("login")
   public ResponseEntity<?> login(@RequestBody @Valid MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response) {
     return ResponseEntity.ok(authService.login(memberLoginRequestDTO, response));
@@ -77,5 +78,14 @@ public class AuthController {
   public ResponseEntity<?> resendVerificationEmail() {
     mailUtil.emailVerification(SecurityUtil.getMemberAuthDTO().getEmail());
     return ResponseEntity.ok(Map.of("message", "success"));
+  }
+
+
+  @PostMapping("link/{provider}/start")
+  public ResponseEntity<?> startLink(@PathVariable("provider") String provider) {
+    if (!SecurityUtil.isUser()) {
+      return ResponseEntity.status(401).body(Map.of("error", "UNAUTHORIZED"));
+    }
+    return ResponseEntity.ok(Map.of("redirectUrl", authService.socialLinkRedirectUrl(provider)));
   }
 }

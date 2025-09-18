@@ -1,13 +1,16 @@
 package com.imchobo.sayren_back.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.exception.SocialLinkException;
 import com.imchobo.sayren_back.domain.member.exception.SocialSignupException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
@@ -16,13 +19,21 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
+@Log4j2
 public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler {
   private final ObjectMapper objectMapper;
+  private final RedisUtil redisUtil;
+
 
   @Override
   public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     response.setContentType("application/json;charset=UTF-8");
+
+    Long memberId = getMemberId(request);
+    if(memberId != null) {
+
+    }
 
     Map<String, Object> result = new HashMap<>();
 
@@ -45,5 +56,21 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
                     "window.close();" +
                     "</script>"
     );
+  }
+
+  private String getSpringState(OAuth2UserRequest userRequest){
+    return userRequest.getAdditionalParameters().get("state") != null
+            ? (String) userRequest.getAdditionalParameters().get("state")
+            : null;
+  }
+
+  private Long getMemberId(HttpServletRequest request){
+    String springState = request.getParameter("state");
+    String myState = redisUtil.getState(springState);
+    redisUtil.deleteState(springState);
+    Long memberId = Long.valueOf(redisUtil.getSocialLink(myState));
+    redisUtil.deleteSocialLink(myState);
+
+    return memberId;
   }
 }

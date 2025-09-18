@@ -77,4 +77,9 @@ public class MemberServiceImpl implements MemberService {
     redisUtil.deleteEmailToken(token);
     return true;
   }
+
+  @Override
+  public Member findById(Long id) {
+    return memberRepository.findById(id).orElseThrow(IllegalArgumentException::new);
+  }
 }

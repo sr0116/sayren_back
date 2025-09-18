@@ -60,8 +60,32 @@ public class RedisUtil {
     delete("EMAIL_VERIFY:" +  token);
   }
 
+  public void setState(String springState, String myState){
+    set("STATE:" +  springState, myState, 5, TimeUnit.MINUTES);
+  }
 
-  public void saveRefreshToken(RedisTokenDTO dto) throws JsonProcessingException {
+  public String getState(String springState){
+    return get("STATE:" +  springState);
+  }
+
+  public void deleteState(String springState){
+    delete("STATE:" +  springState);
+  }
+
+
+  public void setSocialLink(String state, Long memberId) {
+    set("SOCIAL_LINK:" + state, memberId.toString(), 5, TimeUnit.MINUTES);
+  }
+
+  public String getSocialLink(String state) {
+    return get("SOCIAL_LINK:" + state);
+  }
+
+  public void deleteSocialLink(String state) {
+    delete("SOCIAL_LINK:" + state);
+  }
+
+  public void setRefreshToken(RedisTokenDTO dto) throws JsonProcessingException {
 
     String json = objectMapper.writeValueAsString(dto);
     TokenMeta meta = jwtUtil.getMemberIdAndTtl(dto.getToken());

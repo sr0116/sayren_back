@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.member.service;
 
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
+import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Provider;
@@ -15,6 +16,7 @@ import com.imchobo.sayren_back.domain.member.recode.SocialUser;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.UUID;
 
 
 @Service
@@ -35,6 +38,8 @@ public class AuthServiceImpl implements AuthService {
   private final CookieUtil cookieUtil;
   private final MemberMapper memberMapper;
   private final MemberProviderRepository memberProviderRepository;
+  private final MemberService memberService;
+  private final RedisUtil redisUtil;
 
 
   @Override
@@ -121,6 +126,7 @@ public class AuthServiceImpl implements AuthService {
     return tokensAndLoginResponse(member, response, true);
   }
 
+
   private MemberLoginResponseDTO tokensAndLoginResponse(Member member,
                                                         HttpServletResponse response,
                                                         boolean rememberMe) {
@@ -138,4 +144,13 @@ public class AuthServiceImpl implements AuthService {
     return new MemberLoginResponseDTO(accessToken, "로그인 성공");
   }
 
+  @Override
+  public String socialLinkRedirectUrl(String provider) {
+    String state = UUID.randomUUID().toString();
+    Long memberId = SecurityUtil.getMemberAuthDTO().getId();
+
+    redisUtil.setSocialLink(state, memberId);
+
+    return "http://localhost:8080/oauth2/authorization/" + provider.toLowerCase() + "?state=" + state;
+  }
 }
