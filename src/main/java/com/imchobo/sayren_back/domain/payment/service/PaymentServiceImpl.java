@@ -32,8 +32,27 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Log4j2
 public class PaymentServiceImpl implements PaymentService {
+  @Override
+  public PaymentResponseDTO prepare(PaymentRequestDTO dto) {
+    return null;
+  }
 
-//  private final PaymentRepository paymentRepository;
+  @Override
+  public PaymentResponseDTO complete(Long paymentId, String imUid) {
+    return null;
+  }
+
+  @Override
+  public void refund(Long paymentId, Long amount, String reason) {
+
+  }
+
+  @Override
+  public List<PaymentResponseDTO> getAll() {
+    return List.of();
+  }
+// 나중에 삭제 예정
+  //  private final PaymentRepository paymentRepository;
 //  private final PaymentMapper paymentMapper;
 //  // PortOne api 호출 및 연동
 //  private final PortOnePaymentClient portOnePaymentClient;
