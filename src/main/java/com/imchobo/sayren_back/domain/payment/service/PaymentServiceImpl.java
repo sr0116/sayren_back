@@ -1,8 +1,11 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
 
-import com.imchobo.sayren_back.domain.common.config.ApiResponse;
+import com.imchobo.sayren_back.domain.order.entity.Order;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.order.repository.OrderPlanRepository;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
@@ -13,6 +16,7 @@ import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoRes
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
+import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribePaymentService;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +32,27 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Log4j2
 public class PaymentServiceImpl implements PaymentService {
+  @Override
+  public PaymentResponseDTO prepare(PaymentRequestDTO dto) {
+    return null;
+  }
 
-//  private final PaymentRepository paymentRepository;
+  @Override
+  public PaymentResponseDTO complete(Long paymentId, String imUid) {
+    return null;
+  }
+
+  @Override
+  public void refund(Long paymentId, Long amount, String reason) {
+
+  }
+
+  @Override
+  public List<PaymentResponseDTO> getAll() {
+    return List.of();
+  }
+// 나중에 삭제 예정
+  //  private final PaymentRepository paymentRepository;
 //  private final PaymentMapper paymentMapper;
 //  // PortOne api 호출 및 연동
 //  private final PortOnePaymentClient portOnePaymentClient;
@@ -49,10 +72,10 @@ public class PaymentServiceImpl implements PaymentService {
 //    Payment payment = paymentMapper.toEntity(dto);
 //
 //    // 주문 연결
-//    Order order = payment.getOrder();
+//    OrderItem order = payment.getOrderItem();
 //    if (order == null) {
 //      order = Order.builder()
-//              .id(dto.getOrderId())
+//              .id(dto.getOrderItem())
 //              .build();
 //      payment.setOrder(order);
 //    }

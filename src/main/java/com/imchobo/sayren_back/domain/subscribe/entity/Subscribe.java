@@ -35,7 +35,7 @@ public class Subscribe extends BaseEntity {
   @JoinColumn(name = "member_id", nullable = false)
   private Member member;
 
-  // 구독 상태 (PENDING_PAYMENT / ACTIVE / CANCELED / EXPIRED 등)
+  // 구독 상태
   // NOT NULL
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)

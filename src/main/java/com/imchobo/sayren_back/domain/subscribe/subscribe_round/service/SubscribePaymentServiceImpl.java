@@ -4,7 +4,6 @@ import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
-import com.imchobo.sayren_back.domain.subscribe.subscribe_round.en.SubscribePaymentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
