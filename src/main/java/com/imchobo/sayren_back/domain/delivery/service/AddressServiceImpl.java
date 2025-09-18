@@ -50,8 +50,8 @@ public class AddressServiceImpl implements AddressService {
     address.setName(dto.getName());
     address.setTel(dto.getTel());
     address.setZipcode(dto.getZipcode());
-    address.setAddress(dto.getAddress());
     address.setMemo(dto.getMemo());
+    address.setAddress(dto.getAddress());
 
     if (Boolean.TRUE.equals(dto.getIsDefault())) {
       addressRepository.findByMemberIdAndIsDefaultTrue(address.getMember().getId())
