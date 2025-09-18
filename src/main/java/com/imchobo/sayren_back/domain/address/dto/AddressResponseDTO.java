@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.delivery.dto;
+package com.imchobo.sayren_back.domain.address.dto;
 
 import lombok.*;
 import java.time.LocalDateTime;

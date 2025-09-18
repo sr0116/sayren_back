@@ -1,5 +1,5 @@
 package com.imchobo.sayren_back.servicetest;
-import com.imchobo.sayren_back.domain.delivery.service.AddressService;
+import com.imchobo.sayren_back.domain.address.service.AddressService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

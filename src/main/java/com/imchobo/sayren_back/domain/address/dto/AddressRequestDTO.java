@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.delivery.dto;
+package com.imchobo.sayren_back.domain.address.dto;
 
 import lombok.*;
 
@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 public class AddressRequestDTO {
 
-  private Long memberId;    // 소유 회원 ID
+   private Long memberId;    // 소유 회원 ID
   private String name;      // 수령인 이름
   private String tel;       // 연락처
   private String zipcode;   // 우편번호

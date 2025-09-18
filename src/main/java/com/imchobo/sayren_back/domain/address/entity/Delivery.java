@@ -1,14 +1,11 @@
-package com.imchobo.sayren_back.domain.delivery.entity;
+package com.imchobo.sayren_back.domain.address.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
-import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
-import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
+import com.imchobo.sayren_back.domain.address.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.address.en.DeliveryType;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "tbl_delivery")                // 스키마: tbl_delivery

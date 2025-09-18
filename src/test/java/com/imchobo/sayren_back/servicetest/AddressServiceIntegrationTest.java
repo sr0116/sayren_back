@@ -1,8 +1,8 @@
 package com.imchobo.sayren_back.servicetest;
 
-import com.imchobo.sayren_back.domain.delivery.dto.AddressRequestDTO;
-import com.imchobo.sayren_back.domain.delivery.dto.AddressResponseDTO;
-import com.imchobo.sayren_back.domain.delivery.service.AddressService;
+import com.imchobo.sayren_back.domain.address.dto.AddressRequestDTO;
+import com.imchobo.sayren_back.domain.address.dto.AddressResponseDTO;
+import com.imchobo.sayren_back.domain.address.service.AddressService;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
