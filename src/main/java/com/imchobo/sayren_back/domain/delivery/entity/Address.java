@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.delivery.entity;
 
-import com.imchobo.sayren_back.domain.common.BaseEntity;
+import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
+import com.imchobo.sayren_back.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,31 +13,39 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 
-public class Address extends BaseEntity {
+public class Address extends CreatedEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "addr_id")
-  private Long addrId;
+  @Column(name = "address_id")
+  private Long id;// PK (NOT NULL, AUTO_INCREMENT(DB에서 자동증가))
 
-  @Column(nullable = false)
-  private Long memberId;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "member_id", nullable = false)
+  private Member member;
 
+  // 수령인 이름 (NOT NULL, 최대 100자)
   @Column(nullable = false, length = 100)
   private String name;
 
+  // 연락처 (NOT NULL, 최대 20자)
   @Column(nullable = false, length = 20)
   private String tel;
 
+  // 우편번호 (NOT NULL, 최대 20자)
   @Column(nullable = false, length = 20)
   private String zipcode;
 
-  @Column(name = "addr", nullable = false, length = 255)
+  // 주소
+  @Column(name = "addr", nullable = false)
   private String address;
 
-  @Column(name = "is_default", nullable = false)
-  private Boolean defaultAddress;
+  // 기본 배송지 여부 (NOT NULL, 기본값 FALSE)
+  @Column(nullable = false)
+  @Builder.Default
+  private Boolean isDefault = false;
 
+  // 배송 메모 (NULL 허용, 최대 255자)
   @Column(length = 255)
   private String memo;
 }

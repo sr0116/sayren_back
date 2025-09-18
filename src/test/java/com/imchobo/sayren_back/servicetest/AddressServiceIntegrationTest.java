@@ -1,8 +1,7 @@
 package com.imchobo.sayren_back.servicetest;
 
-import com.imchobo.sayren_back.domain.delivery.dto.AddressCreateRequest;
-import com.imchobo.sayren_back.domain.delivery.dto.AddressCreateResponse;
-import com.imchobo.sayren_back.domain.delivery.dto.AddressDTO;
+import com.imchobo.sayren_back.domain.delivery.dto.AddressRequestDTO;
+import com.imchobo.sayren_back.domain.delivery.dto.AddressResponseDTO;
 import com.imchobo.sayren_back.domain.delivery.service.AddressService;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -30,7 +29,7 @@ class AddressServiceIntegrationTest {
   @Test
   @Order(1)
   void 주소등록() {
-    AddressCreateRequest request = AddressCreateRequest.builder()
+    AddressRequestDTO request = AddressRequestDTO.builder()
       .memberId(1L)
       .name("홍길동")
       .tel("010-1111-2222")
@@ -40,7 +39,7 @@ class AddressServiceIntegrationTest {
       .memo("통합 테스트 메모")
       .build();
 
-    AddressCreateResponse response = addressService.create(request);
+    AddressResponseDTO response = addressService.create(request);
 
     assertThat(response).isNotNull();
     assertThat(response.getAddrId()).isNotNull();

@@ -1,26 +1,21 @@
 package com.imchobo.sayren_back.domain.delivery.mapper;
 
-import com.imchobo.sayren_back.domain.delivery.dto.AddressCreateRequest;
-import com.imchobo.sayren_back.domain.delivery.dto.AddressCreateResponse;
-import com.imchobo.sayren_back.domain.delivery.dto.AddressDTO;
+import com.imchobo.sayren_back.domain.delivery.dto.AddressRequestDTO;
+import com.imchobo.sayren_back.domain.delivery.dto.AddressResponseDTO;
 import com.imchobo.sayren_back.domain.delivery.entity.Address;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
+
+import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface AddressMapper {
 
+  @Mapping(source = "memberId", target = "member.id")
+  Address toEntity(AddressRequestDTO dto);
 
-  // Entity → DTO
-  AddressDTO toDTO(Address entity);
+  @Mapping(source = "member.id", target = "memberId")
+  AddressResponseDTO toResponseDTO(Address entity);
 
-  // DTO → Entity
-  Address toEntity(AddressDTO dto);
-
-  // CreateRequest → Entity
-  Address toEntity(AddressCreateRequest request);
-
-  // Entity → CreateResponse
-  AddressCreateResponse toCreateResponse(Address entity);
+  List<AddressResponseDTO> toResponseDTOs(List<Address> entities);
 }
