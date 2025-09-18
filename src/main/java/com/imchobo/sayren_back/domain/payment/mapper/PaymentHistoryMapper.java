@@ -1,9 +1,9 @@
-package com.imchobo.sayren_back.domain.payment.payment_history.mapper;
+package com.imchobo.sayren_back.domain.payment.mapper;
 
 
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
-import com.imchobo.sayren_back.domain.payment.payment_history.dto.PaymentHistoryResponseDTO;
-import com.imchobo.sayren_back.domain.payment.payment_history.entity.PaymentHistory;
+import com.imchobo.sayren_back.domain.payment.dto.PaymentHistoryResponseDTO;
+import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

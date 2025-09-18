@@ -1,8 +1,8 @@
-package com.imchobo.sayren_back.domain.subscribe.subscribe_history.mapper;
+package com.imchobo.sayren_back.domain.subscribe.mapper;
 
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
-import com.imchobo.sayren_back.domain.subscribe.subscribe_history.dto.SubscribeHistoryResponseDTO;
-import com.imchobo.sayren_back.domain.subscribe.subscribe_history.entity.SubscribeHistory;
+import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
+import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

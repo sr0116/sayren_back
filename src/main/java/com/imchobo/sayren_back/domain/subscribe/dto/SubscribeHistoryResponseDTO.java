@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.subscribe.subscribe_history.dto;
+package com.imchobo.sayren_back.domain.subscribe.dto;
 
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;

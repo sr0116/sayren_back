@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.payment.refund_request.dto;
+package com.imchobo.sayren_back.domain.payment.refund.dto;
 
 
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;

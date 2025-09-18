@@ -1,8 +1,8 @@
-package com.imchobo.sayren_back.domain.payment.refund_request.dto;
+package com.imchobo.sayren_back.domain.payment.refund.dto;
 
 
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
-import com.imchobo.sayren_back.domain.payment.refund_request.en.RefundRequestStatus;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;

@@ -1,9 +1,8 @@
-package com.imchobo.sayren_back.domain.payment.payment_history.entity;
+package com.imchobo.sayren_back.domain.payment.entity;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import jakarta.persistence.*;
 import lombok.*;
 
