@@ -34,8 +34,8 @@ public interface OrderMapper {
   @Mapping(source = "address.tel", target = "addressTel")
   @Mapping(source = "address.address", target = "addressDetail")
 
-  @Mapping(source = "regDate", target = "regDate")
-  @Mapping(source = "modDate", target = "modDate")
+  @Mapping(source = "createdAt", target = "regDate")
+  @Mapping(source = "updatedAt", target = "modDate")
   OrderResponseDTO toResponseDTO(Order entity);
 
   // ========================

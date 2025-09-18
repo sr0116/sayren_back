@@ -1,4 +1,5 @@
 package com.imchobo.sayren_back.domain.order.repository;
+
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
