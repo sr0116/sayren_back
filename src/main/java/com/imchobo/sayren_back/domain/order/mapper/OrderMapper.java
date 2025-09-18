@@ -14,44 +14,44 @@ public interface OrderMapper {
   // ========================
   // Request DTO → Entity
   // ========================
-  @Mapping(source = "memberId", target = "member.id")
-  @Mapping(source = "addressId", target = "address.id")
-  @Mapping(source = "status", target = "status")
-  Order toEntity(OrderRequestDTO dto);
-
-  // ========================
-  // Entity → Response DTO
-  // ========================
-  @Mapping(source = "id", target = "orderId")
-  @Mapping(source = "status", target = "status")
-
-  @Mapping(source = "member.id", target = "memberId")
-  @Mapping(source = "member.email", target = "memberEmail")
-  @Mapping(source = "member.name", target = "memberName")
-
-  @Mapping(source = "address.id", target = "addressId")
-  @Mapping(source = "address.name", target = "addressName")
-  @Mapping(source = "address.tel", target = "addressTel")
-  @Mapping(source = "address.address", target = "addressDetail")
-
-  @Mapping(source = "createdAt", target = "regDate")
-  @Mapping(source = "updatedAt", target = "modDate")
-  OrderResponseDTO toResponseDTO(Order entity);
-
-  // ========================
-  // 헬퍼 메서드 (필요 시)
-  // ========================
-  default Member toMember(Long memberId) {
-    if (memberId == null) return null;
-    Member m = new Member();
-    m.setId(memberId);
-    return m;
-  }
-
-  default Address toAddress(Long addressId) {
-    if (addressId == null) return null;
-    Address a = new Address();
-    a.setId(addressId);
-    return a;
-  }
+//  @Mapping(source = "memberId", target = "member.id")
+//  @Mapping(source = "addressId", target = "address.id")
+//  @Mapping(source = "status", target = "status")
+//  Order toEntity(OrderRequestDTO dto);
+//
+//  // ========================
+//  // Entity → Response DTO
+//  // ========================
+//  @Mapping(source = "id", target = "orderId")
+//  @Mapping(source = "status", target = "status")
+//
+//  @Mapping(source = "member.id", target = "memberId")
+//  @Mapping(source = "member.email", target = "memberEmail")
+//  @Mapping(source = "member.name", target = "memberName")
+//
+//  @Mapping(source = "address.id", target = "addressId")
+//  @Mapping(source = "address.name", target = "addressName")
+//  @Mapping(source = "address.tel", target = "addressTel")
+//  @Mapping(source = "address.address", target = "addressDetail")
+//
+//  @Mapping(source = "createdAt", target = "regDate")
+//  @Mapping(source = "updatedAt", target = "modDate")
+//  OrderResponseDTO toResponseDTO(Order entity);
+//
+//  // ========================
+//  // 헬퍼 메서드 (필요 시)
+//  // ========================
+//  default Member toMember(Long memberId) {
+//    if (memberId == null) return null;
+//    Member m = new Member();
+//    m.setId(memberId);
+//    return m;
+//  }
+//
+//  default Address toAddress(Long addressId) {
+//    if (addressId == null) return null;
+//    Address a = new Address();
+//    a.setId(addressId);
+//    return a;
+//  }
 }
