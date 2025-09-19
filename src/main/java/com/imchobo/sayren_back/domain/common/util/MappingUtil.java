@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.common.util;
 
+import com.imchobo.sayren_back.domain.address.entity.Address;
+import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
@@ -102,5 +104,18 @@ public class MappingUtil {
     if (value instanceof Number num) return num.longValue();
     if (value != null) return Long.parseLong(value.toString());
     return null;
+  }
+
+          //주문 mapping필요
+  @Named("mapMember")
+  public Member memberIdToEntity(Long memberId) {
+    if (memberId == null) throw new IllegalArgumentException("memberId가 null입니다.");
+    return Member.builder().id(memberId).build();
+  }
+
+  @Named("mapAddress")
+  public Address addressIdToEntity(Long addressId) {
+    if (addressId == null) throw new IllegalArgumentException("addressId가 null입니다.");
+    return Address.builder().id(addressId).build();
   }
 }

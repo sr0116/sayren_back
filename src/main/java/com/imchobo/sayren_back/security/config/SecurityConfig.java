@@ -51,11 +51,22 @@ public class SecurityConfig {
     http
       .cors(Customizer.withDefaults())
       .csrf(AbstractHttpConfigurer::disable) // REST API라면 CSRF 비활성화
+//      .authorizeHttpRequests(auth -> auth
+//              .requestMatchers("/api/user/**", "/api/auth/**", "/oauth2/**").permitAll() // 누구나 접근 가능
+//              .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용
+//              .anyRequest().authenticated() // 나머지는 로그인 필요
+//      )
+
       .authorizeHttpRequests(auth -> auth
-              .requestMatchers("/api/user/**", "/api/auth/**", "/oauth2/**").permitAll() // 누구나 접근 가능
-              .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용
-              .anyRequest().authenticated() // 나머지는 로그인 필요
+          .requestMatchers("/api/user/**", "/api/auth/**", "/oauth2/**").permitAll()
+          .requestMatchers("/api/admin/**").hasRole("ADMIN")
+//      .anyRequest().authenticated() // 나머지는 로그인 필요 (원래 설정)
+          .anyRequest().permitAll() // 테스트용: 모든 API 접근 허용
       )
+
+
+
+
       .formLogin(AbstractHttpConfigurer::disable) // 기본 로그인 폼 안씀
       .oauth2Login(oauth2 -> oauth2
         .authorizationEndpoint(auth -> auth
