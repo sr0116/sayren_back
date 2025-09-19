@@ -1,18 +1,49 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
+import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
+import com.imchobo.sayren_back.domain.payment.exception.PaymentAlreadyExistsException;
+import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Log4j2
 public class PaymentServiceImpl implements PaymentService {
+
+  private final PaymentRepository paymentRepository;
+
+  // 결제 준비
+  // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
+  @Transactional
   @Override
   public PaymentResponseDTO prepare(PaymentRequestDTO dto) {
+    // 현재 로그인 한 멤버 정보 조회
+    Member currentMember = SecurityUtil.getMemberEntity();
+
+    // portOne 고유 식별자 생성
+    String merchantUid = "pay_" + UUID.randomUUID().toString().replace("-", "");
+
+    // metchantUid 중복 불가 예외 처리, null 값은 이미 처리해둠
+    if(paymentRepository.findByMerchantUid(merchantUid).isPresent()) {
+      throw  new PaymentAlreadyExistsException(merchantUid);
+    }
+
+    // DTO -> 엔티티 변환
+
+
+
+
+
+
     return null;
   }
 
