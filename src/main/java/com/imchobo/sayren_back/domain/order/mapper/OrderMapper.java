@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.order.mapper;
 
-//import com.imchobo.sayren_back.domain.delivery.entity.Address;
+import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.dto.OrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderResponseDTO;
