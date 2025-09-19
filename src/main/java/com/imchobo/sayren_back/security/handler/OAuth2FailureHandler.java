@@ -1,13 +1,16 @@
 package com.imchobo.sayren_back.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.exception.SocialLinkException;
 import com.imchobo.sayren_back.domain.member.exception.SocialSignupException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
@@ -16,8 +19,11 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
+@Log4j2
 public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler {
   private final ObjectMapper objectMapper;
+  private final RedisUtil redisUtil;
+
 
   @Override
   public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
@@ -26,17 +32,31 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
 
     Map<String, Object> result = new HashMap<>();
 
+    String springState = request.getParameter("state");
+    Long memberId = null;
+    if(springState != null) {
+      String state = redisUtil.getState(springState);
+      if(state != null) {
+       memberId = Long.valueOf(redisUtil.getSocialLink(state));
+      }
+    }
+
     if (exception instanceof SocialSignupException ex) {
-      result.put("error", "SIGNUP_REQUIRED");
-      result.put("attributes", ex.getAttributes());
-      result.put("provider", ex.getProvider());
+      if (memberId != null) {
+        result.put("error", "LINK_REQUIRED");
+      } else {
+        result.put("error", "SIGNUP_REQUIRED");
+      }
+        result.put("socialUser", ex.getSocialUser());
     } else if (exception instanceof SocialLinkException ex) {
       result.put("error", "LINK_REQUIRED");
-      result.put("attributes", ex.getAttributes());
-      result.put("provider", ex.getProvider());
+      result.put("socialUser", ex.getSocialUser());
     } else {
       result.put("error", "OAUTH2_LOGIN_FAILED");
     }
+
+
+
 
     String json = objectMapper.writeValueAsString(result);
 

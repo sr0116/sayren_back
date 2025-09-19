@@ -2,23 +2,22 @@ package com.imchobo.sayren_back.domain.member.service;
 
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
-import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.TokenResponseDTO;
+import com.imchobo.sayren_back.domain.common.util.RedisUtil;
+import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Provider;
-import com.imchobo.sayren_back.domain.member.en.Role;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberProvider;
+import com.imchobo.sayren_back.domain.member.exception.AlreadyLinkedProviderException;
 import com.imchobo.sayren_back.domain.member.exception.EmailNotFoundException;
 import com.imchobo.sayren_back.domain.member.exception.InvalidPasswordException;
-import com.imchobo.sayren_back.domain.member.exception.SocialLinkException;
 import com.imchobo.sayren_back.domain.member.exception.TelNotFoundException;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
+import com.imchobo.sayren_back.domain.member.recode.SocialUser;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.UUID;
 
 
 @Service
@@ -39,6 +39,8 @@ public class AuthServiceImpl implements AuthService {
   private final CookieUtil cookieUtil;
   private final MemberMapper memberMapper;
   private final MemberProviderRepository memberProviderRepository;
+  private final MemberService memberService;
+  private final RedisUtil redisUtil;
 
 
   @Override
@@ -94,25 +96,44 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional
   public MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response) {
-    Map<String, Object> attributes = socialSignupRequestDTO.getAttributes();
-    Provider provider = socialSignupRequestDTO.getProvider();
+    SocialUser socialUser = socialSignupRequestDTO.getSocialUser();
 
-    String email = (String) attributes.get("email");
-    String name = (String) attributes.get("name");
-    String uid = (String) attributes.get("sub");
 
-    Member member = Member.builder().name(name).email(email).status(MemberStatus.READY).emailVerified(true).build();
+    Member member = Member.builder().name(socialUser.name()).email(socialUser.email()).status(MemberStatus.READY).emailVerified(true).build();
 
     memberRepository.save(member);
-    memberProviderRepository.save(MemberProvider.builder().providerUid(uid).member(member).provider(provider).email(email).build());
+    memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
 
     return tokensAndLoginResponse(member, response, true);
   }
 
+  @Override
+  @Transactional
+  public MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
+    SocialUser socialUser = socialLinkRequestDTO.getSocialUser();
+
+    String email = SecurityUtil.getMemberAuthDTO() != null ?  SecurityUtil.getMemberAuthDTO().getEmail() : socialUser.email();
+    Member member = memberRepository.findByEmail(email).orElseThrow(EmailNotFoundException::new);
+    if(!passwordEncoder.matches(socialLinkRequestDTO.getPassword(), member.getPassword())){
+      throw new InvalidPasswordException();
+    }
+
+    if(socialUser.email().equals(member.getEmail())){
+      member.setEmailVerified(true);
+    }
+    if(!memberProviderRepository.findByMemberAndProvider(member, socialUser.provider()).isEmpty()){
+      throw new AlreadyLinkedProviderException(socialUser.provider());
+    }
+    memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
+
+    return tokensAndLoginResponse(member, response, true);
+  }
+
+
   private MemberLoginResponseDTO tokensAndLoginResponse(Member member,
-                                                             HttpServletResponse response,
-                                                             boolean rememberMe) {
+                                                        HttpServletResponse response,
+                                                        boolean rememberMe) {
     // 멤버 매핑
     MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
 
@@ -125,5 +146,15 @@ public class AuthServiceImpl implements AuthService {
     cookieUtil.addLoginCookie(response, rememberMe);
 
     return new MemberLoginResponseDTO(accessToken, "로그인 성공");
+  }
+
+  @Override
+  public String socialLinkRedirectUrl(String provider) {
+    String state = UUID.randomUUID().toString();
+    Long memberId = SecurityUtil.getMemberAuthDTO().getId();
+
+    redisUtil.setSocialLink(state, memberId);
+
+    return "http://localhost:8080/oauth2/authorization/" + provider.toLowerCase() + "?state=" + state;
   }
 }

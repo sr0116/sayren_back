@@ -1,32 +1,11 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
-
-import com.imchobo.sayren_back.domain.order.entity.Order;
-import com.imchobo.sayren_back.domain.order.entity.OrderItem;
-import com.imchobo.sayren_back.domain.order.repository.OrderPlanRepository;
-import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
-import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
-import com.imchobo.sayren_back.domain.payment.entity.Payment;
-import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelRequest;
-import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelResponse;
-import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
-import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
-import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
-import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
-import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribePaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

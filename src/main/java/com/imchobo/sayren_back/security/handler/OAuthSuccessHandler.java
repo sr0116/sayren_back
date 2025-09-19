@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
+import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
@@ -49,4 +51,5 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
                     "</script>"
     );
   }
+
 }
