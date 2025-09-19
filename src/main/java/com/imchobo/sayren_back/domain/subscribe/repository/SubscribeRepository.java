@@ -18,4 +18,5 @@ public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
   // 구독 아이템 기준으로 구독 조회(1:1 관계로 확인시에)
   Optional<Subscribe> findByOrderItem_Id(Long orderItemId);
 
+  List<Subscribe> findByMemberId(Long memberId);
 }

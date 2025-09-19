@@ -39,7 +39,8 @@ public class Subscribe extends BaseEntity {
   // NOT NULL
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private SubscribeStatus status;
+  @Builder.Default
+  private SubscribeStatus status=SubscribeStatus.PENDING_PAYMENT;
 
   // 월 렌탈료 스냅샷
   // NOT NULL, 기본값 0
