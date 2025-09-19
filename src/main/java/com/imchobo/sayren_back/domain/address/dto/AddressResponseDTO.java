@@ -18,7 +18,7 @@ public class AddressResponseDTO {
   private String address;   // 주소
   private Boolean isDefault;// 기본배송지 여부
   private String memo;      // 배송 메모
-
+//d임시 커미ㅛ
   private LocalDateTime regDate;
   private LocalDateTime modDate;
 }
