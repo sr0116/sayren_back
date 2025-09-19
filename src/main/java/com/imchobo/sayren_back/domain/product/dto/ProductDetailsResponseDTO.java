@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.product.dto;
 
-import com.imchobo.sayren_back.domain.attach.dto.AttachResponseDTO;
+import com.imchobo.sayren_back.domain.attach.dto.BoardAttachResponseDTO;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 public class ProductDetailsResponseDTO {
   // 상품 번호
-  private Long ProductId;
+  private Long productId;
 
   // 상품 이름
   private String productName;
@@ -40,11 +40,11 @@ public class ProductDetailsResponseDTO {
 //  private LocalDateTime modDate;
 
   // 현재 재고 수량
-  private Integer stock;
+  private Integer productStock;
 
   // 상품 태그 목록 (ex: 색상, 사이즈)
-  private List<String> tags;
+  private List<String> productTags;
 
   // 첨부파일 목록 (썸네일, 상세 이미지 등)
-  private List<AttachResponseDTO> attachList;
+  private List<BoardAttachResponseDTO> attachList;
 }

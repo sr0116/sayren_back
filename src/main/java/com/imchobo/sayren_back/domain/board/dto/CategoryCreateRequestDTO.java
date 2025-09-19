@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.board.dto.category;
+package com.imchobo.sayren_back.domain.board.dto;
 
 import com.imchobo.sayren_back.domain.board.en.CategoryType;
 import jakarta.validation.constraints.NotBlank;

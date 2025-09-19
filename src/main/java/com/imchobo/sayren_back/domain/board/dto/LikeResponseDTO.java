@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.board.dto.like;
+package com.imchobo.sayren_back.domain.board.dto;
 
 import lombok.*;
 

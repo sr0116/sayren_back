@@ -6,8 +6,13 @@ import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductModifyRequestDTO;
 import com.imchobo.sayren_back.domain.product.entity.Product;
+import com.imchobo.sayren_back.domain.product.entity.ProductStock;
+import com.imchobo.sayren_back.domain.product.entity.ProductTag;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+
+import java.util.List;
 
 @Mapper(componentModel = "spring", uses = {MappingUtil.class})
 public interface ProductMapper {

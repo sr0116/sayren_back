@@ -7,9 +7,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AttachResponseDTO {
+public class ProductAttachResponseDTO {
   // 첨부파일 번호
-  private Long AttachId;
-  // 최종 URL (백에서 path, uuid, 버킷 조합)
+  private Long attachId;
+  // S3 URL (백에서 path, uuid, 버킷 조합)
   private String url;
 }
