@@ -34,7 +34,8 @@ dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-security'
   implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
   developmentOnly 'org.springframework.boot:spring-boot-devtools'
-  implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
+  implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.11'
+  implementation 'org.springframework.boot:spring-boot-starter-mail:3.5.5'
 
 
   // = Logging ===
@@ -54,6 +55,9 @@ dependencies {
   annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
   annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 
+  // === JPA API (Entity 어노테이션 문제 해결) ===
+  implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+  annotationProcessor 'jakarta.persistence:jakarta.persistence-api:3.1.0'
 
   // === Redis ===
   implementation 'org.springframework.boot:spring-boot-starter-data-redis'
@@ -63,6 +67,10 @@ dependencies {
   runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
   runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
+  // === AWS SDK (BOM 방식) ===
+  implementation platform("software.amazon.awssdk:bom:2.25.39")
+  implementation "software.amazon.awssdk:s3"
+  implementation "software.amazon.awssdk:sts"
 
   // === Test ===
   testImplementation 'org.springframework.boot:spring-boot-starter-test'

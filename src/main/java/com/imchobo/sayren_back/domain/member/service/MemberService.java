@@ -6,4 +6,6 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 public interface MemberService {
   void register(MemberSignupDTO memberSignupDTO);
   Member findByEmail(String email);
+  Member findById(Long id);
+  boolean emailVerify(String token);
 }
