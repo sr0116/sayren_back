@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.common.util;
 
+import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -91,6 +92,14 @@ public class JwtUtil {
       // 잘못된 서명 or 다른 문제
       return false;
     }
+  }
+
+  public TokenMeta getMemberIdAndTtl(String token) {
+    Claims claims = getClaims(token);
+    Long memberId = Long.parseLong(claims.getSubject());
+    long ttlMillis = claims.getExpiration().getTime() - System.currentTimeMillis();
+
+    return new TokenMeta(memberId, ttlMillis);
   }
 
 }

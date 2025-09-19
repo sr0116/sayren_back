@@ -12,12 +12,12 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(SayrenException.class)
   public ResponseEntity<Map<String, String>> handleSayrenException(SayrenException ex) {
-    HttpStatus status = HttpStatus.BAD_REQUEST; // 기본값 400
-
-    // 토큰 관련 오류는 401
-    if ("TOKEN_EXPIRED".equals(ex.getErrorCode())){
-      status = HttpStatus.UNAUTHORIZED;
-    }
+    HttpStatus status = switch (ex.getErrorCode()) {
+      case "TOKEN_EXPIRED", "INVALID_PASSWORD", "UNAUTHORIZED_ACCESS" -> HttpStatus.UNAUTHORIZED; // 401
+      case "ACCESS_DENIED", "ROLE_NOT_ALLOWED" -> HttpStatus.FORBIDDEN; // 403
+      case "EMAIL_ALREADY_EXISTS", "SOCIAL_LINK_FAILED", "ALREADY_LINKED_PROVIDER" -> HttpStatus.CONFLICT; // 409
+      default -> HttpStatus.BAD_REQUEST; // 400
+    };
 
     return ResponseEntity
       .status(status)
