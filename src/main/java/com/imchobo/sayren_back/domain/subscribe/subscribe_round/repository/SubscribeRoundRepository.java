@@ -24,4 +24,8 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   // 가장 최신 회차 조회 (Optional)
   Optional<SubscribeRound> findTopBySubscribeOrderByRoundNoDesc(Subscribe subscribe);
 
+  // 회차 정보
+  Optional<SubscribeRound> findBySubscribeIdAndRoundNo(Long subscribeId, int roundNo);
+
+  Subscribe subscribe(Subscribe subscribe);
 }
