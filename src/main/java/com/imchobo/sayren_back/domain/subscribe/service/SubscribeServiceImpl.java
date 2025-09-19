@@ -48,16 +48,21 @@ public class SubscribeServiceImpl implements SubscribeService {
   // 구독 테이블 생성
   @Transactional
   @Override
-  public SubscribeResponseDTO createSubscribe(SubscribeRequestDTO dto) {
+  public Subscribe createSubscribe(SubscribeRequestDTO dto) {
     try {
       //dto -> entity (기본값 세팅 PENDING_PAYMENT)
       Subscribe subscribe = subscribeMapper.toEntity(dto);
+      // 로그인 유저 주입
+      Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
+      subscribe.setMember(currentMember);
+
+
       // 구독 저장
       Subscribe savedSubscribe = subscribeRepository.save(subscribe);
       // 회차 테이블 생성
       subscribeRoundService.createRounds(savedSubscribe, dto);
 
-      return subscribeMapper.toResponseDTO(savedSubscribe);
+      return savedSubscribe;
 
     } catch (Exception e) {
       throw new SubscribeCreationException("구독 생성 실패");

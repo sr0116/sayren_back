@@ -45,12 +45,12 @@ public class Subscribe extends BaseEntity {
   // 월 렌탈료 스냅샷
   // NOT NULL, 기본값 0
   @Column(name = "monthly_fee_snapshot", nullable = false)
-  private Integer monthlyFeeSnapshot;
+  private Long monthlyFeeSnapshot;
 
   // 보증금 스냅샷
   // NOT NULL, 기본값 0
   @Column(name = "deposit_snapshot", nullable = false)
-  private Integer depositSnapshot;
+  private Long depositSnapshot;
 
   // 구독 시작일
   // NOT NULL

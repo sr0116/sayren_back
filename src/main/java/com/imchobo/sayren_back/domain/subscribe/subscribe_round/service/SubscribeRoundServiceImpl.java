@@ -11,6 +11,7 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.Subsc
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
@@ -24,6 +25,7 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
 
 
   // 구독회차 정보
+  @Transactional
   @Override
   public void createRounds(Subscribe subscribe, SubscribeRequestDTO dto) {
     // 구독 시작일
@@ -34,11 +36,13 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
       round.setSubscribe(subscribe);
       round.setRoundNo(i);
 //      round.setPayStatus(PaymentStatus.PENDING); // 결제 대기 이미 default 라 나중에 삭제
+      round.setAmount(subscribe.getMonthlyFeeSnapshot());
       round.setDueDate(startDate.plusMonths(i - 1));
+
       subscribeRoundRepository.save(round);
       // 확인용
       log.info("구독 [{}] - {}회차 생성 완료 (납부 예정일: {})",
-              subscribe.getId(), i, round.getDueDate());
+              subscribe.getId(), i, round.getDueDate(), round.getAmount());
 
     }
   }
