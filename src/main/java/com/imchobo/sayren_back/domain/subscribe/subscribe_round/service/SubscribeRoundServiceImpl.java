@@ -30,8 +30,8 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
   public void createRounds(Subscribe subscribe, SubscribeRequestDTO dto) {
     // 구독 시작일
     LocalDate startDate = subscribe.getStartDate();
-    int monthlyFee = subscribe.getMonthlyFeeSnapshot();
-    int deposit = subscribe.getDepositSnapshot();
+    Long monthlyFee = subscribe.getMonthlyFeeSnapshot();
+    Long deposit = subscribe.getDepositSnapshot();
     int totalMonths = dto.getTotalMonths();
 
     for (int i = 1; i <= totalMonths; i++) {
@@ -43,7 +43,7 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
       if (i == 1) {
         round.setAmount((long) (monthlyFee + deposit)); // 임시로 형 변환 해두고 디비 타입 바꿀지 아니면 형변환으로 사용할지 생각
       } else {
-        round.setAmount((long) monthlyFee);
+        round.setAmount(monthlyFee);
       }
 
       round.setAmount(subscribe.getMonthlyFeeSnapshot());
@@ -52,12 +52,9 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
 
       subscribeRoundRepository.save(round);
       // 확인용
-      log.info("구독 [{}] - {}회차 생성 완료 (납부 예정일: {})",
 
-              subscribe.getId(), i, round.getDueDate());
-
-              subscribe.getId(), i, round.getDueDate(), round.getAmount());
-
+      log.info("구독 [{}] - {}회차 생성 완료 (금액: {}, 납부예정일: {})",
+              subscribe.getId(), i, round.getAmount(), round.getDueDate());
     }
   }
 }
