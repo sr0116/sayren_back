@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.common.en;
 
 public enum ReasonCode {
+  NONE, // 기본상태(환불없음)
   USER_REQUEST,     // 회원 요청 환불
   PRODUCT_DEFECT,   // 상품 불량
   SERVICE_ERROR,    // 서비스 오류

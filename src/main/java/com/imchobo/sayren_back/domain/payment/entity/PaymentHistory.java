@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.payment.entity;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
+import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import jakarta.persistence.*;
@@ -31,17 +32,21 @@ public class PaymentHistory extends CreatedEntity {
   // Enum,  NOT NULL
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private PaymentStatus status;
+  @Builder.Default
+  private PaymentStatus status= PaymentStatus.PENDING;
 
   // 사유 코드 (예: 환불 코드, 오류 코드)
   @Column(name = "reason_code", nullable = false)
-  private String reasonCode;
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  private ReasonCode reasonCode= ReasonCode.NONE;
 
   // 변경 주체 타입 (SYSTEM / USER / ADMIN)
   // Enum, NOT NULL
   @Enumerated(EnumType.STRING)
   @Column(name = "actor_type", nullable = false)
-  private ActorType actorType;
+  @Builder.Default
+  private ActorType actorType=ActorType.SYSTEM;
 
   // 생성일시는 CreatedEntity에서 상속 (regDate 자동 기록)
 }
