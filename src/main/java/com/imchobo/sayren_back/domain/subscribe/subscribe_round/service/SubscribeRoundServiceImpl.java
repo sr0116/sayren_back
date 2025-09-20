@@ -28,18 +28,26 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
   public void createRounds(Subscribe subscribe, SubscribeRequestDTO dto) {
     // 구독 시작일
     LocalDate startDate = subscribe.getStartDate();
+    int monthlyFee = subscribe.getMonthlyFeeSnapshot();
+    int deposit = subscribe.getDepositSnapshot();
     int totalMonths = dto.getTotalMonths();
+
     for (int i = 1; i <= totalMonths; i++) {
       SubscribeRound round = new SubscribeRound();
       round.setSubscribe(subscribe);
       round.setRoundNo(i);
 //      round.setPayStatus(PaymentStatus.PENDING); // 결제 대기 이미 default 라 나중에 삭제
+      // 1회차일 때 보증금 + 월 렌탈료 포함
+      if (i == 1) {
+        round.setAmount((long) (monthlyFee + deposit)); // 임시로 형 변환 해두고 디비 타입 바꿀지 아니면 형변환으로 사용할지 생각
+      } else {
+        round.setAmount((long) monthlyFee);
+      }
       round.setDueDate(startDate.plusMonths(i - 1));
       subscribeRoundRepository.save(round);
       // 확인용
       log.info("구독 [{}] - {}회차 생성 완료 (납부 예정일: {})",
               subscribe.getId(), i, round.getDueDate());
-
     }
   }
 }

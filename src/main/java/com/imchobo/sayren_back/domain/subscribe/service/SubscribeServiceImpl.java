@@ -52,6 +52,13 @@ public class SubscribeServiceImpl implements SubscribeService {
     try {
       //dto -> entity (기본값 세팅 PENDING_PAYMENT)
       Subscribe subscribe = subscribeMapper.toEntity(dto);
+
+      // 보증금 및 월 렌탈료 저장
+      int monthlyFee = dto.getMonthlyFeeSnapshot();
+      int depositSnapshot = calculateDeposit(monthlyFee);
+      subscribe.setMonthlyFeeSnapshot(monthlyFee);
+      subscribe.setDepositSnapshot(depositSnapshot);
+
       // 구독 저장
       Subscribe savedSubscribe = subscribeRepository.save(subscribe);
       // 회차 테이블 생성
@@ -62,6 +69,11 @@ public class SubscribeServiceImpl implements SubscribeService {
     } catch (Exception e) {
       throw new SubscribeCreationException("구독 생성 실패");
     }
+  }
+
+  // 보증금 계산(일단 20% 고정 임시로 나중에 % 수정 가능성)
+  private int calculateDeposit(int monthlyFee) {
+    return (int) (monthlyFee * 0.2);
   }
 
   // 구독 단건 조회
