@@ -9,13 +9,17 @@ spring:
       - optional:classpath:secret/mail.yml
       - optional:classpath:secret/redis.yml
       - optional:classpath:secret/portone.yml
+
   jpa:
     hibernate:
       ddl-auto: none
+      naming:
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
-    show_sql: true
+
 logging:
   level:
     org.springframework.security: DEBUG

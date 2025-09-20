@@ -7,12 +7,13 @@ import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 
 import java.util.List;
 
 public interface SubscribeService {
   // 구독 신청
-  SubscribeResponseDTO createSubscribe(SubscribeRequestDTO dto);
+  Subscribe createSubscribe(SubscribeRequestDTO dto);
 
   // 구독시 보증금 계산
 
