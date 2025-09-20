@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.member.controller.auth;
 
 
+import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.MailUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.SocialLinkRequestDTO;
@@ -27,7 +28,7 @@ import java.util.Map;
 public class AuthController {
   private final AuthService authService;
   private final MemberService memberService;
-  private final MailUtil mailUtil;
+  private final MailService  mailService;
 
 
 
@@ -76,7 +77,7 @@ public class AuthController {
   @PostMapping("email-verify")
   @PreAuthorize("!principal.emailVerified")
   public ResponseEntity<?> resendVerificationEmail() {
-    mailUtil.emailVerification(SecurityUtil.getMemberAuthDTO().getEmail());
+    mailService.emailVerification(SecurityUtil.getMemberAuthDTO().getEmail());
     return ResponseEntity.ok(Map.of("message", "success"));
   }
 
