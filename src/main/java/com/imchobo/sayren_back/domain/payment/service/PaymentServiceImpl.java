@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
@@ -7,8 +8,11 @@ import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentAlreadyExistsException;
+import com.imchobo.sayren_back.domain.payment.mapper.PaymentHistoryMapper;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
@@ -37,14 +41,16 @@ public class PaymentServiceImpl implements PaymentService {
   private final PaymentRepository paymentRepository;
   private final OrderItemRepository orderItemRepository;
   private final SubscribeRoundRepository subscribeRoundRepository;
-
+  private final SubscribeRepository subscribeRepository;
+  private final PaymentHistoryRepository paymentHistoryRepository;
   // 서비스
   private final SubscribeService subscribeService;
 
   // 매퍼
   private final SubscribeMapper subscribeMapper;
   private final PaymentMapper paymentMapper;
-  private final SubscribeRepository subscribeRepository;
+  private final PaymentHistoryMapper paymentHistoryMapper;
+
 
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
@@ -55,13 +61,12 @@ public class PaymentServiceImpl implements PaymentService {
     Member currentMember = SecurityUtil.getMemberEntity();
 
     // 주문 아이템 조회(예외 처리 나중에 추가)
-    OrderItem orderItem = orderItemRepository.findById(dto.getOrderItemId()).orElse(null);
+    OrderItem orderItem = orderItemRepository.findById(dto.getOrderItemId())
+            .orElseThrow(() -> new RuntimeException("주문 아이템을 찾을 수 없습니다."));
     // 구독 인지 일반인지 조회
     OrderPlanType planType = orderItem.getOrderPlan().getType();
 
-    // DTO (응답용) 나중에 삭제
-    SubscribeResponseDTO subscribeResponse = null;
-    // 엔티티
+    // 엔티티 변환용
     Subscribe subscribe = null;
 
     //  구독 결제(Rental)일 경우 → 구독 + 회차 생성
@@ -80,7 +85,7 @@ public class PaymentServiceImpl implements PaymentService {
       throw new PaymentAlreadyExistsException(merchantUid);
     }
 
-    // DTO -> 엔티티 변환
+    // DTO -> 엔티티 변환 결제 테이블
     Payment payment = paymentMapper.toEntity(dto);
 
     payment.setMember(currentMember);
@@ -92,12 +97,17 @@ public class PaymentServiceImpl implements PaymentService {
       SubscribeRound firstRound = subscribeRoundRepository
               .findBySubscribeIdAndRoundNo(subscribe.getId(), 1)
               .orElseThrow(() -> new RuntimeException("1회차 회차를 찾을 수 없습니다."));
-
+      // 상품 가격 + 1회차(렌탈료+ 보증금) -> payment.getAmount()+firstRound.getAmount() 나중에 금액 조회시 필요
       payment.setSubscribeRound(firstRound);
+      payment.setAmount(firstRound.getAmount());
     }
-
     // DB 저장
     Payment savedPayment = paymentRepository.save(payment);
+
+    // DTO -> 엔티티 변환 결제 로그 테이블 savedPayment 기반
+    PaymentHistory paymentHistory = paymentHistoryMapper.fromPayment(savedPayment);
+    paymentHistoryRepository.save(paymentHistory);
+
     // 응답
     return paymentMapper.toResponseDTO(savedPayment);
   }

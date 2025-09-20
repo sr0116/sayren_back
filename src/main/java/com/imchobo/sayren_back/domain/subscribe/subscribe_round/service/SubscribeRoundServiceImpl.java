@@ -45,9 +45,6 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
       } else {
         round.setAmount(monthlyFee);
       }
-
-      round.setAmount(subscribe.getMonthlyFeeSnapshot());
-
       round.setDueDate(startDate.plusMonths(i - 1));
 
       subscribeRoundRepository.save(round);

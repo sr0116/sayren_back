@@ -56,6 +56,8 @@ public class SubscribeServiceImpl implements SubscribeService {
       // 보증금 및 월 렌탈료 저장
       int monthlyFee = dto.getMonthlyFeeSnapshot();
       int depositSnapshot = calculateDeposit(monthlyFee);
+
+      // 스냅샷 값
       subscribe.setMonthlyFeeSnapshot((long) monthlyFee);
       subscribe.setDepositSnapshot((long) depositSnapshot);
 
