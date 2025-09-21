@@ -1,11 +1,8 @@
 package com.imchobo.sayren_back.domain.board.dto;
 
-import com.imchobo.sayren_back.domain.attach.entity.Attach;
-import com.imchobo.sayren_back.domain.board.entity.Reply;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter
@@ -14,7 +11,7 @@ import java.util.List;
 @Builder
 public class BoardDetailsResponseDTO {
     // 게시글 번호
-    private Long id;
+    private Long boardId;
     // 게시글 제목
     private String title;
     // 게시글 본문
@@ -23,7 +20,7 @@ public class BoardDetailsResponseDTO {
     private boolean isSecret;
 
     // 작성자
-    // private String memberId; // 토큰으로 멤버관리. -> member.name 으로?
+    // private String memberId; // 토큰기반 인증 -> member.name 으로?
 
     // 카테고리 명
     private String categoryName;

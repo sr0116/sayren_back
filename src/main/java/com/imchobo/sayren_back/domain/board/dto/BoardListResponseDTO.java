@@ -16,7 +16,7 @@ public class BoardListResponseDTO {
     private String title;
 
     // 작성자
-    //private String memberId; // 토큰으로 멤버관리. -> member.name 으로?
+    //private String memberId; // 토큰기반 인증 -> member.name 으로?
 
     // 카테고리 명
     private String categoryName;

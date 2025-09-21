@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.board.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.springframework.scheduling.support.SimpleTriggerContext;
 
 @Getter
 @Setter
@@ -10,6 +10,7 @@ import org.springframework.scheduling.support.SimpleTriggerContext;
 @Builder
 public class BoardCreateRequestDTO {
     // 카테고리 번호
+    @NotNull(message = "카테고리 번호는 필수입니다.")
     private Long categoryId;
     // 상품 번호
     private Long productId;
