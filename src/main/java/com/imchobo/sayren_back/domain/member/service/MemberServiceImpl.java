@@ -3,15 +3,19 @@ package com.imchobo.sayren_back.domain.member.service;
 import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.MailUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
+import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
+import com.imchobo.sayren_back.domain.member.dto.MemberTelModifyDTO;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Role;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.exception.EmailAlreadyExistsException;
 import com.imchobo.sayren_back.domain.member.exception.SocialEmailAlreadyLinkedException;
+import com.imchobo.sayren_back.domain.member.exception.TelNotMatchException;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -33,6 +37,7 @@ public class MemberServiceImpl implements MemberService {
   private final MemberProviderRepository memberProviderRepository;
   private final RedisUtil redisUtil;
   private final MailService mailService;
+  private final SolapiUtil solapiUtil;
 
   @Override
   @Transactional
@@ -82,5 +87,22 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public Member findById(Long id) {
     return memberRepository.findById(id).orElseThrow(IllegalArgumentException::new);
+  }
+
+  @Override
+  public void sendTel(String newTel) {
+    solapiUtil.sendSms(newTel);
+  }
+
+  @Override
+  @Transactional
+  public void modifyTel(MemberTelModifyDTO memberTelModifyDTO) {
+    String saveTel = redisUtil.getPhoneAuth(memberTelModifyDTO.getPhoneAuthCode());
+    if (saveTel == null || saveTel.isBlank() || !saveTel.equals(memberTelModifyDTO.getNewTel())) {
+      throw new TelNotMatchException();
+    }
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+    member.setTel(saveTel);
+    member.setStatus(MemberStatus.ACTIVE);
   }
 }

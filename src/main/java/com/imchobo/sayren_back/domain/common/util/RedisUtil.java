@@ -66,14 +66,9 @@ public class RedisUtil {
 
   public String getState(String springState){
     String state = get("STATE:" +  springState);
-    deleteState(springState);
+    delete("STATE:" +  springState);
     return state;
   }
-
-  public void deleteState(String springState){
-    delete("STATE:" +  springState);
-  }
-
 
   public void setSocialLink(String state, Long memberId) {
     set("SOCIAL_LINK:" + state, memberId.toString(), 5, TimeUnit.MINUTES);
@@ -81,13 +76,22 @@ public class RedisUtil {
 
   public String getSocialLink(String state) {
     String socialLink = get("SOCIAL_LINK:" + state);
-    deleteSocialLink(state);
+    delete("SOCIAL_LINK:" + state);
     return socialLink;
   }
 
-  public void deleteSocialLink(String state) {
-    delete("SOCIAL_LINK:" + state);
+
+
+  public void setPhoneAuth(String phoneAuthCode, String tel) {
+    set("PHONE_AUTH:" +  phoneAuthCode, tel, 5, TimeUnit.MINUTES);
   }
+
+  public String getPhoneAuth(String phoneAuthCode) {
+    String tel = get("PHONE_AUTH:" + phoneAuthCode);
+    delete("PHONE_AUTH:" + phoneAuthCode);
+    return tel;
+  }
+
 
   public void setRefreshToken(RedisTokenDTO dto) throws JsonProcessingException {
 

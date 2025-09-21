@@ -28,4 +28,12 @@ class MemberServiceTest {
     memberService.register(dto);
     log.info(memberService.findByEmail(email));
   }
+
+
+  @Test
+  @DisplayName("핸드폰 번호 수정 테스트")
+  void modifyTel() {
+    
+  }
+
 }
