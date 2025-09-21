@@ -3,10 +3,8 @@ package com.imchobo.sayren_back.domain.member.controller.user;
 
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
 import com.imchobo.sayren_back.domain.member.service.MemberService;
-import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,8 +17,6 @@ import java.util.Map;
 @RequestMapping("api/user/member")
 public class UserMemberController {
   private final MemberService memberService;
-  private final AuthenticationManager authenticationManager;
-  private final JwtUtil jwtUtil;
 
   @PostMapping("register")
   public ResponseEntity<?> register(@RequestBody MemberSignupDTO memberSignupDTO) {

@@ -47,12 +47,10 @@ public class JwtUtil {
     long expireSeconds = expireMinutes * 60;
 
     Map<String, Object> claims = new HashMap<>();
-    claims.put("name", member.getRealName());
     claims.put("status", member.getStatus());
     claims.put("roles", member.getRoles());
-    claims.put("emailVerified", member.getEmailVerified());
 
-    return generateToken(claims, member.getEmail(), expireSeconds);
+    return generateToken(claims, String.valueOf(member.getId()), expireSeconds);
   }
 
   // RefreshToken은 멤버 pk 가지고 있음.
