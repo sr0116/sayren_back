@@ -35,16 +35,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
     if (accessToken != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-      String email = null;
+      String memberId = null;
 
       try {
-        email = jwtUtil.getClaims(accessToken).getSubject();
-        setAuthentication(email, request);
-        log.info("JWT 인증 성공 : {}", email);
+        memberId = jwtUtil.getClaims(accessToken).getSubject();
+        setAuthentication(memberId, request);
+        log.info("JWT 인증 성공 : {}", memberId);
 
       } catch (ExpiredJwtException ex) {
         // 프론트가 새 Access Token 받도록 유도
-        email = ex.getClaims().getSubject();
+        memberId = ex.getClaims().getSubject();
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access Token Expired");
         return;
       } catch (Exception e) {
@@ -56,9 +56,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   }
 
 
-  private void setAuthentication(String email, HttpServletRequest request) {
+  private void setAuthentication(String memberid, HttpServletRequest request) {
     MemberAuthDTO member =
-      (MemberAuthDTO) customUserDetailsService.loadUserByUsername(email);
+      (MemberAuthDTO) customUserDetailsService.loadUserByUsername(memberid);
 
     UsernamePasswordAuthenticationToken authentication =
       new UsernamePasswordAuthenticationToken(

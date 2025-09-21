@@ -8,16 +8,14 @@ import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Provider;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberProvider;
-import com.imchobo.sayren_back.domain.member.exception.AlreadyLinkedProviderException;
-import com.imchobo.sayren_back.domain.member.exception.EmailNotFoundException;
-import com.imchobo.sayren_back.domain.member.exception.InvalidPasswordException;
-import com.imchobo.sayren_back.domain.member.exception.TelNotFoundException;
+import com.imchobo.sayren_back.domain.member.exception.*;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
 import com.imchobo.sayren_back.domain.member.recode.SocialUser;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -66,31 +64,34 @@ public class AuthServiceImpl implements AuthService {
     return tokensAndLoginResponse(member, response, memberLoginRequestDTO.isRememberMe());
   }
 
+  @Override
+  public MemberLoginResponseDTO getUser(HttpServletRequest request) {
+    return memberMapper.toLoginResponseDTO(SecurityUtil.getMemberAuthDTO());
+  }
+
   private boolean isEmail(String username) {
     return username.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
   }
 
   @Override
   public void logout(HttpServletResponse response) {
+    cookieUtil.deleteAccessTokenCookie(response);
     cookieUtil.deleteRefreshTokenCookie(response);
     cookieUtil.deleteLoginCookie(response);
   }
 
   @Override
-  public TokenResponseDTO accessToken(String refreshToken) {
+  public String accessToken(String refreshToken) {
     // 쿠키에 토큰 없으면 401
-    if(refreshToken == null){
-      return null;
-    }
-
-    if(!jwtUtil.isValidToken(refreshToken)){
-      return null;
+    if (refreshToken == null || !jwtUtil.isValidToken(refreshToken)) {
+      throw new UnauthorizedException("Refresh token is missing or invalid");
     }
 
     Member member = memberRepository.findById(Long.valueOf(jwtUtil.getClaims(refreshToken).getSubject()))
       .orElseThrow(() -> new UsernameNotFoundException("없는 유저입니다."));
 
-    return new TokenResponseDTO(jwtUtil.generateAccessToken(memberMapper.toAuthDTO(member)));
+    MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
+    return jwtUtil.generateAccessToken(memberAuthDTO);
   }
 
   @Override
@@ -143,9 +144,10 @@ public class AuthServiceImpl implements AuthService {
 
     // 리프레쉬 토큰 쿠키에 저장
     cookieUtil.addRefreshTokenCookie(response, refreshToken, rememberMe);
+    cookieUtil.addAccsessCookie(response, accessToken);
     cookieUtil.addLoginCookie(response, rememberMe);
 
-    return new MemberLoginResponseDTO(accessToken, "로그인 성공");
+    return memberMapper.toLoginResponseDTO(memberAuthDTO);
   }
 
   @Override

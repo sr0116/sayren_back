@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
+import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
+import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
@@ -28,6 +30,7 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
   private final CookieUtil cookieUtil;
   private final JwtUtil jwtUtil;
   private final ObjectMapper objectMapper;
+  private final MemberMapper memberMapper;
 
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -38,10 +41,10 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     cookieUtil.addRefreshTokenCookie(response, refreshToken, true);
     cookieUtil.addLoginCookie(response, true);
+    cookieUtil.addAccsessCookie(response, accessToken);
 
-    MemberLoginResponseDTO loginResponseDTO = new MemberLoginResponseDTO(accessToken, "로그인 성공");
 
-    String json = objectMapper.writeValueAsString(loginResponseDTO);
+    String json = objectMapper.writeValueAsString(memberMapper.toLoginResponseDTO(memberAuthDTO));
 
     response.setContentType("text/html;charset=UTF-8");
     response.getWriter().write(
