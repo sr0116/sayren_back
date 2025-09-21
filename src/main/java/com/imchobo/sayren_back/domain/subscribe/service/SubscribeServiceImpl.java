@@ -1,8 +1,10 @@
 package com.imchobo.sayren_back.domain.subscribe.service;
 
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -13,6 +15,7 @@ import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
+import com.imchobo.sayren_back.domain.subscribe.history_recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
@@ -44,6 +47,7 @@ public class SubscribeServiceImpl implements SubscribeService {
 
   // 서비스
   private final SubscribeRoundService subscribeRoundService;
+  private final HistoryRecorder historyRecorder;
 
   // 구독 테이블 생성
   @Transactional
@@ -69,6 +73,11 @@ public class SubscribeServiceImpl implements SubscribeService {
       Subscribe savedSubscribe = subscribeRepository.save(subscribe);
       // 회차 테이블 생성
       subscribeRoundService.createRounds(savedSubscribe, dto);
+
+      // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티 )
+      SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
+      subscribeHistoryRepository.save(subscribeHistory);
+
 
       return savedSubscribe;
 
