@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 @Data
 public class PaymentResponseDTO {
   // 결제 응답 DTO
+  private Long paymentId;
+  private Long orderItemId;
   private String merchantUid;
   private String impUid;
   private Long amount;

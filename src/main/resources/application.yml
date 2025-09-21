@@ -5,8 +5,9 @@ spring:
     import:
       - optional:classpath:secret/db.yml
       - optional:classpath:secret/jwt.yml
-      - optional:classpath:secret/portone.yml
       - optional:classpath:secret/oauth.yml
+      - optional:classpath:secret/portone.yml
+      - optional:classpath:secret/mail.yml
   jpa:
     hibernate:
       ddl-auto: none
@@ -17,4 +18,3 @@ spring:
 logging:
   level:
     org.springframework.security: DEBUG
-

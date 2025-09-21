@@ -29,12 +29,12 @@ public class PortOneClientConfig {
   private String merchantCode;
 
   //  콘솔에서 값 들어가 있는지 확인용 (나중에 지워도 됨)
-//  @PostConstruct
-//  public void init() {
-//    log.info("PortOne 설정 확인 → apiKey={}, apiSecret={}, merchantCode={}",
-//            apiKey, apiSecret, merchantCode);
-//
-//  }
+  @PostConstruct
+  public void init() {
+    log.info("PortOne 설정 확인 → apiKey={}, apiSecret={}, merchantCode={}",
+            apiKey, apiSecret, merchantCode);
+
+  }
 
 
 }

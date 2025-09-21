@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.member.service;
 
+import com.imchobo.sayren_back.domain.common.util.MailUtil;
+import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Role;
@@ -28,7 +30,8 @@ public class MemberServiceImpl implements MemberService {
   private final MemberMapper memberMapper;
   private final PasswordEncoder passwordEncoder;
   private final MemberProviderRepository memberProviderRepository;
-
+  private final RedisUtil redisUtil;
+  private final MailUtil mailUtil;
 
   @Override
   @Transactional
@@ -50,10 +53,33 @@ public class MemberServiceImpl implements MemberService {
 
 
     memberRepository.save(entity);
+    mailUtil.emailVerification(entity.getEmail());
   }
 
   @Override
   public Member findByEmail(String email) {
     return memberRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email));
+  }
+
+
+  // 이메일 인증 체크하기
+  @Transactional
+  @Override
+  public boolean emailVerify(String token) {
+    String email = redisUtil.getEmailByToken(token);
+
+    if (email == null) {
+      return false;
+    }
+
+    Member member = findByEmail(email);
+    member.setEmailVerified(true);
+    redisUtil.deleteEmailToken(token);
+    return true;
+  }
+
+  @Override
+  public Member findById(Long id) {
+    return memberRepository.findById(id).orElseThrow(IllegalArgumentException::new);
   }
 }
