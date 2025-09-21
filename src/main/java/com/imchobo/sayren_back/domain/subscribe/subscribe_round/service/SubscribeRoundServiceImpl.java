@@ -23,7 +23,6 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final SubscribeRoundMapper subscribeRoundMapper;
 
-
   // 구독회차 정보
   @Transactional
   @Override
