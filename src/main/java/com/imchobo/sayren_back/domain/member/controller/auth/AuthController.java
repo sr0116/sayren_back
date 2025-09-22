@@ -41,13 +41,13 @@ public class AuthController {
 
 
   @PostMapping("refresh")
-  public ResponseEntity<?> refreshAccessToken(@CookieValue(name = "SR_REFRESH", required = false) String refreshToken) {
-    return ResponseEntity.ok(authService.accessToken(refreshToken));
+  public ResponseEntity<?> refreshAccessToken(HttpServletResponse response, @CookieValue(name = "SR_REFRESH", required = false) String refreshToken) {
+    return ResponseEntity.ok(authService.accessToken(response, refreshToken));
   }
 
   @PostMapping("logout")
-  public ResponseEntity<?> logout(HttpServletResponse response) {
-    authService.logout(response);
+  public ResponseEntity<?> logout(HttpServletResponse response, @CookieValue(name = "SR_REFRESH", required = false) String refreshToken) {
+    authService.logout(response, refreshToken);
     return ResponseEntity.ok().build();
   }
 

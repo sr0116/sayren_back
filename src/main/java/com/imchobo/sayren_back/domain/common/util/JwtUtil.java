@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.common.util;
 
+import com.imchobo.sayren_back.domain.member.exception.UnauthorizedException;
 import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import io.jsonwebtoken.Claims;
@@ -96,6 +97,9 @@ public class JwtUtil {
     Claims claims = getClaims(token);
     Long memberId = Long.parseLong(claims.getSubject());
     long ttlMillis = claims.getExpiration().getTime() - System.currentTimeMillis();
+    if (ttlMillis <= 0) {
+      throw new UnauthorizedException("Token already expired");
+    }
 
     return new TokenMeta(memberId, ttlMillis);
   }

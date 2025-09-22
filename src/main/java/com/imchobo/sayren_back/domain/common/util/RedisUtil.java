@@ -3,15 +3,12 @@ package com.imchobo.sayren_back.domain.common.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imchobo.sayren_back.domain.member.dto.RedisTokenDTO;
-import com.imchobo.sayren_back.domain.member.en.TokenStatus;
 import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -93,11 +90,28 @@ public class RedisUtil {
   }
 
 
-  public void setRefreshToken(RedisTokenDTO dto) throws JsonProcessingException {
+  @SneakyThrows
+  public void setRefreshToken(RedisTokenDTO dto) {
 
     String json = objectMapper.writeValueAsString(dto);
     TokenMeta meta = jwtUtil.getMemberIdAndTtl(dto.getToken());
 
     set("REFRESH_TOKEN:" + meta.memberId(), json, meta.ttlMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  public RedisTokenDTO getRefreshToken(Long memberId) {
+    String json = get("REFRESH_TOKEN:" + memberId);
+    if (json == null) {
+      return null; // 없으면 null
+    }
+    try {
+      return objectMapper.readValue(json, RedisTokenDTO.class);
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Failed to deserialize refresh token", e);
+    }
+  }
+
+  public void deleteRefreshToken(Long memberId) {
+    delete("REFRESH_TOKEN:" + memberId);
   }
 }
