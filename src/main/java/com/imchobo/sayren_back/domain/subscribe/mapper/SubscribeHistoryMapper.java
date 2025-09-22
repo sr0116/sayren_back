@@ -1,7 +1,10 @@
 package com.imchobo.sayren_back.domain.subscribe.mapper;
 
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
+import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
+import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,4 +21,11 @@ public interface SubscribeHistoryMapper {
 
   // 리스트 변환
   List<SubscribeHistoryResponseDTO> toResponseDTOList(List<SubscribeHistory> entities);
+
+  // 엔티티 -> 엔티티
+  default SubscribeHistory fromSubscribe(Subscribe subscribe){
+    return SubscribeHistory.builder()
+            .subscribe(subscribe)
+            .build();
+  }
 }

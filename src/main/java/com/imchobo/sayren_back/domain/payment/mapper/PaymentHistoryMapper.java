@@ -1,8 +1,11 @@
 package com.imchobo.sayren_back.domain.payment.mapper;
 
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentHistoryResponseDTO;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -17,4 +20,11 @@ public interface PaymentHistoryMapper {
   PaymentHistoryResponseDTO toResponse(PaymentHistory history);
 
   List<PaymentHistoryResponseDTO> toResponseList(List<PaymentHistory> histories);
+
+  // 엔티티 -> 엔티티
+  default PaymentHistory fromPayment(Payment payment){
+    return PaymentHistory.builder()
+            .payment(payment)
+            .build();
+  }
 }

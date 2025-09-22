@@ -22,7 +22,6 @@ public interface SubscribeMapper {
   // 기본 상태 (서비스 로직에서 pending)
   @Mapping(source = "orderItemId", target = "orderItem", qualifiedByName = "mapOrderItem")
   @Mapping(target = "member", ignore = true)   // SecurityContext에서 주입 예정
-  @Mapping(target = "status", ignore = true)
   Subscribe toEntity(SubscribeRequestDTO dto);
 
   // 주문 + 주문 아이템 + 플랜 → 구독 신청 DTO

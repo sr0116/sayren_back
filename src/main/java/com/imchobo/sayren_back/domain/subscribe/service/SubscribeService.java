@@ -15,6 +15,8 @@ public interface SubscribeService {
   // 구독 신청
   Subscribe createSubscribe(SubscribeRequestDTO dto);
 
+  // 구독시 보증금 계산
+
   // 배송 완료시 상태 변경
   void  activateAfterDelivery(Long subscribeId);
 
