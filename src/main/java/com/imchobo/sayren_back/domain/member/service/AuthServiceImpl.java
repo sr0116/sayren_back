@@ -39,9 +39,10 @@ public class AuthServiceImpl implements AuthService {
   private final RedisUtil redisUtil;
   private final MemberTermService memberTermService;
   private final MemberTokenService memberTokenService;
+  private final MemberLoginHistoryService memberLoginHistoryService;
 
   @Override
-  public MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response) {
+  public MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response, HttpServletRequest request) {
     Member member;
 
     // 유저네임이 이메일일 때
@@ -60,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
       throw new InvalidPasswordException();
     }
     MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
-
+    memberLoginHistoryService.saveLoginHistory(memberAuthDTO.getId(), request);
     return memberTokenService.saveToken(memberAuthDTO, response, memberLoginRequestDTO.isRememberMe());
   }
 

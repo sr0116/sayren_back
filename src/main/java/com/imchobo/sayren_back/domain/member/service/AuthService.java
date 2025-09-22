@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface AuthService {
-  MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response);
+  MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response, HttpServletRequest request);
   MemberLoginResponseDTO getUser(HttpServletRequest request);
   void logout(HttpServletResponse response, String refreshToken);
   AccessToken accessToken(HttpServletResponse response, String refreshToken);
