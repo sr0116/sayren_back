@@ -1,13 +1,12 @@
 package com.imchobo.sayren_back.domain.member.service;
 
 import com.imchobo.sayren_back.domain.common.service.MailService;
-import com.imchobo.sayren_back.domain.common.util.MailUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
+import com.imchobo.sayren_back.domain.member.dto.FindEmailResponseDTO;
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberTelModifyDTO;
+import com.imchobo.sayren_back.domain.member.dto.MemberTelDTO;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
-import com.imchobo.sayren_back.domain.member.en.Role;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.exception.EmailAlreadyExistsException;
 import com.imchobo.sayren_back.domain.member.exception.SocialEmailAlreadyLinkedException;
@@ -23,9 +22,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -38,7 +34,7 @@ public class MemberServiceImpl implements MemberService {
   private final RedisUtil redisUtil;
   private final MailService mailService;
   private final SolapiUtil solapiUtil;
-
+  private final MemberTermService memberTermService;
   @Override
   @Transactional
   public void register(MemberSignupDTO memberSignupDTO) {
@@ -58,8 +54,10 @@ public class MemberServiceImpl implements MemberService {
     log.info(entity);
 
 
-    memberRepository.save(entity);
+    Member member = memberRepository.save(entity);
     mailService.emailVerification(entity.getEmail());
+
+    memberTermService.saveTerm(member);
   }
 
   @Override
@@ -95,14 +93,25 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  @Transactional
-  public void modifyTel(MemberTelModifyDTO memberTelModifyDTO) {
-    String saveTel = redisUtil.getPhoneAuth(memberTelModifyDTO.getPhoneAuthCode());
-    if (saveTel == null || saveTel.isBlank() || !saveTel.equals(memberTelModifyDTO.getNewTel())) {
+  public Member telVerify(MemberTelDTO memberTelDTO) {
+    String saveTel = redisUtil.getPhoneAuth(memberTelDTO.getPhoneAuthCode());
+    if (saveTel == null || saveTel.isBlank() || !saveTel.equals(memberTelDTO.getTel())) {
       throw new TelNotMatchException();
     }
-    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
-    member.setTel(saveTel);
+    return memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+  }
+
+  @Override
+  @Transactional
+  public void modifyTel(MemberTelDTO memberTelDTO) {
+    Member member = telVerify(memberTelDTO);
+    member.setTel(memberTelDTO.getTel());
     member.setStatus(MemberStatus.ACTIVE);
+  }
+
+  @Override
+  public FindEmailResponseDTO findEmail(MemberTelDTO memberTelDTO) {
+    Member member = telVerify(memberTelDTO);
+    return memberMapper.toFindEmailResponseDTO(member);
   }
 }

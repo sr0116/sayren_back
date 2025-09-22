@@ -2,7 +2,7 @@ package com.imchobo.sayren_back.domain.member.controller.user;
 
 
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberTelModifyDTO;
+import com.imchobo.sayren_back.domain.member.dto.MemberTelDTO;
 import com.imchobo.sayren_back.domain.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +24,8 @@ public class UserMemberController {
   }
 
   @PostMapping("modify-tel")
-  public ResponseEntity<?> modifyTel(@RequestBody @Valid MemberTelModifyDTO memberTelModifyDTO) {
-    memberService.modifyTel(memberTelModifyDTO);
+  public ResponseEntity<?> modifyTel(@RequestBody @Valid MemberTelDTO memberTelDTO) {
+    memberService.modifyTel(memberTelDTO);
     return ResponseEntity.ok(Map.of("message", "휴대전화번호 수정 완료."));
   }
 
@@ -34,4 +34,10 @@ public class UserMemberController {
     memberService.sendTel(newTel);
     return ResponseEntity.ok(Map.of("message", "인증번호 전송 완료."));
   }
+
+  @PostMapping("find-email")
+  public ResponseEntity<?> findEmail(@RequestBody @Valid MemberTelDTO memberTelDTO){
+    return ResponseEntity.ok(memberService.findEmail(memberTelDTO));
+  }
+
 }

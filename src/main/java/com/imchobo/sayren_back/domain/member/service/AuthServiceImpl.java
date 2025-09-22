@@ -37,8 +37,8 @@ public class AuthServiceImpl implements AuthService {
   private final CookieUtil cookieUtil;
   private final MemberMapper memberMapper;
   private final MemberProviderRepository memberProviderRepository;
-  private final MemberService memberService;
   private final RedisUtil redisUtil;
+  private final MemberTermService memberTermService;
 
 
   @Override
@@ -102,7 +102,9 @@ public class AuthServiceImpl implements AuthService {
 
     Member member = Member.builder().name(socialUser.name()).email(socialUser.email()).status(MemberStatus.READY).emailVerified(true).build();
 
-    memberRepository.save(member);
+    Member entity = memberRepository.save(member);
+
+    memberTermService.saveTerm(entity);
     memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
 
