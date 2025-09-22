@@ -3,7 +3,9 @@ package com.imchobo.sayren_back.domain.common.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imchobo.sayren_back.domain.member.dto.RedisTokenDTO;
+import com.imchobo.sayren_back.domain.member.recode.LatestTerms;
 import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
+import com.imchobo.sayren_back.domain.term.entity.Term;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -114,4 +116,37 @@ public class RedisUtil {
   public void deleteRefreshToken(Long memberId) {
     delete("REFRESH_TOKEN:" + memberId);
   }
+
+  public void setTermLatest(LatestTerms latestTerms) {
+    try {
+      String serviceJson = objectMapper.writeValueAsString(latestTerms.service());
+      String privacyJson = objectMapper.writeValueAsString(latestTerms.privacy());
+
+      redisTemplate.opsForValue().set("SERVICE_TERM", serviceJson);
+      redisTemplate.opsForValue().set("PRIVACY_TERM", privacyJson);
+
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException("약관 직렬화 실패", e);
+    }
+  }
+
+  public LatestTerms getLatestTerms() {
+    try {
+      String serviceJson = (String) redisTemplate.opsForValue().get("SERVICE_TERM");
+      String privacyJson = (String) redisTemplate.opsForValue().get("PRIVACY_TERM");
+
+      if (serviceJson == null || privacyJson == null) {
+        throw new IllegalStateException("Redis에 최신 약관이 존재하지 않습니다.");
+      }
+
+      Term service = objectMapper.readValue(serviceJson, Term.class);
+      Term privacy = objectMapper.readValue(privacyJson, Term.class);
+
+      return new LatestTerms(service, privacy);
+
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException("약관 역직렬화 실패", e);
+    }
+  }
+
 }
