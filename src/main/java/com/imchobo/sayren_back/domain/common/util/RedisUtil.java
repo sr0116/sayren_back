@@ -3,15 +3,12 @@ package com.imchobo.sayren_back.domain.common.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imchobo.sayren_back.domain.member.dto.RedisTokenDTO;
-import com.imchobo.sayren_back.domain.member.en.TokenStatus;
 import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -66,14 +63,9 @@ public class RedisUtil {
 
   public String getState(String springState){
     String state = get("STATE:" +  springState);
-    deleteState(springState);
+    delete("STATE:" +  springState);
     return state;
   }
-
-  public void deleteState(String springState){
-    delete("STATE:" +  springState);
-  }
-
 
   public void setSocialLink(String state, Long memberId) {
     set("SOCIAL_LINK:" + state, memberId.toString(), 5, TimeUnit.MINUTES);
@@ -81,19 +73,45 @@ public class RedisUtil {
 
   public String getSocialLink(String state) {
     String socialLink = get("SOCIAL_LINK:" + state);
-    deleteSocialLink(state);
+    delete("SOCIAL_LINK:" + state);
     return socialLink;
   }
 
-  public void deleteSocialLink(String state) {
-    delete("SOCIAL_LINK:" + state);
+
+
+  public void setPhoneAuth(String phoneAuthCode, String tel) {
+    set("PHONE_AUTH:" +  phoneAuthCode, tel, 5, TimeUnit.MINUTES);
   }
 
-  public void setRefreshToken(RedisTokenDTO dto) throws JsonProcessingException {
+  public String getPhoneAuth(String phoneAuthCode) {
+    String tel = get("PHONE_AUTH:" + phoneAuthCode);
+    delete("PHONE_AUTH:" + phoneAuthCode);
+    return tel;
+  }
+
+
+  @SneakyThrows
+  public void setRefreshToken(RedisTokenDTO dto) {
 
     String json = objectMapper.writeValueAsString(dto);
     TokenMeta meta = jwtUtil.getMemberIdAndTtl(dto.getToken());
 
     set("REFRESH_TOKEN:" + meta.memberId(), json, meta.ttlMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  public RedisTokenDTO getRefreshToken(Long memberId) {
+    String json = get("REFRESH_TOKEN:" + memberId);
+    if (json == null) {
+      return null; // 없으면 null
+    }
+    try {
+      return objectMapper.readValue(json, RedisTokenDTO.class);
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Failed to deserialize refresh token", e);
+    }
+  }
+
+  public void deleteRefreshToken(Long memberId) {
+    delete("REFRESH_TOKEN:" + memberId);
   }
 }

@@ -10,8 +10,8 @@ import org.springframework.http.ResponseEntity;
 public interface AuthService {
   MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response);
   MemberLoginResponseDTO getUser(HttpServletRequest request);
-  void logout(HttpServletResponse response);
-  String accessToken(String refreshToken);
+  void logout(HttpServletResponse response, String refreshToken);
+  String accessToken(HttpServletResponse response, String refreshToken);
   MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response);
   MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response);
   String socialLinkRedirectUrl(String provider);

@@ -5,7 +5,6 @@ import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
-import com.imchobo.sayren_back.domain.member.en.Provider;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberProvider;
 import com.imchobo.sayren_back.domain.member.exception.*;
@@ -23,7 +22,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
 import java.util.UUID;
 
 
@@ -37,9 +35,9 @@ public class AuthServiceImpl implements AuthService {
   private final CookieUtil cookieUtil;
   private final MemberMapper memberMapper;
   private final MemberProviderRepository memberProviderRepository;
-  private final MemberService memberService;
   private final RedisUtil redisUtil;
-
+  private final MemberTermService memberTermService;
+  private final MemberTokenService memberTokenService;
 
   @Override
   public MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response) {
@@ -60,8 +58,9 @@ public class AuthServiceImpl implements AuthService {
     if(!passwordEncoder.matches(memberLoginRequestDTO.getPassword(), member.getPassword())){
       throw new InvalidPasswordException();
     }
+    MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
 
-    return tokensAndLoginResponse(member, response, memberLoginRequestDTO.isRememberMe());
+    return memberTokenService.saveToken(memberAuthDTO, response, memberLoginRequestDTO.isRememberMe());
   }
 
   @Override
@@ -74,24 +73,27 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
-  public void logout(HttpServletResponse response) {
+  public void logout(HttpServletResponse response, String refreshToken) {
+    memberTokenService.deleteMemberToken(refreshToken);
     cookieUtil.deleteAccessTokenCookie(response);
     cookieUtil.deleteRefreshTokenCookie(response);
     cookieUtil.deleteLoginCookie(response);
   }
 
   @Override
-  public String accessToken(String refreshToken) {
-    // 쿠키에 토큰 없으면 401
-    if (refreshToken == null || !jwtUtil.isValidToken(refreshToken)) {
-      throw new UnauthorizedException("Refresh token is missing or invalid");
+  public String accessToken(HttpServletResponse response, String refreshToken) {
+    Long memberId = memberTokenService.validateAndGetMemberId(refreshToken);
+    if(memberId == null) {
+      logout(response, refreshToken);
+      throw new UnauthorizedException("NOT_FOUND_MEMBER_TOKEN");
     }
+    else {
+      Member member = memberRepository.findById(memberId)
+        .orElseThrow(() -> new UsernameNotFoundException("없는 유저입니다."));
 
-    Member member = memberRepository.findById(Long.valueOf(jwtUtil.getClaims(refreshToken).getSubject()))
-      .orElseThrow(() -> new UsernameNotFoundException("없는 유저입니다."));
-
-    MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
-    return jwtUtil.generateAccessToken(memberAuthDTO);
+      MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
+      return jwtUtil.generateAccessToken(memberAuthDTO);
+    }
   }
 
   @Override
@@ -99,14 +101,13 @@ public class AuthServiceImpl implements AuthService {
   public MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response) {
     SocialUser socialUser = socialSignupRequestDTO.getSocialUser();
 
+    Member member = memberRepository.save(Member.builder().name(socialUser.name()).email(socialUser.email()).status(MemberStatus.READY).emailVerified(true).build());
 
-    Member member = Member.builder().name(socialUser.name()).email(socialUser.email()).status(MemberStatus.READY).emailVerified(true).build();
-
-    memberRepository.save(member);
+    memberTermService.saveTerm(member);
     memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
-
-    return tokensAndLoginResponse(member, response, true);
+    MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
+    return memberTokenService.saveToken(memberAuthDTO, response, true);
   }
 
   @Override
@@ -128,27 +129,11 @@ public class AuthServiceImpl implements AuthService {
     }
     memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
-    return tokensAndLoginResponse(member, response, true);
-  }
-
-
-  private MemberLoginResponseDTO tokensAndLoginResponse(Member member,
-                                                        HttpServletResponse response,
-                                                        boolean rememberMe) {
-    // 멤버 매핑
     MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
 
-    // jwt 토큰 생성
-    String accessToken = jwtUtil.generateAccessToken(memberAuthDTO);
-    String refreshToken = jwtUtil.generateRefreshToken(memberAuthDTO);
-
-    // 리프레쉬 토큰 쿠키에 저장
-    cookieUtil.addRefreshTokenCookie(response, refreshToken, rememberMe);
-    cookieUtil.addAccsessCookie(response, accessToken);
-    cookieUtil.addLoginCookie(response, rememberMe);
-
-    return memberMapper.toLoginResponseDTO(memberAuthDTO);
+    return memberTokenService.saveToken(memberAuthDTO, response, true);
   }
+
 
   @Override
   public String socialLinkRedirectUrl(String provider) {
