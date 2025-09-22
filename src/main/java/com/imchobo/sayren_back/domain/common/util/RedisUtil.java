@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.common.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.imchobo.sayren_back.domain.common.exception.RedisParseException;
 import com.imchobo.sayren_back.domain.member.dto.RedisTokenDTO;
 import com.imchobo.sayren_back.domain.member.recode.LatestTerms;
 import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
@@ -46,6 +47,39 @@ public class RedisUtil {
   public boolean hasKey(String key) {
     return redisTemplate.hasKey(key);
   }
+
+  // 오브젝트 저장(시간제한 x)
+  public <T> void setObject (String key, T value) {
+    try {
+      String json = objectMapper.writeValueAsString(value);
+      redisTemplate.opsForValue().set(key, json);
+    } catch (JsonProcessingException e) {
+      throw new RedisParseException();
+    }
+  }
+
+  // 오브젝트 저장(시간제한 o)
+  public <T> void setObject (String key, T value, long ttl, TimeUnit ttlUnit) {
+    try {
+      String json = objectMapper.writeValueAsString(value);
+      redisTemplate.opsForValue().set(key, json, ttl, ttlUnit);
+    } catch (JsonProcessingException e) {
+      throw new RedisParseException();
+    }
+  }
+
+  // 오브젝트 가져오기
+  public <T> T getObject(String key, Class<T> clazz) {
+    String json = redisTemplate.opsForValue().get(key);
+    if (json == null) return null;
+    try {
+      return objectMapper.readValue(json, clazz);
+    } catch (JsonProcessingException e) {
+      throw new RedisParseException();
+    }
+  }
+
+
 
   public void emailVerification(String token, String email) {
     set("EMAIL_VERIFY:" +  token, email, 5, TimeUnit.MINUTES);
@@ -94,23 +128,12 @@ public class RedisUtil {
 
   @SneakyThrows
   public void setRefreshToken(RedisTokenDTO dto) {
-
-    String json = objectMapper.writeValueAsString(dto);
     TokenMeta meta = jwtUtil.getMemberIdAndTtl(dto.getToken());
-
-    set("REFRESH_TOKEN:" + meta.memberId(), json, meta.ttlMillis(), TimeUnit.MILLISECONDS);
+    setObject("REFRESH_TOKEN:" + meta.memberId(), dto, meta.ttlMillis(), TimeUnit.MILLISECONDS);
   }
 
   public RedisTokenDTO getRefreshToken(Long memberId) {
-    String json = get("REFRESH_TOKEN:" + memberId);
-    if (json == null) {
-      return null; // 없으면 null
-    }
-    try {
-      return objectMapper.readValue(json, RedisTokenDTO.class);
-    } catch (JsonProcessingException e) {
-      throw new IllegalStateException("Failed to deserialize refresh token", e);
-    }
+    return getObject("REFRESH_TOKEN:" + memberId, RedisTokenDTO.class);
   }
 
   public void deleteRefreshToken(Long memberId) {
@@ -118,35 +141,20 @@ public class RedisUtil {
   }
 
   public void setTermLatest(LatestTerms latestTerms) {
-    try {
-      String serviceJson = objectMapper.writeValueAsString(latestTerms.service());
-      String privacyJson = objectMapper.writeValueAsString(latestTerms.privacy());
-
-      redisTemplate.opsForValue().set("SERVICE_TERM", serviceJson);
-      redisTemplate.opsForValue().set("PRIVACY_TERM", privacyJson);
-
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException("약관 직렬화 실패", e);
-    }
+    setObject("SERVICE_TERM", latestTerms.service());
+    setObject("PRIVACY_TERM", latestTerms.privacy());
   }
 
   public LatestTerms getLatestTerms() {
-    try {
-      String serviceJson = (String) redisTemplate.opsForValue().get("SERVICE_TERM");
-      String privacyJson = (String) redisTemplate.opsForValue().get("PRIVACY_TERM");
+    Term service = getObject("SERVICE_TERM", Term.class);
+    Term privacy = getObject("PRIVACY_TERM", Term.class);
 
-      if (serviceJson == null || privacyJson == null) {
-        throw new IllegalStateException("Redis에 최신 약관이 존재하지 않습니다.");
-      }
-
-      Term service = objectMapper.readValue(serviceJson, Term.class);
-      Term privacy = objectMapper.readValue(privacyJson, Term.class);
-
-      return new LatestTerms(service, privacy);
-
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException("약관 역직렬화 실패", e);
+    if (service == null || privacy == null) {
+      throw new IllegalStateException("Redis에 최신 약관이 존재하지 않습니다.");
     }
+
+    return new LatestTerms(service, privacy);
   }
+
 
 }
