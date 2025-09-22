@@ -63,7 +63,7 @@ public class AuthController {
 
   @GetMapping("email-verify/{token}")
   public RedirectView verificationEmail(@PathVariable String token) {
-    System.out.println("받은 토큰: " + token);
+    log.info("받은 토큰: {}", token);
     String url = "http://localhost:3000/";
     if(!memberService.emailVerify(token)){
      url += "mypage";
