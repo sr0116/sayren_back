@@ -15,7 +15,12 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,31 +33,34 @@ public class MemberTokenServiceImpl implements MemberTokenService {
   private final RedisUtil redisUtil;
 
   @Override
-  public MemberLoginResponseDTO saveToken(Member member, HttpServletResponse response, boolean rememberMe) {
-    MemberAuthDTO authDTO = memberMapper.toAuthDTO(member);
+  @Transactional
+  public MemberLoginResponseDTO saveToken(MemberAuthDTO memberAuthDTO, HttpServletResponse response, boolean rememberMe) {
 
-    String accessToken = jwtUtil.generateAccessToken(authDTO);
-    String refreshToken = jwtUtil.generateRefreshToken(authDTO);
+    String accessToken = jwtUtil.generateAccessToken(memberAuthDTO);
+    String refreshToken = jwtUtil.generateRefreshToken(memberAuthDTO);
 
     // 리프레쉬 토큰 쿠키에 저장
     cookieUtil.addRefreshTokenCookie(response, refreshToken, rememberMe);
     cookieUtil.addAccsessCookie(response, accessToken);
     cookieUtil.addLoginCookie(response, rememberMe);
 
-    memberTokenRepository.save(
+    MemberToken memberToken = memberTokenRepository.save(
       MemberToken.builder()
-        .member(member)
+        .member(Member.builder().id(memberAuthDTO.getId()).build())
         .token(refreshToken)
         .status(TokenStatus.ACTIVE)
         .build()
     );
+
+    memberToken.expireAt(jwtUtil.ttlToLocalDateTime(jwtUtil.getMemberIdAndTtl(refreshToken).ttlMillis()));
+
     RedisTokenDTO redisTokenDTO = RedisTokenDTO.builder()
       .tokenStatus(TokenStatus.ACTIVE)
       .token(refreshToken)
       .build();
     redisUtil.setRefreshToken(redisTokenDTO);
 
-    return memberMapper.toLoginResponseDTO(authDTO);
+    return memberMapper.toLoginResponseDTO(memberAuthDTO);
   }
 
   @Override
@@ -98,12 +106,14 @@ public class MemberTokenServiceImpl implements MemberTokenService {
   }
 
 
+  @Transactional
   @Override
   public void deleteMemberToken(Long memberId) {
     redisUtil.deleteRefreshToken(memberId);
     memberTokenRepository.deleteByMember_Id(memberId);
   }
 
+  @Transactional
   @Override
   public void deleteMemberToken(String refreshToken) {
     try {
@@ -116,5 +126,16 @@ public class MemberTokenServiceImpl implements MemberTokenService {
       redisUtil.deleteRefreshToken(memberId);
       memberTokenRepository.deleteByMemberId(memberId);
     }
+  }
+
+  @Override
+  @Transactional
+  @Scheduled(cron = "0 0 * * * *")
+  public void deleteExpiredTokens() {
+    LocalDateTime now = LocalDateTime.now();
+
+    List<MemberToken> expiredTokens = memberTokenRepository.findByVoidDateBefore(now);
+    expiredTokens.forEach(memberToken -> redisUtil.deleteRefreshToken(memberToken.getMember().getId()));
+    memberTokenRepository.deleteAllInBatch(expiredTokens);
   }
 }

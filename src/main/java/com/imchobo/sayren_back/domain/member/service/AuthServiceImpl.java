@@ -58,8 +58,9 @@ public class AuthServiceImpl implements AuthService {
     if(!passwordEncoder.matches(memberLoginRequestDTO.getPassword(), member.getPassword())){
       throw new InvalidPasswordException();
     }
+    MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
 
-    return memberTokenService.saveToken(member, response, memberLoginRequestDTO.isRememberMe());
+    return memberTokenService.saveToken(memberAuthDTO, response, memberLoginRequestDTO.isRememberMe());
   }
 
   @Override
@@ -105,7 +106,8 @@ public class AuthServiceImpl implements AuthService {
     memberTermService.saveTerm(member);
     memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
-    return memberTokenService.saveToken(member, response, true);
+    MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
+    return memberTokenService.saveToken(memberAuthDTO, response, true);
   }
 
   @Override
@@ -127,7 +129,9 @@ public class AuthServiceImpl implements AuthService {
     }
     memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
-    return memberTokenService.saveToken(member, response, true);
+    MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
+
+    return memberTokenService.saveToken(memberAuthDTO, response, true);
   }
 
 

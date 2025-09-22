@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -103,5 +105,13 @@ public class JwtUtil {
 
     return new TokenMeta(memberId, ttlMillis);
   }
+
+  public LocalDateTime ttlToLocalDateTime(long ttlMillis) {
+    return LocalDateTime.ofInstant(
+      Instant.ofEpochMilli(System.currentTimeMillis() + ttlMillis),
+      ZoneId.systemDefault()
+    );
+  }
+
 
 }
