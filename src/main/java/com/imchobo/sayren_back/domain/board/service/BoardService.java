@@ -20,4 +20,6 @@ public interface BoardService {
   List<BoardListResponseDTO> list();
   // 글 상세
   BoardDetailsResponseDTO read(Long boardId);
+
+//  List<BoardListResponseDTO> listByCategory(String category);
 }

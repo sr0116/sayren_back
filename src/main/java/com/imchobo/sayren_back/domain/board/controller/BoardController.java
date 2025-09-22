@@ -51,4 +51,14 @@ public class BoardController {
     return ResponseEntity.ok(boardService.read(id));
   }
 
+//  // 카테고리 필터(enum 카테고리)
+//  @GetMapping
+//  public ResponseEntity<List<BoardListResponseDTO>> list(
+//          @RequestParam(required = false) String category) {
+//    if (category != null) {
+//      return ResponseEntity.ok(boardService.listByCategory(category));
+//    }
+//    return ResponseEntity.ok(boardService.list());
+//  }
+
 }

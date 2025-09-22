@@ -4,6 +4,7 @@ import com.imchobo.sayren_back.domain.board.dto.BoardCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.BoardDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.BoardListResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.BoardModifyRequestDTO;
+import com.imchobo.sayren_back.domain.board.en.CategoryType;
 import com.imchobo.sayren_back.domain.board.entity.Board;
 import com.imchobo.sayren_back.domain.board.entity.Category;
 import com.imchobo.sayren_back.domain.board.mapper.BoardMapper;
@@ -103,4 +104,12 @@ public class BoardServiceImpl implements BoardService {
             .orElseThrow(() -> new RuntimeException("게시글이 없습니다"));
     return boardMapper.toDetailsDTO(board);
   }
+
+//  @Override
+//  public List<BoardListResponseDTO> listByCategory(String category) {
+//    CategoryType type = CategoryType.valueOf(category.toUpperCase());
+//    return boardRepository.findByCategoryType(type).stream()
+//            .map(boardMapper::toListDTO)
+//            .toList();
+//  }
 }
