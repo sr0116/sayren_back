@@ -5,8 +5,10 @@ public enum PaymentStatus {
   PAID,
   FAILED,
   REFUNDED,
-  PARTIAL_REFUNDED; // 부분 환불
+  PARTIAL_REFUNDED, // 부분 환불
+  COMPLETED;
 
+  // 나중에
   // pg 사는 소문자로 응답 (서비스 로직에서 쉽게 사용하려면 switch 사용으로 해주기)
   public static PaymentStatus fromPortOneStatus(String status) {
     if (status == null) {

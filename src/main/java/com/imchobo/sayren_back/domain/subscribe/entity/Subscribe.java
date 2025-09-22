@@ -2,7 +2,7 @@ package com.imchobo.sayren_back.domain.subscribe.entity;
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
-import com.imchobo.sayren_back.domain.payment.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,27 +29,28 @@ public class Subscribe extends BaseEntity {
   @JoinColumn(name = "order_item_id", nullable = false)
   private OrderItem orderItem;
 
-  // 구독자 회원 FK (필수)
+  // 구독자 회원 FK (필수):
   // NOT NULL
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "member_id", nullable = false)
   private Member member;
 
-  // 구독 상태 (PENDING_PAYMENT / ACTIVE / CANCELED / EXPIRED 등)
+  // 구독 상태
   // NOT NULL
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private SubscribeStatus status;
+  @Builder.Default
+  private SubscribeStatus status=SubscribeStatus.PENDING_PAYMENT;
 
   // 월 렌탈료 스냅샷
   // NOT NULL, 기본값 0
   @Column(name = "monthly_fee_snapshot", nullable = false)
-  private Integer monthlyFeeSnapshot;
+  private Long monthlyFeeSnapshot;
 
   // 보증금 스냅샷
   // NOT NULL, 기본값 0
   @Column(name = "deposit_snapshot", nullable = false)
-  private Integer depositSnapshot;
+  private Long depositSnapshot;
 
   // 구독 시작일
   // NOT NULL
