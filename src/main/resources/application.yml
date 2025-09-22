@@ -8,6 +8,7 @@ spring:
       - optional:classpath:secret/oauth.yml
       - optional:classpath:secret/portone.yml
       - optional:classpath:secret/mail.yml
+      - optional:classpath:secret/solapi.yml
   jpa:
     hibernate:
       ddl-auto: none
