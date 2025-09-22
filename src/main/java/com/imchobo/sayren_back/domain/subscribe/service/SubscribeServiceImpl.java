@@ -123,9 +123,18 @@ public class SubscribeServiceImpl implements SubscribeService {
   public void activateAfterDelivery(Long subscribeId) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
+
+    //  // 구독 준비중
     if (subscribe.getStatus() != SubscribeStatus.PREPARING) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
+
+    subscribe.setStatus(SubscribeStatus.ACTIVE);
+    subscribeRepository.save(subscribe);
+
+    // 이력 기록
+    historyRecorder.recordSubscribe(subscribe, ReasonCode.NONE, ActorType.SYSTEM);
+
   }
 
   // 사용자 구독 취소 요청

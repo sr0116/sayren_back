@@ -5,6 +5,7 @@ import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.lang.ScopedValue;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,6 @@ public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
   Optional<Subscribe> findByOrderItem_Id(Long orderItemId);
 
   List<Subscribe> findByMemberId(Long memberId);
+
+  <T> ScopedValue<T> findByOrderItemId(Long orderItemId);
 }
