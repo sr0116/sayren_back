@@ -51,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
     String accessToken = jwtUtil.resolveToken(request);
-
+    log.info(accessToken);
     if (accessToken == null) {
       throw new UnauthorizedException("Access Token이 없습니다.");
     }

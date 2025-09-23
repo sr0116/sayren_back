@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/user/payments")
 @RequiredArgsConstructor
 @Log4j2
 public class PaymentController {
