@@ -13,7 +13,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(SayrenException.class)
   public ResponseEntity<Map<String, String>> handleSayrenException(SayrenException ex) {
     HttpStatus status = switch (ex.getErrorCode()) {
-      case "TOKEN_EXPIRED", "INVALID_PASSWORD", "UNAUTHORIZED_ACCESS" -> HttpStatus.UNAUTHORIZED; // 401
+      case "TOKEN_EXPIRED", "INVALID_PASSWORD", "UNAUTHORIZED_ACCESS", "UNAUTHORIZED" -> HttpStatus.UNAUTHORIZED; // 401
       case "ACCESS_DENIED", "ROLE_NOT_ALLOWED" -> HttpStatus.FORBIDDEN; // 403
       case "EMAIL_ALREADY_EXISTS", "SOCIAL_LINK_FAILED", "ALREADY_LINKED_PROVIDER" -> HttpStatus.CONFLICT; // 409
       default -> HttpStatus.BAD_REQUEST; // 400

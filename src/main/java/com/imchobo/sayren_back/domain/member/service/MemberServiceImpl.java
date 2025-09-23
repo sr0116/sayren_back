@@ -1,25 +1,26 @@
 package com.imchobo.sayren_back.domain.member.service;
 
-import com.imchobo.sayren_back.domain.common.util.MailUtil;
+import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
+import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
+import com.imchobo.sayren_back.domain.member.dto.FindEmailResponseDTO;
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
+import com.imchobo.sayren_back.domain.member.dto.MemberTelDTO;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
-import com.imchobo.sayren_back.domain.member.en.Role;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.exception.EmailAlreadyExistsException;
 import com.imchobo.sayren_back.domain.member.exception.SocialEmailAlreadyLinkedException;
+import com.imchobo.sayren_back.domain.member.exception.TelNotMatchException;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -31,8 +32,9 @@ public class MemberServiceImpl implements MemberService {
   private final PasswordEncoder passwordEncoder;
   private final MemberProviderRepository memberProviderRepository;
   private final RedisUtil redisUtil;
-  private final MailUtil mailUtil;
-
+  private final MailService mailService;
+  private final SolapiUtil solapiUtil;
+  private final MemberTermService memberTermService;
   @Override
   @Transactional
   public void register(MemberSignupDTO memberSignupDTO) {
@@ -52,8 +54,10 @@ public class MemberServiceImpl implements MemberService {
     log.info(entity);
 
 
-    memberRepository.save(entity);
-    mailUtil.emailVerification(entity.getEmail());
+    Member member = memberRepository.save(entity);
+    mailService.emailVerification(entity.getEmail());
+
+    memberTermService.saveTerm(member);
   }
 
   @Override
@@ -81,5 +85,33 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public Member findById(Long id) {
     return memberRepository.findById(id).orElseThrow(IllegalArgumentException::new);
+  }
+
+  @Override
+  public void sendTel(String newTel) {
+    solapiUtil.sendSms(newTel);
+  }
+
+  @Override
+  public Member telVerify(MemberTelDTO memberTelDTO) {
+    String saveTel = redisUtil.getPhoneAuth(memberTelDTO.getPhoneAuthCode());
+    if (saveTel == null || saveTel.isBlank() || !saveTel.equals(memberTelDTO.getTel())) {
+      throw new TelNotMatchException();
+    }
+    return memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+  }
+
+  @Override
+  @Transactional
+  public void modifyTel(MemberTelDTO memberTelDTO) {
+    Member member = telVerify(memberTelDTO);
+    member.setTel(memberTelDTO.getTel());
+    member.setStatus(MemberStatus.ACTIVE);
+  }
+
+  @Override
+  public FindEmailResponseDTO findEmail(MemberTelDTO memberTelDTO) {
+    Member member = telVerify(memberTelDTO);
+    return memberMapper.toFindEmailResponseDTO(member);
   }
 }

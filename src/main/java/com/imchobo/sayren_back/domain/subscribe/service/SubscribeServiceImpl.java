@@ -1,8 +1,10 @@
 package com.imchobo.sayren_back.domain.subscribe.service;
 
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -13,6 +15,7 @@ import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
+import com.imchobo.sayren_back.domain.subscribe.history_recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
@@ -44,6 +47,7 @@ public class SubscribeServiceImpl implements SubscribeService {
 
   // 서비스
   private final SubscribeRoundService subscribeRoundService;
+  private final HistoryRecorder historyRecorder;
 
   // 구독 테이블 생성
   @Transactional
@@ -52,21 +56,39 @@ public class SubscribeServiceImpl implements SubscribeService {
     try {
       //dto -> entity (기본값 세팅 PENDING_PAYMENT)
       Subscribe subscribe = subscribeMapper.toEntity(dto);
+
+      // 보증금 및 월 렌탈료 저장
+      int monthlyFee = dto.getMonthlyFeeSnapshot();
+      int depositSnapshot = calculateDeposit(monthlyFee);
+
+      // 스냅샷 값
+      subscribe.setMonthlyFeeSnapshot((long) monthlyFee);
+      subscribe.setDepositSnapshot((long) depositSnapshot);
+
       // 로그인 유저 주입
       Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
       subscribe.setMember(currentMember);
-
 
       // 구독 저장
       Subscribe savedSubscribe = subscribeRepository.save(subscribe);
       // 회차 테이블 생성
       subscribeRoundService.createRounds(savedSubscribe, dto);
 
+      // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티 )
+      SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
+      subscribeHistoryRepository.save(subscribeHistory);
+
+
       return savedSubscribe;
 
     } catch (Exception e) {
       throw new SubscribeCreationException("구독 생성 실패");
     }
+  }
+
+  // 보증금 계산(일단 20% 고정 임시로 나중에 % 수정 가능성)
+  private int calculateDeposit(int monthlyFee) {
+    return (int) (monthlyFee * 0.2);
   }
 
   // 구독 단건 조회

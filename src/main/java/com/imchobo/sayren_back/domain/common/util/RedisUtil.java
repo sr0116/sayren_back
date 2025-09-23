@@ -2,16 +2,16 @@ package com.imchobo.sayren_back.domain.common.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.imchobo.sayren_back.domain.common.exception.RedisParseException;
 import com.imchobo.sayren_back.domain.member.dto.RedisTokenDTO;
-import com.imchobo.sayren_back.domain.member.en.TokenStatus;
+import com.imchobo.sayren_back.domain.member.recode.LatestTerms;
 import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
-import io.jsonwebtoken.Claims;
+import com.imchobo.sayren_back.domain.term.entity.Term;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -48,6 +48,39 @@ public class RedisUtil {
     return redisTemplate.hasKey(key);
   }
 
+  // 오브젝트 저장(시간제한 x)
+  public <T> void setObject (String key, T value) {
+    try {
+      String json = objectMapper.writeValueAsString(value);
+      redisTemplate.opsForValue().set(key, json);
+    } catch (JsonProcessingException e) {
+      throw new RedisParseException();
+    }
+  }
+
+  // 오브젝트 저장(시간제한 o)
+  public <T> void setObject (String key, T value, long ttl, TimeUnit ttlUnit) {
+    try {
+      String json = objectMapper.writeValueAsString(value);
+      redisTemplate.opsForValue().set(key, json, ttl, ttlUnit);
+    } catch (JsonProcessingException e) {
+      throw new RedisParseException();
+    }
+  }
+
+  // 오브젝트 가져오기
+  public <T> T getObject(String key, Class<T> clazz) {
+    String json = redisTemplate.opsForValue().get(key);
+    if (json == null) return null;
+    try {
+      return objectMapper.readValue(json, clazz);
+    } catch (JsonProcessingException e) {
+      throw new RedisParseException();
+    }
+  }
+
+
+
   public void emailVerification(String token, String email) {
     set("EMAIL_VERIFY:" +  token, email, 5, TimeUnit.MINUTES);
   }
@@ -66,14 +99,9 @@ public class RedisUtil {
 
   public String getState(String springState){
     String state = get("STATE:" +  springState);
-    deleteState(springState);
+    delete("STATE:" +  springState);
     return state;
   }
-
-  public void deleteState(String springState){
-    delete("STATE:" +  springState);
-  }
-
 
   public void setSocialLink(String state, Long memberId) {
     set("SOCIAL_LINK:" + state, memberId.toString(), 5, TimeUnit.MINUTES);
@@ -81,19 +109,52 @@ public class RedisUtil {
 
   public String getSocialLink(String state) {
     String socialLink = get("SOCIAL_LINK:" + state);
-    deleteSocialLink(state);
+    delete("SOCIAL_LINK:" + state);
     return socialLink;
   }
 
-  public void deleteSocialLink(String state) {
-    delete("SOCIAL_LINK:" + state);
+
+
+  public void setPhoneAuth(String phoneAuthCode, String tel) {
+    set("PHONE_AUTH:" +  phoneAuthCode, tel, 5, TimeUnit.MINUTES);
   }
 
-  public void setRefreshToken(RedisTokenDTO dto) throws JsonProcessingException {
+  public String getPhoneAuth(String phoneAuthCode) {
+    String tel = get("PHONE_AUTH:" + phoneAuthCode);
+    delete("PHONE_AUTH:" + phoneAuthCode);
+    return tel;
+  }
 
-    String json = objectMapper.writeValueAsString(dto);
+
+  @SneakyThrows
+  public void setRefreshToken(RedisTokenDTO dto) {
     TokenMeta meta = jwtUtil.getMemberIdAndTtl(dto.getToken());
-
-    set("REFRESH_TOKEN:" + meta.memberId(), json, meta.ttlMillis(), TimeUnit.MILLISECONDS);
+    setObject("REFRESH_TOKEN:" + meta.memberId(), dto, meta.ttlMillis(), TimeUnit.MILLISECONDS);
   }
+
+  public RedisTokenDTO getRefreshToken(Long memberId) {
+    return getObject("REFRESH_TOKEN:" + memberId, RedisTokenDTO.class);
+  }
+
+  public void deleteRefreshToken(Long memberId) {
+    delete("REFRESH_TOKEN:" + memberId);
+  }
+
+  public void setTermLatest(LatestTerms latestTerms) {
+    setObject("SERVICE_TERM", latestTerms.service());
+    setObject("PRIVACY_TERM", latestTerms.privacy());
+  }
+
+  public LatestTerms getLatestTerms() {
+    Term service = getObject("SERVICE_TERM", Term.class);
+    Term privacy = getObject("PRIVACY_TERM", Term.class);
+
+    if (service == null || privacy == null) {
+      throw new IllegalStateException("Redis에 최신 약관이 존재하지 않습니다.");
+    }
+
+    return new LatestTerms(service, privacy);
+  }
+
+
 }

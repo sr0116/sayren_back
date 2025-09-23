@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.member.mapper;
 
+import com.imchobo.sayren_back.domain.member.dto.FindEmailResponseDTO;
+import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
 import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
 import com.imchobo.sayren_back.domain.member.entity.Member;
@@ -20,4 +22,10 @@ public interface MemberMapper {
   @Mapping(source = "name", target = "realName")
   @Mapping(target = "attributes", ignore = true)
   MemberAuthDTO toAuthDTO(Member entity);
+
+  @Mapping(source = "realName", target = "name")
+  MemberLoginResponseDTO toLoginResponseDTO(MemberAuthDTO memberAuthDTO);
+
+
+  FindEmailResponseDTO toFindEmailResponseDTO(Member entity);
 }

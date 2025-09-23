@@ -37,6 +37,11 @@ dependencies {
   implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.11'
   implementation 'org.springframework.boot:spring-boot-starter-mail:3.5.5'
 
+  // 버전 비교용 라이브러리
+  implementation 'org.apache.maven:maven-artifact:3.9.9'
+
+  // 유저 접속 정보 파싱 라이브러리
+  implementation 'com.github.ua-parser:uap-java:1.6.1'
 
   // = Logging ===
   implementation 'org.springframework.boot:spring-boot-starter-log4j2'
@@ -76,7 +81,6 @@ dependencies {
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
   testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-  implementation 'org.springframework.boot:spring-boot-starter-mail'
   // ======================================
   implementation 'org.springframework.boot:spring-boot-starter-validation'
 }

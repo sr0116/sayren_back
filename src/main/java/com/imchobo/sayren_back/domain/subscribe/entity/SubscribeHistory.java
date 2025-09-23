@@ -37,10 +37,12 @@ public class SubscribeHistory extends CreatedEntity {
   // 상태 변경 사유 (상세 설명)
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private ReasonCode reasonCode;
+  @Builder.Default
+  private ReasonCode reasonCode=ReasonCode.NONE;
 
   // 변경자
   @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
   @Builder.Default
   private ActorType changedBy=ActorType.SYSTEM; // 이거 나중에 확인하기 기본값 세팅
   // 생성일시는 CreatedEntity에서 상속
