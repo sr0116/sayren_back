@@ -71,6 +71,8 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public boolean emailVerify(String token) {
     String email = redisUtil.getEmailByToken(token);
+    log.info(email);
+    log.info(token);
 
     if (email == null) {
       return false;

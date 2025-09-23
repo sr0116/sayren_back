@@ -35,25 +35,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   FilterChain filterChain)
           throws ServletException, IOException {
 
-    String path = request.getRequestURI();
-
-    List<String> skipUrls = List.of(
-      "/api/auth/refresh",
-      "/api/auth/login",
-      "/api/auth/signup",
-      "/api/auth/logout"
-    );
-
-    if (skipUrls.contains(path)) {
-      filterChain.doFilter(request, response);
-      return;
-    }
-
 
     String accessToken = jwtUtil.resolveToken(request);
-    log.info(accessToken);
+
     if (accessToken == null) {
-      throw new UnauthorizedException("Access Token이 없습니다.");
+      filterChain.doFilter(request, response);
+      return;
     }
 
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
