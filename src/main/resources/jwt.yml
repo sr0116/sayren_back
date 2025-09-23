@@ -1,4 +1,0 @@
-jwt:
-  secret: security-jwt-study-key-this-is-key
-  expiration-minutes: 60
-  refresh-expiration-days: 30
