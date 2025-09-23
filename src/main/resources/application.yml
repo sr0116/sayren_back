@@ -10,8 +10,6 @@ spring:
       - optional:classpath:secret/mail.yml
       - optional:classpath:secret/solapi.yml
       - optional:classpath:secret/redis.yml
-  jackson:
-    property-naming-strategy: SNAKE_CASE
   jpa:
     hibernate:
       ddl-auto: none

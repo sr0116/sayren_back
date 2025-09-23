@@ -80,6 +80,7 @@ public class PaymentServiceImpl implements PaymentService {
     // 엔티티 변환용
     Subscribe subscribe = null;
 
+
     //  구독 결제(Rental)일 경우 → 구독 + 회차 생성
     if (planType == OrderPlanType.RENTAL) {
       SubscribeRequestDTO subscribeRequestDTO =
@@ -111,9 +112,14 @@ public class PaymentServiceImpl implements PaymentService {
       // 상품 가격 + 1회차(렌탈료+ 보증금) -> payment.getAmount()+firstRound.getAmount() 나중에 금액 조회시 필요
       payment.setSubscribeRound(firstRound);
       payment.setAmount(firstRound.getAmount());
+    }  else {
+      // 일반 결제는 OrderItem 금액 사용
+      payment.setAmount(Long.valueOf(orderItem.getProductPriceSnapshot()));
     }
     // DB 저장
     Payment savedPayment = paymentRepository.save(payment);
+    PaymentResponseDTO response = paymentMapper.toResponseDTO(savedPayment);
+    log.info("결제 응답 DTO: {}", response);
 
     // DTO -> 엔티티 변환 결제 로그 테이블 savedPayment 기반
     PaymentHistory paymentHistory = paymentHistoryMapper.fromPayment(savedPayment);
@@ -126,13 +132,13 @@ public class PaymentServiceImpl implements PaymentService {
   // 결제 응답
   @Override
   @Transactional
-  public PaymentResponseDTO complete(Long paymentId, String imUid) {
+  public PaymentResponseDTO complete(Long paymentId, String impUid) {
     // payment 조회(OrderItem, paln join)
     Payment payment = paymentRepository.findWithOrderAndPlan(paymentId)
             .orElseThrow(() -> new PaymentNotFoundException(paymentId));
 
     // portone 결제 정보 조회
-    PaymentInfoResponse paymentInfo = portOnePaymentClient.getPaymentInfo(imUid);
+    PaymentInfoResponse paymentInfo = portOnePaymentClient.getPaymentInfo(impUid);
     log.info("portone 결제 정보 : {}", paymentInfo);
 
     // 상태 검증
@@ -151,7 +157,7 @@ public class PaymentServiceImpl implements PaymentService {
       throw new PaymentAmountMismatchException(payment.getAmount(), paymentInfo.getAmount());
     }
     // 결제 완료 처리
-    payment.setImpUid(imUid);
+    payment.setImpUid(impUid);
     payment.setPaymentStatus(PaymentStatus.PAID);
     Payment savedPayment = paymentRepository.save(payment);
 
