@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.common.util;
 
+import com.imchobo.sayren_back.domain.member.recode.LatestTerms;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,5 +46,13 @@ class RedisUtilTest {
   @Test
   void emailVerification() {
     redisUtil.emailVerification("token", "user@gmail.com");
+  }
+
+
+  @Test
+  void getLatestTerms() {
+    LatestTerms latestTerms = redisUtil.getLatestTerms();
+    log.info(latestTerms.service());
+    log.info(latestTerms.privacy());
   }
 }

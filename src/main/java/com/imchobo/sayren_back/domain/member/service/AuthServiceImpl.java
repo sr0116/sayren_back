@@ -9,6 +9,7 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberProvider;
 import com.imchobo.sayren_back.domain.member.exception.*;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
+import com.imchobo.sayren_back.domain.member.recode.AccessToken;
 import com.imchobo.sayren_back.domain.member.recode.SocialUser;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
@@ -38,9 +39,10 @@ public class AuthServiceImpl implements AuthService {
   private final RedisUtil redisUtil;
   private final MemberTermService memberTermService;
   private final MemberTokenService memberTokenService;
+  private final MemberLoginHistoryService memberLoginHistoryService;
 
   @Override
-  public MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response) {
+  public MemberLoginResponseDTO login(MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response, HttpServletRequest request) {
     Member member;
 
     // 유저네임이 이메일일 때
@@ -59,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
       throw new InvalidPasswordException();
     }
     MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
-
+    memberLoginHistoryService.saveLoginHistory(memberAuthDTO.getId(), request);
     return memberTokenService.saveToken(memberAuthDTO, response, memberLoginRequestDTO.isRememberMe());
   }
 
@@ -81,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
-  public String accessToken(HttpServletResponse response, String refreshToken) {
+  public AccessToken accessToken(HttpServletResponse response, String refreshToken) {
     Long memberId = memberTokenService.validateAndGetMemberId(refreshToken);
     if(memberId == null) {
       logout(response, refreshToken);
@@ -92,7 +94,7 @@ public class AuthServiceImpl implements AuthService {
         .orElseThrow(() -> new UsernameNotFoundException("없는 유저입니다."));
 
       MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
-      return jwtUtil.generateAccessToken(memberAuthDTO);
+      return new AccessToken(jwtUtil.generateAccessToken(memberAuthDTO));
     }
   }
 
