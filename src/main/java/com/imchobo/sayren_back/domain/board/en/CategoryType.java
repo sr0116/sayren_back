@@ -1,5 +1,5 @@
 package com.imchobo.sayren_back.domain.board.en;
 
 public enum CategoryType {
-  PRODUCT, REVIEW, QNA, NOTICE, FAQ, QUESTION
+  PRODUCT, REVIEW, QNA, NOTICE, FAQ
 }
