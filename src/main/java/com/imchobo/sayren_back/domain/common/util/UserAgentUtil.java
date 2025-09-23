@@ -2,7 +2,6 @@ package com.imchobo.sayren_back.domain.common.util;
 
 import com.imchobo.sayren_back.domain.member.recode.UserAgent;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ua_parser.Client;
 import ua_parser.Parser;
