@@ -1,7 +1,9 @@
 package com.imchobo.sayren_back.domain.member.service;
 
+import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberTerm;
+import com.imchobo.sayren_back.domain.member.recode.LatestTerms;
 import com.imchobo.sayren_back.domain.member.repository.MemberTermRepository;
 import com.imchobo.sayren_back.domain.term.en.TermType;
 import com.imchobo.sayren_back.domain.term.entity.Term;
@@ -15,19 +17,19 @@ import org.springframework.stereotype.Service;
 public class MemberTermServiceImpl implements MemberTermService {
   private final MemberTermRepository memberTermRepository;
   private final TermService termService;
+  private final RedisUtil redisUtil;
 
   @Override
   @Transactional
   public void saveTerm(Member member) {
-    Term service = termService.getTerm(TermType.SERVICE);
-    Term privacy = termService.getTerm(TermType.PRIVACY);
+    LatestTerms latestTerms = redisUtil.getLatestTerms();
 
     memberTermRepository.save(
       MemberTerm.builder()
         .member(member)
         .agreed(true)
-        .term(service)
-        .version(service.getVersion())
+        .term(latestTerms.service())
+        .version(latestTerms.service().getVersion())
         .build()
     );
 
@@ -35,8 +37,8 @@ public class MemberTermServiceImpl implements MemberTermService {
       MemberTerm.builder()
         .member(member)
         .agreed(true)
-        .term(privacy)
-        .version(privacy.getVersion())
+        .term(latestTerms.privacy())
+        .version(latestTerms.privacy().getVersion())
         .build()
     );
   }

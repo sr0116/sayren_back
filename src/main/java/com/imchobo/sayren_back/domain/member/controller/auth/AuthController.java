@@ -35,8 +35,8 @@ public class AuthController {
   }
 
   @PostMapping("login")
-  public ResponseEntity<?> login(@RequestBody @Valid MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response) {
-    return ResponseEntity.ok(authService.login(memberLoginRequestDTO, response));
+  public ResponseEntity<?> login(@RequestBody @Valid MemberLoginRequestDTO memberLoginRequestDTO, HttpServletResponse response, HttpServletRequest request) {
+    return ResponseEntity.ok(authService.login(memberLoginRequestDTO, response, request));
   }
 
 
@@ -63,7 +63,7 @@ public class AuthController {
 
   @GetMapping("email-verify/{token}")
   public RedirectView verificationEmail(@PathVariable String token) {
-    System.out.println("받은 토큰: " + token);
+    log.info("받은 토큰: {}", token);
     String url = "http://localhost:3000/";
     if(!memberService.emailVerify(token)){
      url += "mypage";

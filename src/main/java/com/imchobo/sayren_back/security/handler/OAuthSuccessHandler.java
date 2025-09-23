@@ -6,6 +6,7 @@ import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
+import com.imchobo.sayren_back.domain.member.service.MemberLoginHistoryService;
 import com.imchobo.sayren_back.domain.member.service.MemberTokenService;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
@@ -33,12 +34,13 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
   private final ObjectMapper objectMapper;
   private final MemberMapper memberMapper;
   private final MemberTokenService memberTokenService;
+  private final MemberLoginHistoryService  memberLoginHistoryService;
 
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
     MemberAuthDTO memberAuthDTO = SecurityUtil.getMemberAuthDTO();
     String json = objectMapper.writeValueAsString(memberTokenService.saveToken(memberAuthDTO, response, true));
-
+    memberLoginHistoryService.saveLoginHistory(memberAuthDTO.getId(), request);
     response.setContentType("text/html;charset=UTF-8");
     response.getWriter().write(
             "<script>" +
