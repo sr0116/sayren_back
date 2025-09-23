@@ -16,6 +16,7 @@ public interface PaymentMapper {
 
   // RequestDTO → Entity (등록/저장 시 사용)
   @Mapping(source = "orderItemId", target = "orderItem", qualifiedByName = "mapOrderItem")
+  @Mapping(target = "amount", ignore = true)
   Payment toEntity(PaymentRequestDTO dto);
 
   // entity -> responseDRO(상세 응답)

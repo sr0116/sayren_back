@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.subscribe.subscribe_round.controller;
 
 
-import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribePaymentService;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribeRoundService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class SubscribePaymentController {
 
-  private final SubscribePaymentService subscribePaymentService;
+  private final SubscribeRoundService subscribeRoundService;
 
   // 특정 구독 회차 전체 조회
 

@@ -1,11 +1,14 @@
 package com.imchobo.sayren_back.security.filter;
 
+import com.imchobo.sayren_back.domain.member.exception.AccessTokenExpiredException;
+import com.imchobo.sayren_back.domain.member.exception.UnauthorizedException;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import com.imchobo.sayren_back.security.service.CustomUserDetailsService;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Log4j2
 @RequiredArgsConstructor
@@ -31,34 +35,49 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   FilterChain filterChain)
           throws ServletException, IOException {
 
+    String path = request.getRequestURI();
+
+    List<String> skipUrls = List.of(
+      "/api/auth/refresh",
+      "/api/auth/login",
+      "/api/auth/signup",
+      "/api/auth/logout"
+    );
+
+    if (skipUrls.contains(path)) {
+      filterChain.doFilter(request, response);
+      return;
+    }
+
+
     String accessToken = jwtUtil.resolveToken(request);
 
+    if (accessToken == null) {
+      throw new UnauthorizedException("Access Token이 없습니다.");
+    }
 
-    if (accessToken != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-      String email = null;
-
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
       try {
-        email = jwtUtil.getClaims(accessToken).getSubject();
-        setAuthentication(email, request);
-        log.info("JWT 인증 성공 : {}", email);
+        String memberId = jwtUtil.getClaims(accessToken).getSubject();
+        setAuthentication(memberId, request);
+        log.info("JWT 인증 성공 : {}", memberId);
 
       } catch (ExpiredJwtException ex) {
-        // 프론트가 새 Access Token 받도록 유도
-        email = ex.getClaims().getSubject();
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access Token Expired");
-        return;
+        throw new AccessTokenExpiredException();
       } catch (Exception e) {
         log.error("JWT 파싱/검증 실패", e);
+        throw new UnauthorizedException("유효하지 않은 토큰입니다.");
       }
     }
 
     filterChain.doFilter(request, response);
+
   }
 
 
-  private void setAuthentication(String email, HttpServletRequest request) {
+  private void setAuthentication(String memberid, HttpServletRequest request) {
     MemberAuthDTO member =
-      (MemberAuthDTO) customUserDetailsService.loadUserByUsername(email);
+      (MemberAuthDTO) customUserDetailsService.loadUserByUsername(memberid);
 
     UsernamePasswordAuthenticationToken authentication =
       new UsernamePasswordAuthenticationToken(
