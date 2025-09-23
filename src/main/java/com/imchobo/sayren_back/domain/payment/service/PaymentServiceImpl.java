@@ -172,11 +172,17 @@ public class PaymentServiceImpl implements PaymentService {
   }
 
   @Override
+  @Transactional
   public void refund(Long paymentId, Long amount, String reason) {
+    // 나중에 payment 에서 refund 서비스 위임해서 히스토리만 기록하거나 
+    // reason code만 따로 변경하게 상태값 변경
+    // 구독 일반 결제 구분해서
+//    refundService.requestRefund(paymentId, amount, reason);
 
   }
 
   @Override
+  @Transactional
   public List<PaymentResponseDTO> getAll() {
     return List.of();
   }
