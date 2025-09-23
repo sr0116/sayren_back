@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentVerifyResponse {
-  // 포트원 결제 검증 응답 DTO
+
   @JsonProperty("imp_uid")
   private String impUid;
 
@@ -21,7 +21,13 @@ public class PaymentVerifyResponse {
 
   private Long amount;
   private String status;
+
+  @JsonProperty("pay_method")
   private String payMethod;
+
+  @JsonProperty("buyer_name")
   private String buyerName;
+
+  @JsonProperty("buyer_email")
   private String buyerEmail;
 }
