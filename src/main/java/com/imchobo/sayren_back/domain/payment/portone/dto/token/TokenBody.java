@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TokenBody {
+
   @JsonProperty("access_token")
   private String accessToken;
 
