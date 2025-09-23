@@ -52,6 +52,14 @@ public class BoardServiceImpl implements BoardService {
     Category category = categoryRepository.findById(dto.getCategoryId())
             .orElseThrow(() -> new RuntimeException("카테고리가 없습니다"));
     board.setCategory(category);
+
+    // 게시판 타입에 따라 productId 필수 여부 확인
+    if (category.getType() == CategoryType.REVIEW || category.getType() == CategoryType.PRODUCT) {
+      if (dto.getProductId() == null) {
+        throw new IllegalArgumentException("상품 게시판/후기 게시판에는 productId가 필수입니다.");
+      }
+    }
+
     if (dto.getProductId() != null) {
       Product product = productRepository.findById(dto.getProductId())
               .orElseThrow(() -> new RuntimeException("상품이 없습니다"));
@@ -68,6 +76,7 @@ public class BoardServiceImpl implements BoardService {
   public void modify(BoardModifyRequestDTO dto) {
     Board board = boardRepository.findById(dto.getId())
             .orElseThrow(() -> new RuntimeException("게시글이 없습니다"));
+
 
     // 수정할 값 반영
     board.setTitle(dto.getTitle());
