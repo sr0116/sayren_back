@@ -9,7 +9,7 @@ spring:
       - optional:classpath:secret/aws_s3.yml
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true

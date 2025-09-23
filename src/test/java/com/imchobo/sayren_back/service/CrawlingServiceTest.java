@@ -22,7 +22,7 @@ public class CrawlingServiceTest {
 
   @Test
   public void crawlingTest() throws Exception {
-    crawlingService.crawlCategory("https://www.lge.co.kr/category/dehumidifiers");
+    crawlingService.crawlCategory("https://www.lge.co.kr/category/care-solutions/shoe-care");
 
   }
 }
