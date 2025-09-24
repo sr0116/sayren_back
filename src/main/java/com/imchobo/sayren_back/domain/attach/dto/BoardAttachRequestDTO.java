@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.attach.dto;
 
+import com.imchobo.sayren_back.domain.attach.entity.Attach;
 import lombok.*;
 
 @Getter
@@ -16,5 +17,7 @@ public class BoardAttachRequestDTO {
   private Long size;
   // 게시판 글 번호 (FK)
   private Long boardId;
+  // 대표이미지 여부
+  private boolean isThumbnail;
 
 }

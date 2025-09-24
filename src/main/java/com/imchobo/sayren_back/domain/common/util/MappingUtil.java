@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.common.util;
 
+import com.imchobo.sayren_back.domain.attach.entity.Attach;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.delivery.entity.Address;
@@ -52,6 +53,14 @@ public class MappingUtil {
   @Named("mapOrderPlan")
   public OrderPlan orderPlanIdToEntity(Long planId) {
     return planId != null ? OrderPlan.builder().id(planId).build() : null;
+  }
+
+  @Named("mapAttachUrl")
+  public static String mapAttachUrl(Attach attach) {
+    if (attach == null) return null;
+
+    return "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+            + attach.getPath() + "/" + attach.getUuid();
   }
   //  엔티티 → ID 변환 (DTO 응답용)
   @Named("mapPaymentId")

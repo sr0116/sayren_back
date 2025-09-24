@@ -1,9 +1,7 @@
 package com.imchobo.sayren_back.domain.board.controller;
 
-import com.imchobo.sayren_back.domain.board.dto.BoardCreateRequestDTO;
-import com.imchobo.sayren_back.domain.board.dto.BoardDetailsResponseDTO;
-import com.imchobo.sayren_back.domain.board.dto.BoardListResponseDTO;
-import com.imchobo.sayren_back.domain.board.dto.BoardModifyRequestDTO;
+import com.imchobo.sayren_back.domain.board.dto.BoardRequestDTO;
+import com.imchobo.sayren_back.domain.board.dto.BoardResponseDTO;
 import com.imchobo.sayren_back.domain.board.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,18 +15,18 @@ import java.util.List;
 public class BoardController {
   private final BoardService boardService;
 
+  // 게시글 등록
   @PostMapping
-  public ResponseEntity<BoardDetailsResponseDTO> register(@RequestBody BoardCreateRequestDTO dto) {
+  public ResponseEntity<BoardResponseDTO> register(@RequestBody BoardRequestDTO dto) {
     Long id = boardService.register(dto);
-    BoardDetailsResponseDTO response = boardService.read(id);
+    BoardResponseDTO response = boardService.read(id);
     return ResponseEntity.ok(response);
   }
 
-  // 게시글 수정
+  // 게시글 수정 (BoardRequestDTO 재사용)
   @PutMapping("/{id}")
-  public ResponseEntity<Void> modify(@PathVariable Long id, @RequestBody BoardModifyRequestDTO dto) {
-    dto.setId(id); // path 변수랑 dto 묶어주기
-    boardService.modify(dto);
+  public ResponseEntity<Void> modify(@PathVariable Long id, @RequestBody BoardRequestDTO dto) {
+    boardService.modify(id, dto);  // 서비스에서 id와 dto 같이 처리
     return ResponseEntity.ok().build();
   }
 
@@ -39,26 +37,15 @@ public class BoardController {
     return ResponseEntity.noContent().build();
   }
 
-  // 게시글 목록 조회
+  // 게시글 목록 조회 (BoardResponseDTO 재사용)
   @GetMapping
-  public ResponseEntity<List<BoardListResponseDTO>> list() {
+  public ResponseEntity<List<BoardResponseDTO>> list() {
     return ResponseEntity.ok(boardService.list());
   }
 
   // 게시글 상세 조회
   @GetMapping("/{id}")
-  public ResponseEntity<BoardDetailsResponseDTO> read(@PathVariable Long id) {
+  public ResponseEntity<BoardResponseDTO> read(@PathVariable Long id) {
     return ResponseEntity.ok(boardService.read(id));
   }
-
-//  // 카테고리 필터(enum 카테고리)
-//  @GetMapping
-//  public ResponseEntity<List<BoardListResponseDTO>> list(
-//          @RequestParam(required = false) String category) {
-//    if (category != null) {
-//      return ResponseEntity.ok(boardService.listByCategory(category));
-//    }
-//    return ResponseEntity.ok(boardService.list());
-//  }
-
 }

@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
-//  List<Board> findByCategoryType(CategoryType type);
+//  Collection<Object> findByCategoryType(CategoryType categoryType);
+  List<Board> findByCategoryType(CategoryType type);
 
 }

@@ -15,4 +15,5 @@ public class BoardAttachResponseDTO {
 
   private String fileName; // 원본 파일명
   private Long boardId;    // 어떤 게시판 글 소속인지
+  private boolean thumbnail;
 }
