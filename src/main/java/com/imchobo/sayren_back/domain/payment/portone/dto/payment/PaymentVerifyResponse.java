@@ -30,4 +30,10 @@ public class PaymentVerifyResponse {
 
   @JsonProperty("buyer_email")
   private String buyerEmail;
+
+  @JsonProperty("error_code")
+  private String errorCode;
+
+  @JsonProperty("error_msg")
+  private String errorMsg;
 }

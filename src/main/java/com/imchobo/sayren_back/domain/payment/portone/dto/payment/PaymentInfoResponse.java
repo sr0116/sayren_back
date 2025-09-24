@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentInfoResponse {
 
+
   @JsonProperty("imp_uid")
   private String impUid;
 
@@ -21,4 +22,12 @@ public class PaymentInfoResponse {
 
   private Long amount;
   private String status;
+
+  @JsonProperty("fail_reason")
+  private String failReason;   // 사용자 취소, 잔액 부족 등 이유
+
+  @JsonProperty("error_code")
+  private String errorCode;  // PortOne 내부 에러 코드
+
+
 }
