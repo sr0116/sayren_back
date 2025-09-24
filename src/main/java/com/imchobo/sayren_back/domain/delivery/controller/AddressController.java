@@ -1,8 +1,8 @@
-package com.imchobo.sayren_back.domain.address.controller;
+package com.imchobo.sayren_back.domain.delivery.controller;
 
-import com.imchobo.sayren_back.domain.address.dto.AddressRequestDTO;
-import com.imchobo.sayren_back.domain.address.dto.AddressResponseDTO;
-import com.imchobo.sayren_back.domain.address.service.AddressService;
+import com.imchobo.sayren_back.domain.delivery.dto.AddressRequestDTO;
+import com.imchobo.sayren_back.domain.delivery.dto.AddressResponseDTO;
+import com.imchobo.sayren_back.domain.delivery.service.AddressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +29,7 @@ public class AddressController {
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(@PathVariable Long id) {
     addressService.deleteAddress(id);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.noContent(). build();
   }
 
   @GetMapping("/member/{memberId}")

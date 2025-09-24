@@ -7,7 +7,6 @@ import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,35 +44,4 @@ public class PaymentController {
 //  public ApiResponse<List<PaymentResponseDTO> > getAll() {
 //    return paymentService.getAll();
 //  }
-
-// 결제 준비 (임시 기본값 리턴)
-@PostMapping("/prepare")
-public ResponseEntity<String> prepare(@RequestBody PaymentRequestDTO dto) {
-  return ResponseEntity.ok("prepare dummy response");
-}
-
-  // 결제 완료시 상태 변경 (임시 기본값 리턴)
-  @PostMapping("/{paymentId}/complete")
-  public ResponseEntity<String> complete(
-    @PathVariable Long paymentId,
-    @RequestParam("imp_uid") String impUid
-  ) {
-    return ResponseEntity.ok("complete dummy response");
-  }
-
-  // 결제 환불 (임시 기본값 리턴)
-  @PostMapping("/{paymentId}/refund")
-  public ResponseEntity<String> refund(
-    @PathVariable Long paymentId,
-    @RequestParam(required = false) Long amount,
-    @RequestParam String reason
-  ) {
-    return ResponseEntity.ok("refund dummy response");
-  }
-
-  // 전체 결제 조회 (임시 기본값 리턴)
-  @GetMapping
-  public ResponseEntity<List<String>> getAll() {
-    return ResponseEntity.ok(List.of("payment1", "payment2"));
-  }
 }
