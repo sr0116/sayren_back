@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.subscribe.en;
 
 public enum SubscribeStatus {
-  PENDING_PAYMENT,
+  PENDING_PAYMENT,  // 결제전
   PREPARING,        // 결제 완료, 배송 중
   ACTIVE,           // 구독 진행 중
   ENDED,            // 구독 종료

@@ -20,6 +20,8 @@ public interface PortOneMapper {
   @Mapping(source = "merchant_uid", target = "merchantUid", qualifiedByName = "toStringSafe")
   @Mapping(source = "amount", target = "amount", qualifiedByName = "toLongSafe")
   @Mapping(source = "status", target = "status", qualifiedByName = "toStringSafe")
+  @Mapping(source = "fail_reason", target = "failReason", qualifiedByName = "toStringSafe")
+  @Mapping(source = "error_code", target = "errorCode", qualifiedByName = "toStringSafe")
   PaymentInfoResponse toPaymentInfoResponse(Map<String, Object> response);
 
   // Map → DTO 변환 (결제 검증 응답)
@@ -30,6 +32,8 @@ public interface PortOneMapper {
   @Mapping(source = "pay_method", target = "payMethod", qualifiedByName = "toStringSafe")
   @Mapping(source = "buyer_name", target = "buyerName", qualifiedByName = "toStringSafe")
   @Mapping(source = "buyer_email", target = "buyerEmail", qualifiedByName = "toStringSafe")
+  @Mapping(source = "error_code", target = "errorCode", qualifiedByName = "toStringSafe")
+  @Mapping(source = "error_msg", target = "errorMsg", qualifiedByName = "toStringSafe")
   PaymentVerifyResponse toPaymentVerifyResponse(Map<String, Object> response);
 
   // Map → DTO 변환 (환불 응답)
