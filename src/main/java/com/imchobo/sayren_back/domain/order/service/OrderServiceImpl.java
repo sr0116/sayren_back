@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.order.service;
 
-import com.imchobo.sayren_back.domain.address.entity.Address;
-import com.imchobo.sayren_back.domain.address.repository.AddressRepository;
+import com.imchobo.sayren_back.domain.delivery.entity.Address;
+import com.imchobo.sayren_back.domain.delivery.repository.AddressRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.domain.order.dto.OrderResponseDTO;
@@ -12,8 +12,10 @@ import com.imchobo.sayren_back.domain.order.en.OrderStatus;
 import com.imchobo.sayren_back.domain.order.mapper.OrderMapper;
 import com.imchobo.sayren_back.domain.order.repository.CartRepository;
 import com.imchobo.sayren_back.domain.order.repository.OrderRepository;
+import com.imchobo.sayren_back.domain.order.sharedevent.OrderPlacedEvent;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,26 +26,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class OrderServiceImpl implements OrderService {
-//  @Override
-//  public OrderResponseDTO createOrderFromCart(Long memberId, Long addressId) {
-//    return null;
-//  }
-//
-//  @Override
-//  public OrderResponseDTO getOrderById(Long orderId) {
-//    return null;
-//  }
-//
-//  @Override
-//  public List<OrderResponseDTO> getOrdersByMemberId(Long memberId) {
-//    return List.of();
-//  }
 
   private final OrderRepository orderRepository;
   private final MemberRepository memberRepository;
   private final AddressRepository addressRepository;
   private final CartRepository cartRepository;
   private final OrderMapper orderMapper;
+  private final ApplicationEventPublisher eventPublisher; // 이벤트 발행기
 
   /**
    * 장바구니 → 주문 생성
@@ -68,28 +57,32 @@ public class OrderServiceImpl implements OrderService {
     Order order = Order.builder()
       .member(member)
       .address(address)
-      .status(OrderStatus.PENDING) // enum 사용
+      .status(OrderStatus.PENDING)
       .build();
 
     // 5. 장바구니 아이템 → 주문 아이템 변환
     List<OrderItem> orderItems = cartItems.stream()
       .map(cart -> OrderItem.builder()
-        .order(order) //  여기서 바로 연관관계 주입
+        .order(order)
         .product(cart.getProduct())
         .orderPlan(cart.getOrderPlan()) // 일반구매면 null
         .productPriceSnapshot(cart.getProduct().getPrice()) // snapshot
         .build()
       ).collect(Collectors.toList());
 
+    // 연관관계 세팅
+//    order.setOrderItems(orderItems);
 
-
-    // 6. 주문 저장 (cascade로 orderItems도 저장됨)
+    // 6. 주문 저장
     Order savedOrder = orderRepository.save(order);
 
     // 7. 장바구니 비우기
     cartRepository.deleteAll(cartItems);
 
-    // 8. DTO 변환 후 반환
+    // 8. 이벤트 발행 (주문 커밋 후 배송 자동 생성되도록)
+    eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId(), member.getId()));
+
+    // 9. DTO 변환 후 반환
     return orderMapper.toResponseDTO(savedOrder);
   }
 

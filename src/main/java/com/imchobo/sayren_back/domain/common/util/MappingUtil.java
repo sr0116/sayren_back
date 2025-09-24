@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.common.util;
 
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
@@ -103,4 +105,17 @@ public class MappingUtil {
     if (value != null) return Long.parseLong(value.toString());
     return null;
   }
-}
+
+
+            //배송 필요매핑 DeliveryMapper
+    @Named("mapDeliveryTypeToString")
+    public String mapDeliveryTypeToString(DeliveryType type) {
+      return type != null ? type.name() : null;
+    }
+
+    @Named("mapDeliveryStatusToString")
+    public String mapDeliveryStatusToString(DeliveryStatus status) {
+      return status != null ? status.name() : null;
+    }
+  }
+
