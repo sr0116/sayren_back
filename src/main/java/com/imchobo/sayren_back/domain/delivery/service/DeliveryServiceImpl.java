@@ -2,11 +2,17 @@ package com.imchobo.sayren_back.domain.delivery.service;
 
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryResponseDTO;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
+import com.imchobo.sayren_back.domain.delivery.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.mapper.DeliveryMapper;
+import com.imchobo.sayren_back.domain.delivery.repository.AddressRepository;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.delivery.sharedevent.DeliveryStatusChangedEvent;
+import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -21,24 +27,41 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryMapper deliveryMapper;
-    private final ApplicationEventPublisher eventPublisher; // 이벤트 발행기
+    private final AddressRepository addressRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public DeliveryResponseDTO create(DeliveryRequestDTO dto) {
-        Delivery entity = deliveryMapper.toEntity(dto);
-        // 초기 상태 기본값 (READY)
-        if (entity.getStatus() == null) entity.setStatus(DeliveryStatus.READY);
-        Delivery saved = deliveryRepository.save(entity);
+        // 1) 로그인 사용자
+        Member currentMember = SecurityUtil.getMemberEntity();
 
-        publishEvent(saved); // 생성 시에도 이벤트 발행 가능
+        // 2) 주소 조회 + 소유자 검증
+        Address address = addressRepository.findById(dto.getAddressId())
+          .orElseThrow(() -> new EntityNotFoundException("주소 없음: id=" + dto.getAddressId()));
+
+        if (!address.getMember().getId().equals(currentMember.getId())) {
+            throw new IllegalStateException("본인 주소만 사용할 수 있습니다.");
+        }
+
+        // 3) 항상 DELIVERY 타입으로 생성(반품은 상태로 처리)
+        Delivery delivery = Delivery.builder()
+          .member(currentMember)
+          .address(address)
+          .type(DeliveryType.DELIVERY)
+          .status(DeliveryStatus.READY)
+          .build();
+
+        Delivery saved = deliveryRepository.save(delivery);
+
+        // 필요 시 생성 시점에도 이벤트 발행
+        publishEvent(saved);
         return deliveryMapper.toResponseDTO(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public DeliveryResponseDTO get(Long id) {
-        Delivery d = mustFind(id);
-        return deliveryMapper.toResponseDTO(d);
+        return deliveryMapper.toResponseDTO(mustFind(id));
     }
 
     @Override
@@ -50,24 +73,22 @@ public class DeliveryServiceImpl implements DeliveryService {
           .toList();
     }
 
-    // ── 상태 전환 ────────────────────────────────
-
     @Override
-    public DeliveryResponseDTO prepare(Long id) {
-        Delivery d = mustFind(id);
-        ensure(d.getStatus() == DeliveryStatus.READY, "READY 에서만 PREPARING으로 전환 가능");
-        d.setStatus(DeliveryStatus.PREPARING);
-
-        publishEvent(d);
-        return deliveryMapper.toResponseDTO(d);
+    @Transactional(readOnly = true)
+    public List<DeliveryResponseDTO> getByOrder(Long orderId) {
+        return deliveryRepository.findByDeliveryItems_OrderItem_Order_Id(orderId)
+          .stream()
+          .map(deliveryMapper::toResponseDTO)
+          .toList();
     }
+
+    // ── 상태 전환 ────────────────────────────────
 
     @Override
     public DeliveryResponseDTO ship(Long id) {
         Delivery d = mustFind(id);
-        ensure(d.getStatus() == DeliveryStatus.PREPARING, "PREPARING 에서만 SHIPPING으로 전환 가능");
+        ensure(d.getStatus() == DeliveryStatus.READY, "READY → SHIPPING만 가능");
         d.setStatus(DeliveryStatus.SHIPPING);
-
         publishEvent(d);
         return deliveryMapper.toResponseDTO(d);
     }
@@ -75,28 +96,35 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Override
     public DeliveryResponseDTO complete(Long id) {
         Delivery d = mustFind(id);
-        ensure(d.getStatus() == DeliveryStatus.SHIPPING, "SHIPPING 에서만 DELIVERED로 전환 가능");
+        ensure(d.getStatus() == DeliveryStatus.SHIPPING, "SHIPPING → DELIVERED만 가능");
         d.setStatus(DeliveryStatus.DELIVERED);
-
         publishEvent(d);
         return deliveryMapper.toResponseDTO(d);
     }
 
     @Override
-    public DeliveryResponseDTO pickupReady(Long id) {
+    public DeliveryResponseDTO returnReady(Long id) {
         Delivery d = mustFind(id);
-        d.setStatus(DeliveryStatus.PICKUP_READY);
-
+        ensure(d.getStatus() == DeliveryStatus.DELIVERED, "DELIVERED → RETURN_READY만 가능");
+        d.setStatus(DeliveryStatus.RETURN_READY);
         publishEvent(d);
         return deliveryMapper.toResponseDTO(d);
     }
 
     @Override
-    public DeliveryResponseDTO pickedUp(Long id) {
+    public DeliveryResponseDTO inReturning(Long id) {
         Delivery d = mustFind(id);
-        ensure(d.getStatus() == DeliveryStatus.PICKUP_READY, "PICKUP_READY 에서만 PICKED_UP으로 전환 가능");
-        d.setStatus(DeliveryStatus.PICKED_UP);
+        ensure(d.getStatus() == DeliveryStatus.RETURN_READY, "RETURN_READY → IN_RETURNING만 가능");
+        d.setStatus(DeliveryStatus.IN_RETURNING);
+        publishEvent(d);
+        return deliveryMapper.toResponseDTO(d);
+    }
 
+    @Override
+    public DeliveryResponseDTO returned(Long id) {
+        Delivery d = mustFind(id);
+        ensure(d.getStatus() == DeliveryStatus.IN_RETURNING, "IN_RETURNING → RETURNED만 가능");
+        d.setStatus(DeliveryStatus.RETURNED);
         publishEvent(d);
         return deliveryMapper.toResponseDTO(d);
     }
@@ -110,8 +138,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     private void ensure(boolean cond, String msg) {
         if (!cond) throw new IllegalStateException(msg);
     }
-
-    // ── 이벤트 발행 ─────────────────────────────
+    // -------이벤트발행
     private void publishEvent(Delivery delivery) {
         eventPublisher.publishEvent(
           new DeliveryStatusChangedEvent(

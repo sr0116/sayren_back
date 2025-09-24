@@ -7,22 +7,26 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
-@Table(name = "tbl_delivery")                // 스키마: tbl_delivery
+@Table(name = "tbl_delivery")
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 @Builder
 public class Delivery extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO_INCREMENT
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "delivery_id")
-    private Long id;  // PK (NOT NULL, AUTO_INCREMENT)
+    private Long id;
 
-    // 배송 타입 (DELIVERY / RETURN)
+    // 배송 타입 (DELIVERY 기본값)
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
-    private DeliveryType type;
+    @Builder.Default
+    private DeliveryType type = DeliveryType.DELIVERY;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -32,8 +36,13 @@ public class Delivery extends BaseEntity {
     @JoinColumn(name = "address_id", nullable = false)
     private Address address;
 
-    // 배송 상태 (READY / PREPARING / SHIPPING / DELIVERED / PICKUP_READY / PICKED_UP) (NOT NULL, 최대 20자)
+    // 배송 상태 (READY 기본값)
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
-    private DeliveryStatus status;
+    @Builder.Default
+    private DeliveryStatus status = DeliveryStatus.READY;
+
+
+    @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DeliveryItem> deliveryItems = new ArrayList<>();
 }

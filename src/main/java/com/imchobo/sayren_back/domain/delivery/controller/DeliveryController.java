@@ -6,6 +6,7 @@ import com.imchobo.sayren_back.domain.delivery.service.DeliveryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -14,6 +15,8 @@ import java.util.List;
 public class DeliveryController {
 
     private final DeliveryService deliveryService;
+
+    // ── 기본 CRUD ────────────────────────────────
 
     // 생성
     @PostMapping
@@ -33,35 +36,35 @@ public class DeliveryController {
         return ResponseEntity.ok(deliveryService.getByMember(memberId));
     }
 
-    // 상태 전환
-    @PutMapping("/{id}/prepare")
-    public ResponseEntity<DeliveryResponseDTO> prepare(@PathVariable Long id) {
-        return ResponseEntity.ok(deliveryService.prepare(id));
-    }
+    // ── 상태 전환 ────────────────────────────────
 
+    // 배송 시작 (READY → SHIPPING)
     @PutMapping("/{id}/ship")
     public ResponseEntity<DeliveryResponseDTO> ship(@PathVariable Long id) {
         return ResponseEntity.ok(deliveryService.ship(id));
     }
 
+    // 배송 완료 (SHIPPING → DELIVERED)
     @PutMapping("/{id}/complete")
     public ResponseEntity<DeliveryResponseDTO> complete(@PathVariable Long id) {
         return ResponseEntity.ok(deliveryService.complete(id));
     }
 
-    @PutMapping("/{id}/pickup-ready")
-    public ResponseEntity<DeliveryResponseDTO> pickupReady(@PathVariable Long id) {
-        return ResponseEntity.ok(deliveryService.pickupReady(id));
+    // 회수 준비 (DELIVERED → RETURN_READY)
+    @PutMapping("/{id}/return-ready")
+    public ResponseEntity<DeliveryResponseDTO> returnReady(@PathVariable Long id) {
+        return ResponseEntity.ok(deliveryService.returnReady(id));
     }
 
-    @PutMapping("/{id}/picked-up")
-    public ResponseEntity<DeliveryResponseDTO> pickedUp(@PathVariable Long id) {
-        return ResponseEntity.ok(deliveryService.pickedUp(id));
+    // 회수 중 (RETURN_READY → IN_RETURNING)
+    @PutMapping("/{id}/in-returning")
+    public ResponseEntity<DeliveryResponseDTO> inReturning(@PathVariable Long id) {
+        return ResponseEntity.ok(deliveryService.inReturning(id));
     }
 
-
-
-
-
-
+    // 회수 완료 (IN_RETURNING → RETURNED)
+    @PutMapping("/{id}/returned")
+    public ResponseEntity<DeliveryResponseDTO> returned(@PathVariable Long id) {
+        return ResponseEntity.ok(deliveryService.returned(id));
+    }
 }
