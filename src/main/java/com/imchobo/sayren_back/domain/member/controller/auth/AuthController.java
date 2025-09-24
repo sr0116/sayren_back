@@ -64,16 +64,13 @@ public class AuthController {
   @GetMapping("email-verify/{token}")
   public RedirectView verificationEmail(@PathVariable String token) {
     log.info("받은 토큰: {}", token);
-    String url = "http://localhost:3000/";
-    if(!memberService.emailVerify(token)){
-     url += "mypage";
-    }
+    String url = "http://localhost:3000/mypage/emailverify";
+    memberService.emailVerify(token);
 
     return new RedirectView(url);
   }
 
   @PostMapping("email-verify")
-  @PreAuthorize("!principal.emailVerified")
   public ResponseEntity<?> resendVerificationEmail() {
     mailService.emailVerification(SecurityUtil.getMemberAuthDTO().getEmail());
     return ResponseEntity.ok(Map.of("message", "success"));

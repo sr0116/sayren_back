@@ -1,6 +1,6 @@
-package com.imchobo.sayren_back.domain.address.repository;
+package com.imchobo.sayren_back.domain.delivery.repository;
 
-import com.imchobo.sayren_back.domain.address.entity.Address;
+import com.imchobo.sayren_back.domain.delivery.entity.Address;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
