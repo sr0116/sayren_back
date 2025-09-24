@@ -30,8 +30,8 @@ public class UserMemberController {
   }
 
   @PostMapping("send-tel")
-  public ResponseEntity<?> sendTel(@RequestParam String newTel){
-    memberService.sendTel(newTel);
+  public ResponseEntity<?> sendTel(@RequestParam String tel){
+    memberService.sendTel(tel);
     return ResponseEntity.ok(Map.of("message", "인증번호 전송 완료."));
   }
 
