@@ -1,10 +1,10 @@
-package com.imchobo.sayren_back.domain.address.service;
+package com.imchobo.sayren_back.domain.delivery.service;
 
-import com.imchobo.sayren_back.domain.address.dto.AddressRequestDTO;
-import com.imchobo.sayren_back.domain.address.dto.AddressResponseDTO;
-import com.imchobo.sayren_back.domain.address.entity.Address;
-import com.imchobo.sayren_back.domain.address.mapper.AddressMapper;
-import com.imchobo.sayren_back.domain.address.repository.AddressRepository;
+import com.imchobo.sayren_back.domain.delivery.dto.AddressRequestDTO;
+import com.imchobo.sayren_back.domain.delivery.dto.AddressResponseDTO;
+import com.imchobo.sayren_back.domain.delivery.entity.Address;
+import com.imchobo.sayren_back.domain.delivery.mapper.AddressMapper;
+import com.imchobo.sayren_back.domain.delivery.repository.AddressRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

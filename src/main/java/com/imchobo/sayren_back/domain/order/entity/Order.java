@@ -1,6 +1,6 @@
 package com.imchobo.sayren_back.domain.order.entity;
 
-import com.imchobo.sayren_back.domain.address.entity.Address;
+import com.imchobo.sayren_back.domain.delivery.entity.Address;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.en.OrderStatus;
 import jakarta.persistence.*;
