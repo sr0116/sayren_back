@@ -6,11 +6,16 @@ import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.delivery.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
 import com.imchobo.sayren_back.domain.delivery.mapper.DeliveryMapper;
 import com.imchobo.sayren_back.domain.delivery.repository.AddressRepository;
+import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.delivery.sharedevent.DeliveryStatusChangedEvent;
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.order.entity.Order;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -26,16 +31,19 @@ import java.util.List;
 public class DeliveryServiceImpl implements DeliveryService {
 
     private final DeliveryRepository deliveryRepository;
-    private final DeliveryMapper deliveryMapper;
+    private final DeliveryItemRepository deliveryItemRepository;
+    private final OrderItemRepository orderItemRepository;
     private final AddressRepository addressRepository;
+    private final DeliveryMapper deliveryMapper;
     private final ApplicationEventPublisher eventPublisher;
 
+    /**
+     * 사용자 직접 생성 (테스트/예외 케이스용)
+     */
     @Override
     public DeliveryResponseDTO create(DeliveryRequestDTO dto) {
-        // 1) 로그인 사용자
         Member currentMember = SecurityUtil.getMemberEntity();
 
-        // 2) 주소 조회 + 소유자 검증
         Address address = addressRepository.findById(dto.getAddressId())
           .orElseThrow(() -> new EntityNotFoundException("주소 없음: id=" + dto.getAddressId()));
 
@@ -43,19 +51,51 @@ public class DeliveryServiceImpl implements DeliveryService {
             throw new IllegalStateException("본인 주소만 사용할 수 있습니다.");
         }
 
-        // 3) 항상 DELIVERY 타입으로 생성(반품은 상태로 처리)
         Delivery delivery = Delivery.builder()
           .member(currentMember)
           .address(address)
-          .type(DeliveryType.DELIVERY)
+          .type(DeliveryType.DELIVERY) // 항상 DELIVERY
           .status(DeliveryStatus.READY)
           .build();
 
         Delivery saved = deliveryRepository.save(delivery);
-
-        // 필요 시 생성 시점에도 이벤트 발행
         publishEvent(saved);
         return deliveryMapper.toResponseDTO(saved);
+    }
+
+    /**
+     * 결제 성공 직후 배송 자동 생성
+     */
+    @Override
+    public void createFromOrderId(Long orderId) {
+        // 이미 배송이 생성된 주문이면 중복 생성 X
+        if (deliveryRepository.existsByDeliveryItems_OrderItem_Order_Id(orderId)) return;
+
+        // 주문 항목 조회
+        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+        if (items.isEmpty()) throw new EntityNotFoundException("OrderItems 없음: orderId=" + orderId);
+
+        Order order = items.get(0).getOrder();
+
+        Delivery delivery = Delivery.builder()
+          .member(order.getMember())        // 주문자
+          .address(order.getAddress())      // 주문 시 사용한 주소
+          .type(DeliveryType.DELIVERY)      // 기본값
+          .status(DeliveryStatus.READY)     // 기본값
+          .build();
+
+        Delivery saved = deliveryRepository.save(delivery);
+
+        // 주문 항목과 매핑
+        List<DeliveryItem> deliveryItems = items.stream()
+          .map(oi -> DeliveryItem.builder()
+            .delivery(saved)
+            .orderItem(oi)
+            .build())
+          .toList();
+        deliveryItemRepository.saveAll(deliveryItems);
+
+        publishEvent(saved);
     }
 
     @Override
@@ -82,8 +122,7 @@ public class DeliveryServiceImpl implements DeliveryService {
           .toList();
     }
 
-    // ── 상태 전환 ────────────────────────────────
-
+    // ===== 상태 전환 =====
     @Override
     public DeliveryResponseDTO ship(Long id) {
         Delivery d = mustFind(id);
@@ -129,7 +168,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         return deliveryMapper.toResponseDTO(d);
     }
 
-    // ── helpers ────────────────────────────────
+    // ===== helpers =====
     private Delivery mustFind(Long id) {
         return deliveryRepository.findById(id)
           .orElseThrow(() -> new IllegalArgumentException("배송 정보를 찾을 수 없습니다. id=" + id));
@@ -138,7 +177,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     private void ensure(boolean cond, String msg) {
         if (!cond) throw new IllegalStateException(msg);
     }
-    // -------이벤트발행
+    // --------이벤트처리
     private void publishEvent(Delivery delivery) {
         eventPublisher.publishEvent(
           new DeliveryStatusChangedEvent(
