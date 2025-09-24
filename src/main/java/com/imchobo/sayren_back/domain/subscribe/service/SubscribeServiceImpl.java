@@ -4,7 +4,6 @@ package com.imchobo.sayren_back.domain.subscribe.service;
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.member.entity.Member;
-import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -15,12 +14,11 @@ import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
-import com.imchobo.sayren_back.domain.subscribe.history_recorder.HistoryRecorder;
+import com.imchobo.sayren_back.domain.payment.component_recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
-import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.mapper.SubscribeRoundMapper;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribeRoundService;
@@ -29,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service

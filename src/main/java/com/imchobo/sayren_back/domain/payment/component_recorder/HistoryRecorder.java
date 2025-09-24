@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.subscribe.history_recorder;
+package com.imchobo.sayren_back.domain.payment.component_recorder;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
