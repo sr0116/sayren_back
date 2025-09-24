@@ -17,12 +17,11 @@ import org.springframework.stereotype.Service;
 public class MemberTermServiceImpl implements MemberTermService {
   private final MemberTermRepository memberTermRepository;
   private final TermService termService;
-  private final RedisUtil redisUtil;
 
   @Override
   @Transactional
   public void saveTerm(Member member) {
-    LatestTerms latestTerms = redisUtil.getLatestTerms();
+    LatestTerms latestTerms = termService.getLatestTerms();
 
     memberTermRepository.save(
       MemberTerm.builder()
