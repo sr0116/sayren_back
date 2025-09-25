@@ -8,8 +8,6 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring", uses = MappingUtil.class)
 public interface DeliveryMapper {
-
-    // Entity → ResponseDTO
     @Mapping(source = "id", target = "deliveryId")
     @Mapping(source = "member.id", target = "memberId")
     @Mapping(source = "address.id", target = "addressId")

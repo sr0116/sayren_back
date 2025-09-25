@@ -1,9 +1,6 @@
 package com.imchobo.sayren_back.domain.subscribe.subscribe_round.service;
 
-import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.mapper.SubscribeRoundMapper;

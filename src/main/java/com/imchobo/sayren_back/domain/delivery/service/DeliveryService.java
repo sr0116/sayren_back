@@ -33,4 +33,7 @@ public interface DeliveryService {
 
     // 회수 완료 (IN_RETURNING → RETURNED)
     DeliveryResponseDTO returned(Long id);
+
+    // ----------------------------------
+    void createFromOrderId(Long orderId); // 결제 성공 직후 자동 생성
 }
