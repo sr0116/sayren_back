@@ -10,6 +10,7 @@ spring:
       - optional:classpath:secret/mail.yml
       - optional:classpath:secret/solapi.yml
       - optional:classpath:secret/redis.yml
+      - optional:classpath:secret/next.yml
   jpa:
     hibernate:
       ddl-auto: none

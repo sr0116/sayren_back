@@ -6,9 +6,11 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
+import com.imchobo.sayren_back.domain.payment.component_recorder.StatusChanger;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentAlreadyExistsException;
@@ -21,10 +23,11 @@ import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoRes
 import com.imchobo.sayren_back.domain.payment.repository.PaymentHistoryRepository;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
-import com.imchobo.sayren_back.domain.subscribe.history_recorder.HistoryRecorder;
+import com.imchobo.sayren_back.domain.payment.component_recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
@@ -60,8 +63,9 @@ public class PaymentServiceImpl implements PaymentService {
 
   // PortOne api 호출 및 연동
   private final PortOnePaymentClient portOnePaymentClient;
+  // 상태 변경 컴포넌트 이벤트 처리
   private final HistoryRecorder historyRecorder;
-
+  private final StatusChanger statusChanger;
 
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
@@ -79,18 +83,15 @@ public class PaymentServiceImpl implements PaymentService {
 
     // 엔티티 변환용
     Subscribe subscribe = null;
-
-
     //  구독 결제(Rental)일 경우 → 구독 + 회차 생성
     if (planType == OrderPlanType.RENTAL) {
       SubscribeRequestDTO subscribeRequestDTO =
               subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
-
       // 구독 생성 (엔티티 리턴)
       subscribe = subscribeService.createSubscribe(subscribeRequestDTO);
     }
 
-    // portOne 고유 식별자 생성
+    // portOne 고유 식별자 (merchantUid) 생성
     String merchantUid = "pay_" + UUID.randomUUID().toString().replace("-", "");
     // metchantUid 중복 불가 예외 처리, null 값은 이미 처리해둠
     if (paymentRepository.findByMerchantUid(merchantUid).isPresent()) {
@@ -99,7 +100,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     // DTO -> 엔티티 변환 결제 테이블
     Payment payment = paymentMapper.toEntity(dto);
-
     payment.setMember(currentMember);
     payment.setMerchantUid(merchantUid);
     payment.setOrderItem(orderItem);
@@ -112,16 +112,16 @@ public class PaymentServiceImpl implements PaymentService {
       // 상품 가격 + 1회차(렌탈료+ 보증금) -> payment.getAmount()+firstRound.getAmount() 나중에 금액 조회시 필요
       payment.setSubscribeRound(firstRound);
       payment.setAmount(firstRound.getAmount());
-    }  else {
+    } else {
       // 일반 결제는 OrderItem 금액 사용
       payment.setAmount(Long.valueOf(orderItem.getProductPriceSnapshot()));
     }
     // DB 저장
     Payment savedPayment = paymentRepository.save(payment);
-    PaymentResponseDTO response = paymentMapper.toResponseDTO(savedPayment);
-    log.info("결제 응답 DTO: {}", response);
+//    PaymentResponseDTO response = paymentMapper.toResponseDTO(savedPayment); 테스트용 나중에 지우기
+//    log.info("결제 응답 DTO: {}", response);
 
-    // DTO -> 엔티티 변환 결제 로그 테이블 savedPayment 기반
+    // DTO -> 엔티티 변환 결제 로그 테이블  생성 savedPayment 기반
     PaymentHistory paymentHistory = paymentHistoryMapper.fromPayment(savedPayment);
     paymentHistoryRepository.save(paymentHistory);
 
@@ -136,45 +136,40 @@ public class PaymentServiceImpl implements PaymentService {
     // payment 조회(OrderItem, paln join)
     Payment payment = paymentRepository.findWithOrderAndPlan(paymentId)
             .orElseThrow(() -> new PaymentNotFoundException(paymentId));
-
-    // portone 결제 정보 조회
+    // 결제 정보 조회
     PaymentInfoResponse paymentInfo = portOnePaymentClient.getPaymentInfo(impUid);
-    log.info("portone 결제 정보 : {}", paymentInfo);
+    log.info("PortOne 결제 정보: {}", paymentInfo);
 
-    // 상태 검증
-    PaymentStatus mappedStatus = PaymentStatus.fromPortOneStatus(paymentInfo.getStatus());
-    if (mappedStatus != PaymentStatus.PAID) {
-      payment.setPaymentStatus(mappedStatus);
-      paymentRepository.save(payment);
-      // 실패시 히스토리 기록
-      historyRecorder.recordPayment(payment, ReasonCode.PAYMENT_FAILURE, ActorType.SYSTEM);
+    // 매핑 확인 로그
+    log.info("PortOne 매핑 확인: status={}, errorCode={}, errorMsg={}",
+            paymentInfo.getStatus(),
+            paymentInfo.getErrorCode(),
+            paymentInfo.getFailReason());
 
-      throw new PaymentNotFoundException("결제 미완료 상태: " + paymentInfo.getStatus());
+    PaymentTransition transition = PaymentTransition.fromPortOne(paymentInfo);
+
+    if (transition == PaymentTransition.COMPLETE &&
+            !paymentInfo.getAmount().equals(payment.getAmount())) {
+      log.warn("결제 금액 불일치: 요청 금액={}, PortOne 금액={}",
+              payment.getAmount(), paymentInfo.getAmount());
+      transition = PaymentTransition.FAIL_SYSTEM;
     }
-    // 금액 검증
-    if(!paymentInfo.getAmount().equals(payment.getAmount())) {
-      log.warn("결제 금액 불 일치: 요청 금액={}, portone 금액={}", payment.getAmount(), paymentInfo.getAmount());
-      throw new PaymentAmountMismatchException(payment.getAmount(), paymentInfo.getAmount());
-    }
-    // 결제 완료 처리
+// 5. 상태 반영
     payment.setImpUid(impUid);
-    payment.setPaymentStatus(PaymentStatus.PAID);
-    Payment savedPayment = paymentRepository.save(payment);
+    statusChanger.changePayment(payment, transition, ActorType.SYSTEM);
 
-    // 결제 히스토리 기록(결제 완료)- actortype 일단 system 으로 해두는데 어떻게 할지 논의
-    historyRecorder.recordPayment(savedPayment, ReasonCode.NONE, ActorType.SYSTEM);
-
-    // 구독 결제시 상태 (구독 준비 상태 변경 및 회차 테이블 paid 상태 변경)
-    if (savedPayment.getSubscribeRound() != null) {
-      Subscribe subscribe = savedPayment.getSubscribeRound().getSubscribe();
-      subscribe.setStatus(SubscribeStatus.PENDING_PAYMENT);
-      subscribeRepository.save(subscribe);
-
-      historyRecorder.recordSubscribe(subscribe, ReasonCode.NONE, ActorType.SYSTEM);
-
+// 6. 성공일 때만 구독/회차 처리
+    if (transition == PaymentTransition.COMPLETE && payment.getSubscribeRound() != null) {
+      Subscribe subscribe = payment.getSubscribeRound().getSubscribe();
+      statusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+      statusChanger.changeSubscribeRound(
+              payment.getSubscribeRound(),
+              SubscribeRoundTransition.PAY_SUCCESS,
+              ActorType.SYSTEM
+      );
     }
-    // 응답
-    return  paymentMapper.toResponseDTO(savedPayment);
+    return paymentMapper.toResponseDTO(payment);
+
   }
 
   @Override

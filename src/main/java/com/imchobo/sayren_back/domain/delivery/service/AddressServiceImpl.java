@@ -5,6 +5,8 @@ import com.imchobo.sayren_back.domain.delivery.dto.AddressResponseDTO;
 import com.imchobo.sayren_back.domain.delivery.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.mapper.AddressMapper;
 import com.imchobo.sayren_back.domain.delivery.repository.AddressRepository;
+import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,11 +27,14 @@ public class AddressServiceImpl implements AddressService {
    */
   @Override
   public AddressResponseDTO createAddress(AddressRequestDTO dto) {
-    Address address = addressMapper.toEntity(dto);
+    // 현재 로그인한 멤버 가져오기
+    Member currentMember = SecurityUtil.getMemberEntity();
+
+    Address address = addressMapper.toEntity(dto, currentMember);
 
     // 기본 배송지 설정
     if (Boolean.TRUE.equals(dto.getIsDefault())) {
-      addressRepository.findByMemberIdAndIsDefaultTrue(dto.getMemberId())
+      addressRepository.findByMemberIdAndIsDefaultTrue(currentMember.getId())
         .ifPresent(addr -> {
           addr.setIsDefault(false); // 기존 기본 배송지 해제
           addressRepository.save(addr);

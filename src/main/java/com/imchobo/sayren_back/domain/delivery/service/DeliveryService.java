@@ -2,17 +2,38 @@ package com.imchobo.sayren_back.domain.delivery.service;
 
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryResponseDTO;
+
 import java.util.List;
 
 public interface DeliveryService {
-    DeliveryResponseDTO create(DeliveryRequestDTO dto); // 수동 생성(API)
+
+    // ── 기본 CRUD ────────────────────────────────
+    DeliveryResponseDTO create(DeliveryRequestDTO dto);
+
     DeliveryResponseDTO get(Long id);
+
     List<DeliveryResponseDTO> getByMember(Long memberId);
 
-    // 상태 전환 (엔티티 최종본 상태셋에 맞춤)
-    DeliveryResponseDTO prepare(Long id);     // READY -> PREPARING
-    DeliveryResponseDTO ship(Long id);        // PREPARING -> SHIPPING
-    DeliveryResponseDTO complete(Long id);    // SHIPPING -> DELIVERED
-    DeliveryResponseDTO pickupReady(Long id); // RETURN 타입 회수 준비
-    DeliveryResponseDTO pickedUp(Long id);    // 회수 완료
+    // 주문 ID 기준 조회
+    List<DeliveryResponseDTO> getByOrder(Long orderId);
+
+    // ── 상태 전환 ────────────────────────────────
+
+    // 배송 시작 (READY → SHIPPING)
+    DeliveryResponseDTO ship(Long id);
+
+    // 배송 완료 (SHIPPING → DELIVERED)
+    DeliveryResponseDTO complete(Long id);
+
+    // 회수 준비 (DELIVERED → RETURN_READY)
+    DeliveryResponseDTO returnReady(Long id);
+
+    // 회수 중 (RETURN_READY → IN_RETURNING)
+    DeliveryResponseDTO inReturning(Long id);
+
+    // 회수 완료 (IN_RETURNING → RETURNED)
+    DeliveryResponseDTO returned(Long id);
+
+    // ----------------------------------
+    void createFromOrderId(Long orderId); // 결제 성공 직후 자동 생성
 }

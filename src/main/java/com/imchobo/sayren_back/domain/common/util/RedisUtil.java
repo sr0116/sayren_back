@@ -140,21 +140,5 @@ public class RedisUtil {
     delete("REFRESH_TOKEN:" + memberId);
   }
 
-  public void setTermLatest(LatestTerms latestTerms) {
-    setObject("SERVICE_TERM", latestTerms.service());
-    setObject("PRIVACY_TERM", latestTerms.privacy());
-  }
-
-  public LatestTerms getLatestTerms() {
-    Term service = getObject("SERVICE_TERM", Term.class);
-    Term privacy = getObject("PRIVACY_TERM", Term.class);
-
-    if (service == null || privacy == null) {
-      throw new IllegalStateException("Redis에 최신 약관이 존재하지 않습니다.");
-    }
-
-    return new LatestTerms(service, privacy);
-  }
-
 
 }

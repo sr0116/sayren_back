@@ -5,17 +5,14 @@ import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.payment.service.PaymentService;
-import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/user/payments")
+@RequestMapping("/api/payments")
 @RequiredArgsConstructor
 @Log4j2
 public class PaymentController {
@@ -32,12 +29,10 @@ public class PaymentController {
 
   // 결제 완료시 상태 변경
   @PostMapping("/{paymentId}/complete")
-  public PaymentResponseDTO complete(@PathVariable Long paymentId,
-                                     @RequestParam("imp_uid") String impUid) {
+  public PaymentResponseDTO complete(@PathVariable Long paymentId, @RequestParam("imp_uid") String impUid) {
+    //
     return paymentService.complete(paymentId, impUid);
   }
-
-
 
 //// 결제 환불
 //  @PostMapping("/{paymentId}/refund")

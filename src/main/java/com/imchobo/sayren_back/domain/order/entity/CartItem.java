@@ -16,17 +16,19 @@ public class CartItem {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "cart_item_id")
-  private Long id;
+  private Long id;  // PK
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "member_id", nullable = false)
-  private Member member;
+  private Member member; // 장바구니 소유자
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "product_id", nullable = false)
-  private Product product;
+  private Product product;  // 담긴 상품
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "order_plan_id", nullable = false)
-  private OrderPlan orderPlan;
+  private OrderPlan orderPlan; // 요금제 (일반구매 시 null 가능)
+
+  private int quantity; // 수량
 }
