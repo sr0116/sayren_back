@@ -1,12 +1,6 @@
 package com.imchobo.sayren_back.domain.delivery.orchestration;
 
-import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
-import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
-import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
-import com.imchobo.sayren_back.domain.delivery.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
-import com.imchobo.sayren_back.domain.order.entity.Order;
-import com.imchobo.sayren_back.domain.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;

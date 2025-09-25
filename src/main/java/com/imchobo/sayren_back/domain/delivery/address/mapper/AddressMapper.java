@@ -1,12 +1,11 @@
-package com.imchobo.sayren_back.domain.delivery.mapper;
+package com.imchobo.sayren_back.domain.delivery.address.mapper;
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
-import com.imchobo.sayren_back.domain.delivery.dto.AddressRequestDTO;
-import com.imchobo.sayren_back.domain.delivery.dto.AddressResponseDTO;
-import com.imchobo.sayren_back.domain.delivery.entity.Address;
+import com.imchobo.sayren_back.domain.delivery.address.dto.AddressRequestDTO;
+import com.imchobo.sayren_back.domain.delivery.address.dto.AddressResponseDTO;
+import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 
 import java.util.List;
 

@@ -1,10 +1,10 @@
-package com.imchobo.sayren_back.domain.delivery.service;
+package com.imchobo.sayren_back.domain.delivery.address.service;
 
-import com.imchobo.sayren_back.domain.delivery.dto.AddressRequestDTO;
-import com.imchobo.sayren_back.domain.delivery.dto.AddressResponseDTO;
-import com.imchobo.sayren_back.domain.delivery.entity.Address;
-import com.imchobo.sayren_back.domain.delivery.mapper.AddressMapper;
-import com.imchobo.sayren_back.domain.delivery.repository.AddressRepository;
+import com.imchobo.sayren_back.domain.delivery.address.dto.AddressRequestDTO;
+import com.imchobo.sayren_back.domain.delivery.address.dto.AddressResponseDTO;
+import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
+import com.imchobo.sayren_back.domain.delivery.address.mapper.AddressMapper;
+import com.imchobo.sayren_back.domain.delivery.address.repository.AddressRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.persistence.EntityNotFoundException;
