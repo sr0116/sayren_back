@@ -11,6 +11,6 @@ import java.time.LocalDateTime;
 @Builder
 public class FaqListResponseDTO {
   private Long boardId;
-  private String title;     // 질문
+  private String title;
   private LocalDateTime regDate;
 }

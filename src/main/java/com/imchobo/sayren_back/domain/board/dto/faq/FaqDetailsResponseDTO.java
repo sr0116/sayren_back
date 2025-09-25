@@ -1,13 +1,20 @@
 package com.imchobo.sayren_back.domain.board.dto.faq;
 
-import com.imchobo.sayren_back.domain.board.dto.BoardResponseDTO;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FaqDetailsResponseDTO extends BoardResponseDTO {
-  private String answer;
+public class FaqDetailsResponseDTO {
+  private Long boardId;
+  private String title;
+  private String content;
+
+  private String categoryName;
+  private LocalDateTime regDate;
+  private LocalDateTime modDate;
 }

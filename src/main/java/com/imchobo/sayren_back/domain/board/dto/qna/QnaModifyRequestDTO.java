@@ -1,6 +1,5 @@
 package com.imchobo.sayren_back.domain.board.dto.qna;
 
-import com.imchobo.sayren_back.domain.board.dto.BoardRequestDTO;
 import lombok.*;
 
 @Getter
@@ -8,7 +7,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class QnaModifyRequestDTO extends BoardRequestDTO {
-  private Long boardId;   // 수정할 게시글 번호
+public class QnaModifyRequestDTO {
+  private String title;
+  private String content;
   private boolean isSecret;
 }

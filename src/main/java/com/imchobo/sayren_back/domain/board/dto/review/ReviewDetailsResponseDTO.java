@@ -1,16 +1,34 @@
 package com.imchobo.sayren_back.domain.board.dto.review;
 
-import com.imchobo.sayren_back.domain.board.dto.BoardRequestDTO;
-import com.imchobo.sayren_back.domain.board.dto.BoardResponseDTO;
+import com.imchobo.sayren_back.domain.attach.dto.BoardAttachResponseDTO;
 import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReviewDetailsResponseDTO extends BoardResponseDTO {
-    private int rating;  // 별점
-    private Long productId; // 상품 번호
-    private String productName; // 상품명
+public class ReviewDetailsResponseDTO {
+    private Long boardId;
+    private String title;
+    private String content;
+    private boolean isSecret;
+
+    private String categoryName;
+    private int replyCount;
+    private int likeCount;
+
+    private LocalDateTime regDate;
+    private LocalDateTime modDate;
+
+    private BoardAttachResponseDTO thumbnail;
+    private List<BoardAttachResponseDTO> attachList;
+
+    // 리뷰 전용
+    private int rating;
+    private Long productId;
+    private String productName;
 }

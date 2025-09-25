@@ -12,27 +12,27 @@ import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring", uses = MappingUtil.class)
 public interface NoticeMapper {
-  // NoticeCreateRequestDTO -> Board
-  @Mapping(target = "id", ignore = true)
-  @Mapping(target = "member", ignore = true)
-  @Mapping(target = "category", ignore = true)   // 카테고리(NOTICE) Service에서 강제 주입
-  @Mapping(target = "product", ignore = true)    // 공지는 상품 연관 없음
-  @Mapping(target = "status", ignore = true)
+  // ============ Create ============
+  @Mapping(target = "id", ignore = true)         // PK 자동 생성
+  @Mapping(target = "member", ignore = true)     // 로그인 사용자 Service에서 주입
+  @Mapping(target = "category", ignore = true)   // NOTICE 카테고리 Service에서 강제 주입
+  @Mapping(target = "product", ignore = true)    // Notice는 상품 연관 없음
+  @Mapping(target = "status", ignore = true)     // 엔티티 기본값 사용
   Board toEntity(NoticeCreateRequestDTO dto);
 
-  // NoticeModifyRequestDTO -> Board 업데이트
-  @Mapping(target = "category", ignore = true)
+  // ============ Update ============
   @Mapping(target = "member", ignore = true)
+  @Mapping(target = "category", ignore = true)
   @Mapping(target = "product", ignore = true)
   @Mapping(target = "status", ignore = true)
   void updateEntity(@MappingTarget Board board, NoticeModifyRequestDTO dto);
 
-  // Board -> NoticeDetailsResponseDTO
+  // ============ Details ============
   @Mapping(source = "id", target = "boardId")
   @Mapping(source = "category.name", target = "categoryName")
   NoticeDetailsResponseDTO toDetailsDTO(Board board);
 
-  // Board -> NoticeListResponseDTO
+  // ============ List ============
   @Mapping(source = "id", target = "boardId")
   NoticeListResponseDTO toListDTO(Board board);
 }
