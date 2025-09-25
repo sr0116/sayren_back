@@ -80,12 +80,7 @@ public class PaymentServiceImpl implements PaymentService {
     // 엔티티 변환용
     Subscribe subscribe = null;
     //  구독 결제(Rental)일 경우 → 구독 + 회차 생성
-    if (planType == OrderPlanType.RENTAL) {
-      SubscribeRequestDTO subscribeRequestDTO =
-              subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
-      // 구독 생성 (엔티티 리턴)
-      subscribe = subscribeService.createSubscribe(subscribeRequestDTO);
-    }
+    subscribe = getSubscribe(planType, orderItem, subscribe);
 
     // portOne 고유 식별자 (merchantUid) 생성
     String merchantUid = "pay_" + UUID.randomUUID().toString().replace("-", "");
@@ -123,6 +118,16 @@ public class PaymentServiceImpl implements PaymentService {
 
     // 응답
     return paymentMapper.toResponseDTO(savedPayment);
+  }
+
+  private Subscribe getSubscribe(OrderPlanType planType, OrderItem orderItem, Subscribe subscribe) {
+    if (planType == OrderPlanType.RENTAL) {
+      SubscribeRequestDTO subscribeRequestDTO =
+              subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
+      // 구독 생성 (엔티티 리턴)
+      subscribe = subscribeService.createSubscribe(subscribeRequestDTO);
+    }
+    return subscribe;
   }
 
   // 결제 응답

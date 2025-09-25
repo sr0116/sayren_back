@@ -50,17 +50,17 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Transactional
   @Override
   public Subscribe createSubscribe(SubscribeRequestDTO dto) {
-    try {
+
       //dto -> entity (기본값 세팅 PENDING_PAYMENT)
       Subscribe subscribe = subscribeMapper.toEntity(dto);
 
       // 보증금 및 월 렌탈료 저장
-      int monthlyFee = dto.getMonthlyFeeSnapshot();
-      int depositSnapshot = calculateDeposit(monthlyFee);
+      Long monthlyFee = dto.getMonthlyFeeSnapshot();
+      Long depositSnapshot = calculateDeposit(monthlyFee);
 
       // 스냅샷 값
-      subscribe.setMonthlyFeeSnapshot((long) monthlyFee);
-      subscribe.setDepositSnapshot((long) depositSnapshot);
+      subscribe.setMonthlyFeeSnapshot(monthlyFee);
+      subscribe.setDepositSnapshot(depositSnapshot);
 
       // 로그인 유저 주입
       Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
@@ -68,24 +68,21 @@ public class SubscribeServiceImpl implements SubscribeService {
 
       // 구독 저장
       Subscribe savedSubscribe = subscribeRepository.save(subscribe);
+
       // 회차 테이블 생성
       subscribeRoundService.createRounds(savedSubscribe, dto);
 
-      // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티 )
+      // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티)
       SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
       subscribeHistoryRepository.save(subscribeHistory);
 
-
       return savedSubscribe;
-
-    } catch (Exception e) {
-      throw new SubscribeCreationException("구독 생성 실패");
-    }
   }
 
   // 보증금 계산(일단 20% 고정 임시로 나중에 % 수정 가능성)
-  private int calculateDeposit(int monthlyFee) {
-    return (int) (monthlyFee * 0.2);
+  private Long calculateDeposit(Long monthlyFee) {
+    if (monthlyFee == null) return 0L;
+    return Math.round(monthlyFee * 0.2);
   }
 
   // 구독 단건 조회

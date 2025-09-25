@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -30,24 +32,18 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
     Long deposit = subscribe.getDepositSnapshot();
     int totalMonths = dto.getTotalMonths();
 
+    List<SubscribeRound> rounds = new ArrayList<>();
+
     for (int i = 1; i <= totalMonths; i++) {
-      SubscribeRound round = new SubscribeRound();
-      round.setSubscribe(subscribe);
-      round.setRoundNo(i);
-//      round.setPayStatus(PaymentStatus.PENDING); // 결제 대기 이미 default 라 나중에 삭제
-      // 1회차일 때 보증금 + 월 렌탈료 포함
-      if (i == 1) {
-        round.setAmount((long) (monthlyFee + deposit)); // 임시로 형 변환 해두고 디비 타입 바꿀지 아니면 형변환으로 사용할지 생각
-      } else {
-        round.setAmount(monthlyFee);
-      }
-      round.setDueDate(startDate.plusMonths(i - 1));
+      Long amount = (i == 1) ? monthlyFee + deposit // 1회차 = 월 렌탈료 + 보증금
+              : monthlyFee;          // 나머지 회차 = 월 렌탈료만
 
-      subscribeRoundRepository.save(round);
-      // 확인용
+      SubscribeRound round = SubscribeRound.builder().subscribe(subscribe).roundNo(i).amount(amount).dueDate(startDate.plusMonths(i - 1)).build();
 
-      log.info("구독 [{}] - {}회차 생성 완료 (금액: {}, 납부예정일: {})",
-              subscribe.getId(), i, round.getAmount(), round.getDueDate());
+      rounds.add(round);
     }
+    subscribeRoundRepository.saveAll(rounds);
+    // 확인용
+    log.info("구독 [{}] - 총 {}회차 생성 완료. (1회차 금액: {}, 보증금 포함, 시작일: {})", subscribe.getId(), totalMonths, rounds.get(0).getAmount(), startDate);
   }
 }

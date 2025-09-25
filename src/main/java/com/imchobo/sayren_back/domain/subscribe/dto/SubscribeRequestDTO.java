@@ -18,11 +18,11 @@ public class SubscribeRequestDTO {
 
   @NotNull(message = "월 렌탈료는 필수입니다.")
   @PositiveOrZero(message = "월 렌탈료는 0 이상이어야 합니다.")
-  private Integer monthlyFeeSnapshot;
+  private Long monthlyFeeSnapshot;
 
   @NotNull(message = "보증금은 필수입니다.")
   @PositiveOrZero(message = "보증금은 0 이상이어야 합니다.")
-  private Integer depositSnapshot;
+  private Long depositSnapshot;
 
   @NotNull(message = "구독 개월 수는 필수입니다.")
   @Min(value = 12, message = "구독 개월 수는 1년 이상이어야 합니다.")
