@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class HistoryRecorder {
   // reason_code 공통 사용
-
+  // 패키지 분리 후 삭제
   private final PaymentHistoryRepository paymentHistoryRepository;
   private final SubscribeHistoryRepository subscribeHistoryRepository;
   private final RefundRepository refundRepository;
@@ -59,7 +59,5 @@ public class HistoryRecorder {
     refund.setAmount(amount);
     refundRepository.save(refund);
   }
-
-
 
 }

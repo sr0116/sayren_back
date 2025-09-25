@@ -28,10 +28,8 @@ public interface SubscribeMapper {
   @Mapping(source = "orderItem.id", target = "orderItemId")
   @Mapping(source = "orderItem.productPriceSnapshot", target = "monthlyFeeSnapshot")
   @Mapping(source = "plan.month", target = "totalMonths")
-  @Mapping(target = "depositSnapshot", constant = "0")
-  @Mapping(target = "startDate", expression = "java(LocalDate.now())")
-  @Mapping(target = "endDate", expression = "java(LocalDate.now().plusMonths(plan.getMonth()))")
   SubscribeRequestDTO toRequestDTO(OrderItem orderItem, Order order, OrderPlan plan);
+
 
   // 응답 DTO
   @Mapping(source = "orderItem.id", target = "orderItemId")

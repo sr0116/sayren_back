@@ -77,15 +77,8 @@ public class PaymentServiceImpl implements PaymentService {
     // 구독 인지 일반인지 조회
     OrderPlanType planType = orderItem.getOrderPlan().getType();
 
-    // 엔티티 변환용
-    Subscribe subscribe = null;
     //  구독 결제(Rental)일 경우 → 구독 + 회차 생성
-    if (planType == OrderPlanType.RENTAL) {
-      SubscribeRequestDTO subscribeRequestDTO =
-              subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
-      // 구독 생성 (엔티티 리턴)
-      subscribe = subscribeService.createSubscribe(subscribeRequestDTO);
-    }
+    Subscribe subscribe = getSubscribe(planType, orderItem);
 
     // portOne 고유 식별자 (merchantUid) 생성
     String merchantUid = "pay_" + UUID.randomUUID().toString().replace("-", "");
@@ -110,12 +103,10 @@ public class PaymentServiceImpl implements PaymentService {
       payment.setAmount(firstRound.getAmount());
     } else {
       // 일반 결제는 OrderItem 금액 사용
-      payment.setAmount(Long.valueOf(orderItem.getProductPriceSnapshot()));
+      payment.setAmount(orderItem.getProductPriceSnapshot());
     }
     // DB 저장
     Payment savedPayment = paymentRepository.save(payment);
-//    PaymentResponseDTO response = paymentMapper.toResponseDTO(savedPayment); 테스트용 나중에 지우기
-//    log.info("결제 응답 DTO: {}", response);
 
     // DTO -> 엔티티 변환 결제 로그 테이블  생성 savedPayment 기반
     PaymentHistory paymentHistory = paymentHistoryMapper.fromPayment(savedPayment);
@@ -123,6 +114,17 @@ public class PaymentServiceImpl implements PaymentService {
 
     // 응답
     return paymentMapper.toResponseDTO(savedPayment);
+  }
+
+  // 구독 생성
+  private Subscribe getSubscribe(OrderPlanType planType, OrderItem orderItem) {
+    if (planType == OrderPlanType.RENTAL) {
+      SubscribeRequestDTO subscribeRequestDTO =
+              subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
+      // 구독 생성 (엔티티 리턴) → OrderItem도 함께 전달
+      return subscribeService.createSubscribe(subscribeRequestDTO, orderItem);
+    }
+    return null;
   }
 
   // 결제 응답

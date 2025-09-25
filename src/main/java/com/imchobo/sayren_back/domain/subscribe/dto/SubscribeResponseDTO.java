@@ -14,8 +14,8 @@ public class SubscribeResponseDTO {
   private Long orderItemId;
   private SubscribeStatus status;
 
-  private Integer monthlyFeeSnapshot;
-  private Integer depositSnapshot;
+  private Long monthlyFeeSnapshot;
+  private Long depositSnapshot;
   private Integer totalMonths;
 
   private LocalDateTime regDate; // 신청일

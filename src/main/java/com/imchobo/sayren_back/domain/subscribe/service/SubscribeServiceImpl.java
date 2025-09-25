@@ -4,6 +4,7 @@ package com.imchobo.sayren_back.domain.subscribe.service;
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -19,18 +20,22 @@ import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.mapper.SubscribeRoundMapper;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribeRoundService;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class SubscribeServiceImpl implements SubscribeService {
   // DB 접근
   private final SubscribeRepository subscribeRepository;
@@ -49,43 +54,43 @@ public class SubscribeServiceImpl implements SubscribeService {
   // 구독 테이블 생성
   @Transactional
   @Override
-  public Subscribe createSubscribe(SubscribeRequestDTO dto) {
-    try {
-      //dto -> entity (기본값 세팅 PENDING_PAYMENT)
-      Subscribe subscribe = subscribeMapper.toEntity(dto);
+  public Subscribe createSubscribe(SubscribeRequestDTO dto, OrderItem orderItem) {
 
-      // 보증금 및 월 렌탈료 저장
-      int monthlyFee = dto.getMonthlyFeeSnapshot();
-      int depositSnapshot = calculateDeposit(monthlyFee);
+    //dto -> entity (기본값 세팅 PENDING_PAYMENT)
+    Subscribe subscribe = subscribeMapper.toEntity(dto);
 
-      // 스냅샷 값
-      subscribe.setMonthlyFeeSnapshot((long) monthlyFee);
-      subscribe.setDepositSnapshot((long) depositSnapshot);
+    // 보증금 및 월 렌탈료 저장
+    Long productPrice = orderItem.getProductPriceSnapshot();
+    // 월렌탈료 먼저 계산
+    Long monthlyFee = productPrice / dto.getTotalMonths();
+    // 보증금 계산
+    Long depositSnapshot = calculateDeposit(productPrice);
 
-      // 로그인 유저 주입
-      Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
-      subscribe.setMember(currentMember);
+    // 스냅샷 값
+    subscribe.setMonthlyFeeSnapshot(monthlyFee); // 렌탈료
+    subscribe.setDepositSnapshot(depositSnapshot); // 보증금
 
-      // 구독 저장
-      Subscribe savedSubscribe = subscribeRepository.save(subscribe);
-      // 회차 테이블 생성
-      subscribeRoundService.createRounds(savedSubscribe, dto);
+    // 로그인 유저 주입
+    Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
+    subscribe.setMember(currentMember);
 
-      // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티 )
-      SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
-      subscribeHistoryRepository.save(subscribeHistory);
+    // 구독 저장
+    Subscribe savedSubscribe = subscribeRepository.save(subscribe);
 
+    // 회차 테이블 생성
+    subscribeRoundService.createRounds(savedSubscribe, dto, orderItem);
 
-      return savedSubscribe;
+    // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티)
+    SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
+    subscribeHistoryRepository.save(subscribeHistory);
 
-    } catch (Exception e) {
-      throw new SubscribeCreationException("구독 생성 실패");
-    }
+    return savedSubscribe;
   }
 
   // 보증금 계산(일단 20% 고정 임시로 나중에 % 수정 가능성)
-  private int calculateDeposit(int monthlyFee) {
-    return (int) (monthlyFee * 0.2);
+  private Long calculateDeposit(Long monthlyFee) {
+    if (monthlyFee == null) return 0L;
+    return Math.round(monthlyFee * 0.2);
   }
 
   // 구독 단건 조회
@@ -126,13 +131,34 @@ public class SubscribeServiceImpl implements SubscribeService {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
 
+    // 구독 개월 수 가져오기
+    Integer months = subscribe.getOrderItem().getOrderPlan().getMonth();
+    if (months == null || months <= 0) {
+      throw new IllegalStateException("구독 기간(month)이 잘못 설정됨");
+    }
+
+    // 시작일/종료일 확정
+    LocalDate startDate = LocalDate.now();
+    subscribe.setStartDate(startDate);
+    subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
+
+    // 상태 ACTIVE 전환
     subscribe.setStatus(SubscribeStatus.ACTIVE);
     subscribeRepository.save(subscribe);
+
+    // 회차 dueDate 확정
+    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
+    for (SubscribeRound round : rounds) {
+      round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
+    }
 
     // 이력 기록
     historyRecorder.recordSubscribe(subscribe, ReasonCode.NONE, ActorType.SYSTEM);
 
+    log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
+            subscribeId, startDate, subscribe.getEndDate(), rounds.size());
   }
+
 
   // 사용자 구독 취소 요청
   @Override
@@ -177,8 +203,7 @@ public class SubscribeServiceImpl implements SubscribeService {
       history.setStatus(SubscribeStatus.CANCELED);
       history.setReasonCode(ReasonCode.CONTRACT_CANCEL); // 승인
       subscribeHistoryRepository.save(history);
-    }
-    else {
+    } else {
       subscribe.setStatus(SubscribeStatus.ACTIVE);
       subscribeRepository.save(subscribe);
 
@@ -196,7 +221,7 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Transactional
   public List<SubscribeHistoryResponseDTO> getHistories(Long subscribeId) {
     List<SubscribeHistory> histories = subscribeHistoryRepository.findBySubscribe_Id(subscribeId);
-    if(histories.isEmpty()) {
+    if (histories.isEmpty()) {
       throw new SubscribeNotFoundException(subscribeId);
     }
     return subscribeHistoryMapper.toResponseDTOList(histories);
