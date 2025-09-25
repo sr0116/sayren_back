@@ -66,7 +66,7 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
-  public MemberLoginResponseDTO getUser(HttpServletRequest request) {
+  public MemberLoginResponseDTO getUser() {
     return memberMapper.toLoginResponseDTO(SecurityUtil.getMemberAuthDTO());
   }
 

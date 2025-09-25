@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.member.service;
 
+import com.imchobo.sayren_back.domain.common.annotation.ActiveMemberOnly;
 import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
@@ -21,6 +22,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -115,5 +118,12 @@ public class MemberServiceImpl implements MemberService {
   public FindEmailResponseDTO findEmail(MemberTelDTO memberTelDTO) {
     Member member = telVerify(memberTelDTO);
     return memberMapper.toFindEmailResponseDTO(member);
+  }
+
+  @Override
+  @ActiveMemberOnly
+  public Map<?, ?> getTel() {
+    String tel = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new).getTel();
+    return Map.of("telinfo", tel);
   }
 }

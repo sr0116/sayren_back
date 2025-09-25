@@ -40,4 +40,8 @@ public class UserMemberController {
     return ResponseEntity.ok(memberService.findEmail(memberTelDTO));
   }
 
+  @GetMapping("get-tel")
+  public ResponseEntity<?> getTel(){
+    return ResponseEntity.ok(memberService.getTel());
+  }
 }
