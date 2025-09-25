@@ -4,6 +4,7 @@ package com.imchobo.sayren_back.domain.subscribe.service;
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -19,18 +20,22 @@ import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.mapper.SubscribeRoundMapper;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribeRoundService;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class SubscribeServiceImpl implements SubscribeService {
   // DB 접근
   private final SubscribeRepository subscribeRepository;
@@ -49,12 +54,13 @@ public class SubscribeServiceImpl implements SubscribeService {
   // 구독 테이블 생성
   @Transactional
   @Override
-  public Subscribe createSubscribe(SubscribeRequestDTO dto) {
+  public Subscribe createSubscribe(SubscribeRequestDTO dto, OrderItem orderItem) {
 
       //dto -> entity (기본값 세팅 PENDING_PAYMENT)
       Subscribe subscribe = subscribeMapper.toEntity(dto);
 
       // 보증금 및 월 렌탈료 저장
+//      Long productPrice = orderItem.getProductPriceSnapshot();
       Long monthlyFee = dto.getMonthlyFeeSnapshot();
       Long depositSnapshot = calculateDeposit(monthlyFee);
 
@@ -70,7 +76,7 @@ public class SubscribeServiceImpl implements SubscribeService {
       Subscribe savedSubscribe = subscribeRepository.save(subscribe);
 
       // 회차 테이블 생성
-      subscribeRoundService.createRounds(savedSubscribe, dto);
+      subscribeRoundService.createRounds(savedSubscribe, dto, orderItem);
 
       // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티)
       SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
@@ -123,13 +129,34 @@ public class SubscribeServiceImpl implements SubscribeService {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
 
+    // 구독 개월 수 가져오기
+    Integer months = subscribe.getOrderItem().getOrderPlan().getMonth();
+    if (months == null || months <= 0) {
+      throw new IllegalStateException("구독 기간(month)이 잘못 설정됨");
+    }
+
+    // 시작일/종료일 확정
+    LocalDate startDate = LocalDate.now();
+    subscribe.setStartDate(startDate);
+    subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
+
+    // 상태 ACTIVE 전환
     subscribe.setStatus(SubscribeStatus.ACTIVE);
     subscribeRepository.save(subscribe);
+
+    // 회차 dueDate 확정
+    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
+    for (SubscribeRound round : rounds) {
+      round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
+    }
 
     // 이력 기록
     historyRecorder.recordSubscribe(subscribe, ReasonCode.NONE, ActorType.SYSTEM);
 
+    log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
+            subscribeId, startDate, subscribe.getEndDate(), rounds.size());
   }
+
 
   // 사용자 구독 취소 요청
   @Override

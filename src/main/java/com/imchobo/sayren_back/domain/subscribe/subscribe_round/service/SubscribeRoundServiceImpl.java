@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.subscribe.subscribe_round.service;
 
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
@@ -25,9 +26,10 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
   // 구독회차 정보
   @Transactional
   @Override
-  public void createRounds(Subscribe subscribe, SubscribeRequestDTO dto) {
-    // 구독 시작일
+  public void createRounds(Subscribe subscribe, SubscribeRequestDTO dto, OrderItem orderItem) {
+    // 구독 시작일(배송 완료 후 확정)
     LocalDate startDate = subscribe.getStartDate();
+    Long productPrice = orderItem.getProductPriceSnapshot(); // 상품 가격
     Long monthlyFee = subscribe.getMonthlyFeeSnapshot();
     Long deposit = subscribe.getDepositSnapshot();
     int totalMonths = dto.getTotalMonths();
@@ -38,12 +40,19 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
       Long amount = (i == 1) ? monthlyFee + deposit // 1회차 = 월 렌탈료 + 보증금
               : monthlyFee;          // 나머지 회차 = 월 렌탈료만
 
-      SubscribeRound round = SubscribeRound.builder().subscribe(subscribe).roundNo(i).amount(amount).dueDate(startDate.plusMonths(i - 1)).build();
+      SubscribeRound round = SubscribeRound.builder()
+              .subscribe(subscribe)
+              .roundNo(i)
+              .amount(amount)
+              .dueDate(startDate != null ? startDate.plusMonths(i - 1) : null)
+              .build();
 
       rounds.add(round);
     }
     subscribeRoundRepository.saveAll(rounds);
     // 확인용
-    log.info("구독 [{}] - 총 {}회차 생성 완료. (1회차 금액: {}, 보증금 포함, 시작일: {})", subscribe.getId(), totalMonths, rounds.get(0).getAmount(), startDate);
+    log.info("구독 [{}] - 총 {}회차 생성 완료. (1회차 금액: {}, 상품 가격(보증금 포함) {}, 시작일: {})", subscribe.getId(),  totalMonths, rounds.get(0).getAmount(), productPrice, startDate);
   }
+
+
 }
