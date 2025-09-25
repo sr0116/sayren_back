@@ -1,7 +1,6 @@
-package com.imchobo.sayren_back.domain.payment.component_recorder;
+package com.imchobo.sayren_back.domain.payment.component.event;
 
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
