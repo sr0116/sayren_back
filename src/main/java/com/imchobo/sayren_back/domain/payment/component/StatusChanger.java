@@ -1,8 +1,11 @@
-package com.imchobo.sayren_back.domain.payment.component_recorder;
+package com.imchobo.sayren_back.domain.payment.component;
 
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
-import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
+import com.imchobo.sayren_back.domain.payment.component.event.SubscribeRoundStatusChangedEvent;
+import com.imchobo.sayren_back.domain.payment.component.event.SubscribeStatusChangedEvent;
+import com.imchobo.sayren_back.domain.payment.component.recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
@@ -13,7 +16,6 @@ import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
-import org.reactivestreams.Subscription;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
