@@ -15,6 +15,6 @@ public interface MemberService {
   void modifyTel(MemberTelDTO memberTelDTO);
   void sendTel(String newTel);
   FindEmailResponseDTO findEmail(MemberTelDTO memberTelDTO);
-  Member telVerify(MemberTelDTO memberTelDTO);
+  void telVerify(MemberTelDTO memberTelDTO);
   Map<?, ?> getTel();
 }

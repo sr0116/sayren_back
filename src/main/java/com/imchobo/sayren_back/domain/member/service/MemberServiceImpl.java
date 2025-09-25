@@ -97,26 +97,30 @@ public class MemberServiceImpl implements MemberService {
     solapiUtil.sendSms(newTel);
   }
 
+
+
   @Override
-  public Member telVerify(MemberTelDTO memberTelDTO) {
+  public void telVerify(MemberTelDTO memberTelDTO) {
     String saveTel = redisUtil.getPhoneAuth(memberTelDTO.getPhoneAuthCode());
     if (saveTel == null || saveTel.isBlank() || !saveTel.equals(memberTelDTO.getTel())) {
       throw new TelNotMatchException();
     }
-    return memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
   }
+
 
   @Override
   @Transactional
   public void modifyTel(MemberTelDTO memberTelDTO) {
-    Member member = telVerify(memberTelDTO);
+    telVerify(memberTelDTO);
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
     member.setTel(memberTelDTO.getTel());
     member.setStatus(MemberStatus.ACTIVE);
   }
 
   @Override
   public FindEmailResponseDTO findEmail(MemberTelDTO memberTelDTO) {
-    Member member = telVerify(memberTelDTO);
+    telVerify(memberTelDTO);
+    Member member = memberRepository.findByTel(memberTelDTO.getTel()).orElse(null);
     return memberMapper.toFindEmailResponseDTO(member);
   }
 
