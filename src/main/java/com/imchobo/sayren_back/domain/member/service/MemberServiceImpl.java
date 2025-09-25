@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.member.service;
 
+import com.imchobo.sayren_back.domain.common.annotation.ActiveMemberOnly;
 import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
@@ -21,6 +22,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -94,26 +97,37 @@ public class MemberServiceImpl implements MemberService {
     solapiUtil.sendSms(newTel);
   }
 
+
+
   @Override
-  public Member telVerify(MemberTelDTO memberTelDTO) {
+  public void telVerify(MemberTelDTO memberTelDTO) {
     String saveTel = redisUtil.getPhoneAuth(memberTelDTO.getPhoneAuthCode());
     if (saveTel == null || saveTel.isBlank() || !saveTel.equals(memberTelDTO.getTel())) {
       throw new TelNotMatchException();
     }
-    return memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
   }
+
 
   @Override
   @Transactional
   public void modifyTel(MemberTelDTO memberTelDTO) {
-    Member member = telVerify(memberTelDTO);
+    telVerify(memberTelDTO);
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
     member.setTel(memberTelDTO.getTel());
     member.setStatus(MemberStatus.ACTIVE);
   }
 
   @Override
   public FindEmailResponseDTO findEmail(MemberTelDTO memberTelDTO) {
-    Member member = telVerify(memberTelDTO);
+    telVerify(memberTelDTO);
+    Member member = memberRepository.findByTel(memberTelDTO.getTel()).orElse(null);
     return memberMapper.toFindEmailResponseDTO(member);
+  }
+
+  @Override
+  @ActiveMemberOnly
+  public Map<?, ?> getTel() {
+    String tel = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new).getTel();
+    return Map.of("telinfo", tel);
   }
 }

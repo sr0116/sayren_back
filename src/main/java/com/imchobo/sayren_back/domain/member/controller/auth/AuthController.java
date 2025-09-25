@@ -30,8 +30,8 @@ public class AuthController {
   private final MailService  mailService;
 
   @GetMapping("me")
-  public ResponseEntity<?> getUser(HttpServletRequest request) {
-    return ResponseEntity.ok(authService.getUser(request));
+  public ResponseEntity<?> getUser() {
+    return ResponseEntity.ok(authService.getUser());
   }
 
   @PostMapping("login")
