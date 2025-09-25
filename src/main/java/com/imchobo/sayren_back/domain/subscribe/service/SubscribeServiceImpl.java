@@ -56,33 +56,35 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Override
   public Subscribe createSubscribe(SubscribeRequestDTO dto, OrderItem orderItem) {
 
-      //dto -> entity (기본값 세팅 PENDING_PAYMENT)
-      Subscribe subscribe = subscribeMapper.toEntity(dto);
+    //dto -> entity (기본값 세팅 PENDING_PAYMENT)
+    Subscribe subscribe = subscribeMapper.toEntity(dto);
 
-      // 보증금 및 월 렌탈료 저장
-//      Long productPrice = orderItem.getProductPriceSnapshot();
-      Long monthlyFee = dto.getMonthlyFeeSnapshot();
-      Long depositSnapshot = calculateDeposit(monthlyFee);
+    // 보증금 및 월 렌탈료 저장
+    Long productPrice = orderItem.getProductPriceSnapshot();
+    // 월렌탈료 먼저 계산
+    Long monthlyFee = productPrice / dto.getTotalMonths();
+    // 보증금 계산
+    Long depositSnapshot = calculateDeposit(productPrice);
 
-      // 스냅샷 값
-      subscribe.setMonthlyFeeSnapshot(monthlyFee);
-      subscribe.setDepositSnapshot(depositSnapshot);
+    // 스냅샷 값
+    subscribe.setMonthlyFeeSnapshot(monthlyFee); // 렌탈료
+    subscribe.setDepositSnapshot(depositSnapshot); // 보증금
 
-      // 로그인 유저 주입
-      Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
-      subscribe.setMember(currentMember);
+    // 로그인 유저 주입
+    Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
+    subscribe.setMember(currentMember);
 
-      // 구독 저장
-      Subscribe savedSubscribe = subscribeRepository.save(subscribe);
+    // 구독 저장
+    Subscribe savedSubscribe = subscribeRepository.save(subscribe);
 
-      // 회차 테이블 생성
-      subscribeRoundService.createRounds(savedSubscribe, dto, orderItem);
+    // 회차 테이블 생성
+    subscribeRoundService.createRounds(savedSubscribe, dto, orderItem);
 
-      // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티)
-      SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
-      subscribeHistoryRepository.save(subscribeHistory);
+    // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티)
+    SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
+    subscribeHistoryRepository.save(subscribeHistory);
 
-      return savedSubscribe;
+    return savedSubscribe;
   }
 
   // 보증금 계산(일단 20% 고정 임시로 나중에 % 수정 가능성)
@@ -201,8 +203,7 @@ public class SubscribeServiceImpl implements SubscribeService {
       history.setStatus(SubscribeStatus.CANCELED);
       history.setReasonCode(ReasonCode.CONTRACT_CANCEL); // 승인
       subscribeHistoryRepository.save(history);
-    }
-    else {
+    } else {
       subscribe.setStatus(SubscribeStatus.ACTIVE);
       subscribeRepository.save(subscribe);
 
@@ -220,7 +221,7 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Transactional
   public List<SubscribeHistoryResponseDTO> getHistories(Long subscribeId) {
     List<SubscribeHistory> histories = subscribeHistoryRepository.findBySubscribe_Id(subscribeId);
-    if(histories.isEmpty()) {
+    if (histories.isEmpty()) {
       throw new SubscribeNotFoundException(subscribeId);
     }
     return subscribeHistoryMapper.toResponseDTOList(histories);

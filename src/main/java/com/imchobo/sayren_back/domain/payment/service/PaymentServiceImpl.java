@@ -111,9 +111,6 @@ public class PaymentServiceImpl implements PaymentService {
     // DTO -> 엔티티 변환 결제 로그 테이블  생성 savedPayment 기반
     PaymentHistory paymentHistory = paymentHistoryMapper.fromPayment(savedPayment);
     paymentHistoryRepository.save(paymentHistory);
-    PaymentResponseDTO response = paymentMapper.toResponseDTO(savedPayment);
-    log.info(">>> prepare response: {}", response);
-
 
     // 응답
     return paymentMapper.toResponseDTO(savedPayment);
