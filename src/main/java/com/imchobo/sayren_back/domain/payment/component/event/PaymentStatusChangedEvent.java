@@ -1,9 +1,8 @@
-package com.imchobo.sayren_back.domain.payment.component_recorder;
+package com.imchobo.sayren_back.domain.payment.component.event;
 
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.springframework.context.ApplicationEvent;
 
 @Getter
 @AllArgsConstructor

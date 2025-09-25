@@ -1,20 +1,17 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
-import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
-import com.imchobo.sayren_back.domain.payment.component_recorder.StatusChanger;
+import com.imchobo.sayren_back.domain.payment.component.StatusChanger;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
-import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentAlreadyExistsException;
-import com.imchobo.sayren_back.domain.payment.exception.PaymentAmountMismatchException;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentHistoryMapper;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
@@ -24,10 +21,9 @@ import com.imchobo.sayren_back.domain.payment.repository.PaymentHistoryRepositor
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
-import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
-import com.imchobo.sayren_back.domain.payment.component_recorder.HistoryRecorder;
+import com.imchobo.sayren_back.domain.payment.component.recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
