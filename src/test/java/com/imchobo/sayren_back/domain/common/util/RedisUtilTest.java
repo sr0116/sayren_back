@@ -49,10 +49,4 @@ class RedisUtilTest {
   }
 
 
-  @Test
-  void getLatestTerms() {
-    LatestTerms latestTerms = redisUtil.getLatestTerms();
-    log.info(latestTerms.service());
-    log.info(latestTerms.privacy());
-  }
 }
