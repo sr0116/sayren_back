@@ -12,4 +12,5 @@ public class ReviewCreateRequestDTO {
     private String title;         // 제목
     private String content;       // 본문
     private boolean isSecret;     // 비밀글 여부 (리뷰면 안 써도 됨)
+
 }
