@@ -1,6 +1,6 @@
-package com.imchobo.sayren_back.domain.order.repository;
+package com.imchobo.sayren_back.domain.order.cart.repository;
 
-import com.imchobo.sayren_back.domain.order.entity.CartItem;
+import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

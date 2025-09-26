@@ -1,7 +1,7 @@
-package com.imchobo.sayren_back.domain.order.controller;
+package com.imchobo.sayren_back.domain.order.cart.controller;
 
-import com.imchobo.sayren_back.domain.order.entity.CartItem;
-import com.imchobo.sayren_back.domain.order.service.CartService;
+import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
+import com.imchobo.sayren_back.domain.order.cart.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
