@@ -36,21 +36,19 @@ public class SubscribeStatusChanger {
     subscribe.setStatus(transition.getStatus());
     subscribeRepository.save(subscribe);
 
-    eventPublisher.publishEvent(
-            new SubscribeStatusChangedEvent(subscribe.getId(), transition.getStatus())
-    );
+    eventPublisher.publishEvent(new SubscribeStatusChangedEvent( subscribe.getId(), transition, actor));
   }
 
   // 구독 회차 상태 변경 (결제 상태)
   @Transactional
-  public void changeSubscribeRound(SubscribeRound subscribeRound, SubscribeRoundTransition transition, ActorType actor) {
+  public void changeSubscribeRound(SubscribeRound subscribeRound, SubscribeRoundTransition transition) {
+    // 1) 회차 상태 변경
     subscribeRound.setPayStatus(transition.getStatus());
     subscribeRoundRepository.save(subscribeRound);
 
+    //  이벤트 발행
     eventPublisher.publishEvent(
-            new SubscribeRoundStatusChangedEvent(subscribeRound.getId(), transition.getStatus())
-    );
+            new SubscribeRoundStatusChangedEvent(subscribeRound.getId(), transition));
   }
-
 }
 

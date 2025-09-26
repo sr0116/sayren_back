@@ -11,7 +11,10 @@ public enum SubscribeTransition {
   REQUEST_CANCEL(SubscribeStatus.CANCEL_REQUESTED, ReasonCode.USER_REQUEST), // 회원 취소 요청
   CANCEL(SubscribeStatus.CANCELED, ReasonCode.USER_REQUEST), // 회수 완료 → 구독 해지
   CANCEL_REJECT(SubscribeStatus.ACTIVE, ReasonCode.CANCEL_REJECTED), // 관리자 거절
-  END(SubscribeStatus.ENDED, ReasonCode.EXPIRED);           // 만료 → 구독 종료
+  END(SubscribeStatus.ENDED, ReasonCode.EXPIRED),          // 만료 → 구독 종료
+  OVERDUE(SubscribeStatus.OVERDUE, ReasonCode.PAYMENT_FAILURE),    // 자동 결제 실패 → 연체
+  RETURN_REQUEST(SubscribeStatus.RETURN_REQUESTED, ReasonCode.USER_REQUEST), // 회수 요청
+  RETURNED(SubscribeStatus.RETURNED, ReasonCode.CONTRACT_CANCEL);  // 회수 완료
 
   private final SubscribeStatus status;
   private final ReasonCode reason;
