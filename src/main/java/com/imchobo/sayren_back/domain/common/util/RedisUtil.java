@@ -141,4 +141,20 @@ public class RedisUtil {
   }
 
 
+  public void setResetPassword(String token, Long memberId) {
+    set("RESET_PASSWORD:" + token, memberId.toString(), 15, TimeUnit.MINUTES);
+  }
+
+  public Long getResetPassword(String token) {
+    return Long.valueOf(get("RESET_PASSWORD:" + token));
+  }
+
+  public boolean hasResetPasswordKey(String token) {
+    return hasKey("RESET_PASSWORD:" + token);
+  }
+
+  public void deleteResetPassword(String token) {
+    delete("RESET_PASSWORD:" + token);
+  }
+
 }

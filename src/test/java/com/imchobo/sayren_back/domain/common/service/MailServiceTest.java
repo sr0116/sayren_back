@@ -12,6 +12,6 @@ class MailServiceTest {
 
   @Test
   void emailVerification() {
-    mailService.emailVerification("manlubo11@gmail.com");
+    mailService.emailVerification("jiyu16413@gmail.com");
   }
 }
