@@ -3,13 +3,22 @@ package com.imchobo.sayren_back.domain.subscribe.service;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
+import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
+import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundException;
+import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
+import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
+import com.imchobo.sayren_back.domain.subscribe.component.recorder.SubscribeHistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
@@ -41,6 +50,8 @@ public class SubscribeServiceImpl implements SubscribeService {
   private final SubscribeRepository subscribeRepository;
   private final SubscribeHistoryRepository subscribeHistoryRepository;
   private final SubscribeRoundRepository subscribeRoundRepository;
+  private final DeliveryRepository deliveryRepository;
+  private final DeliveryItemRepository deliveryItemRepository;
 
   // 매퍼
   private final SubscribeMapper subscribeMapper;
@@ -50,6 +61,7 @@ public class SubscribeServiceImpl implements SubscribeService {
   // 서비스
   private final SubscribeRoundService subscribeRoundService;
   private final HistoryRecorder historyRecorder;
+  private final SubscribeStatusChanger subscribeStatusChanger;
 
   // 구독 테이블 생성
   @Transactional
@@ -87,6 +99,11 @@ public class SubscribeServiceImpl implements SubscribeService {
     return savedSubscribe;
   }
 
+  @Override
+  public void activateAfterDelivery(Long subscribeId) {
+
+  }
+
   // 보증금 계산(일단 20% 고정 임시로 나중에 % 수정 가능성)
   private Long calculateDeposit(Long monthlyFee) {
     if (monthlyFee == null) return 0L;
@@ -120,17 +137,14 @@ public class SubscribeServiceImpl implements SubscribeService {
   }
 
   // 배송 완료 후 상태 변경 (ACTIVE)
-  @Override
   @Transactional
-  public void activateAfterDelivery(Long subscribeId) {
+  public void activateAfterDelivery(Long subscribeId, OrderItem orderItem) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
-
-    //  // 구독 준비중
+    //   구독 준비중
     if (subscribe.getStatus() != SubscribeStatus.PREPARING) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
-
     // 구독 개월 수 가져오기
     Integer months = subscribe.getOrderItem().getOrderPlan().getMonth();
     if (months == null || months <= 0) {
@@ -142,18 +156,31 @@ public class SubscribeServiceImpl implements SubscribeService {
     subscribe.setStartDate(startDate);
     subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
 
-    // 상태 ACTIVE 전환
-    subscribe.setStatus(SubscribeStatus.ACTIVE);
-    subscribeRepository.save(subscribe);
+
+    // (나중에 배송 이벤트 처리 할거고 지금은 임시 )
+    // 상태 ACTIVE 전환 (이 안에서 save + event + history 기록까지 자동 처리)
+    // orderItem에서 deliveryItems를 통해 배송 추적
+    List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
+    Delivery delivery = deliveryItems.stream()
+            .map(DeliveryItem::getDelivery)
+            .findFirst()
+            .orElseThrow(() -> new DeliveryNotFoundException(orderItem.getId()));
+
+    if (delivery.getStatus() == DeliveryStatus.DELIVERED) {
+      subscribeStatusChanger.changeSubscribe(
+              subscribe,
+              SubscribeTransition.START,
+              ActorType.SYSTEM
+      );
+    }
+
+
 
     // 회차 dueDate 확정
     List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
     for (SubscribeRound round : rounds) {
       round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
     }
-
-    // 이력 기록
-    historyRecorder.recordSubscribe(subscribe, ReasonCode.NONE, ActorType.SYSTEM);
 
     log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
             subscribeId, startDate, subscribe.getEndDate(), rounds.size());

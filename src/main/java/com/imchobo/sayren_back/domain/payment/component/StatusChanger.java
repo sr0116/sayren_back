@@ -41,7 +41,7 @@ public class StatusChanger {
     historyRecorder.recordPayment(payment, transition.getReason(), actor);
 
     eventPublisher.publishEvent(
-            new PaymentStatusChangedEvent(payment.getId(), transition.getStatus())
+            new PaymentStatusChangedEvent(payment.getId(), transition.getStatus(),  payment.getOrderItem().getId() )
     );
   }
 
