@@ -1,8 +1,8 @@
-package com.imchobo.sayren_back.domain.order.mapper;
+package com.imchobo.sayren_back.domain.order.OrderPlan.mapper;
 
-import com.imchobo.sayren_back.domain.order.dto.OrderPlanRequestDTO;
-import com.imchobo.sayren_back.domain.order.dto.OrderPlanResponseDTO;
-import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
+import com.imchobo.sayren_back.domain.order.OrderPlan.dto.OrderPlanRequestDTO;
+import com.imchobo.sayren_back.domain.order.OrderPlan.dto.OrderPlanResponseDTO;
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

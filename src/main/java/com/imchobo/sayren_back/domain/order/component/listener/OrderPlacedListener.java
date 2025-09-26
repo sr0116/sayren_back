@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.order.listener;
+package com.imchobo.sayren_back.domain.order.component.listener;
 
 import com.imchobo.sayren_back.domain.delivery.orchestration.DeliveryCreationService;
 import com.imchobo.sayren_back.domain.order.sharedevent.OrderPlacedEvent;

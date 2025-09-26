@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.order.dto;
+package com.imchobo.sayren_back.domain.order.OrderPlan.dto;
 
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import lombok.*;

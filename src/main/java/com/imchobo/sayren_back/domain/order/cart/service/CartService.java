@@ -1,6 +1,6 @@
-package com.imchobo.sayren_back.domain.order.service;
+package com.imchobo.sayren_back.domain.order.cart.service;
 
-import com.imchobo.sayren_back.domain.order.entity.CartItem;
+import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
 
 import java.util.List;
 

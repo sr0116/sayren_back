@@ -1,13 +1,13 @@
-package com.imchobo.sayren_back.domain.order.service;
+package com.imchobo.sayren_back.domain.order.cart.service;
 
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
-import com.imchobo.sayren_back.domain.order.entity.CartItem;
-import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
-import com.imchobo.sayren_back.domain.order.repository.CartRepository;
+import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
+import com.imchobo.sayren_back.domain.order.cart.repository.CartRepository;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
-import com.imchobo.sayren_back.domain.order.repository.OrderPlanRepository;
+import com.imchobo.sayren_back.domain.order.OrderPlan.repository.OrderPlanRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
