@@ -11,6 +11,7 @@ import com.imchobo.sayren_back.domain.board.mapper.ReviewMapper;
 import com.imchobo.sayren_back.domain.board.repository.BoardRepository;
 import com.imchobo.sayren_back.domain.board.repository.CategoryRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
+import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -52,16 +53,20 @@ public class ReviewServiceImpl implements ReviewService{
   }
 
   @Override
+  @Transactional
   public void modify(Long id, ReviewModifyRequestDTO dto) {
     Board board = boardRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("게시글 없음"));
 
-    // DTO 값으로 엔티티 업데이트
+    // 제목/내용 등만 매퍼로 업데이트
     reviewMapper.updateEntity(board, dto);
 
-    // 상품 수정도 반영
-    board.setProduct(productRepository.findById(dto.getProductId())
-            .orElseThrow(() -> new RuntimeException("상품 없음")));
+    // 상품 따로 세팅
+    if (dto.getProductId() != null) {
+      Product product = productRepository.findById(dto.getProductId())
+              .orElseThrow(() -> new RuntimeException("상품 없음"));
+      board.setProduct(product);
+    }
   }
 
   @Override
