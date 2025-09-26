@@ -10,6 +10,7 @@ public enum ReasonCode {
   SERVICE_ERROR,    // 서비스 오류
   SYSTEM_ERROR, // 시스템 장애
   PAYMENT_FAILURE,  // 결제 실패
+  PAYMENT_TIMEOUT, // 유예 기간 초과
   CANCEL_REJECTED, // 취소 요청 거절
   CONTRACT_CANCEL,  // 계약 해지 (중도 해지)
   EXPIRED, // 계약 만료(환급)

@@ -72,7 +72,7 @@ public class SubscribeServiceImpl implements SubscribeService {
     Subscribe subscribe = subscribeMapper.toEntity(dto);
 
     // 보증금 및 월 렌탈료 저장
-    Long productPrice = orderItem.getProductPriceSnapshot();
+    Long productPrice = orderItem.getProductPriceSnapshot(); //상품 총 가격
     // 월렌탈료 먼저 계산
     Long monthlyFee = productPrice / dto.getTotalMonths();
     // 보증금 계산

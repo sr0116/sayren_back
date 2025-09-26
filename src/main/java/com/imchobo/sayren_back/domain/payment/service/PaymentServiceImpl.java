@@ -5,7 +5,6 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
-import com.imchobo.sayren_back.domain.payment.component.StatusChanger;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
@@ -61,7 +60,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final PortOnePaymentClient portOnePaymentClient;
   // 상태 변경 컴포넌트 이벤트 처리
   private final HistoryRecorder historyRecorder;
-  private final StatusChanger statusChanger;
+//  private final StatusChanger statusChanger;
 
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
@@ -154,17 +153,17 @@ public class PaymentServiceImpl implements PaymentService {
     }
 // 5. 상태 반영
     payment.setImpUid(impUid);
-    statusChanger.changePayment(payment, transition, ActorType.SYSTEM);
+//    statusChanger.changePayment(payment, transition, ActorType.SYSTEM);
 
 // 6. 성공일 때만 구독/회차 처리
     if (transition == PaymentTransition.COMPLETE && payment.getSubscribeRound() != null) {
       Subscribe subscribe = payment.getSubscribeRound().getSubscribe();
-      statusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
-      statusChanger.changeSubscribeRound(
-              payment.getSubscribeRound(),
-              SubscribeRoundTransition.PAY_SUCCESS,
-              ActorType.SYSTEM
-      );
+//      statusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+//      statusChanger.changeSubscribeRound(
+//              payment.getSubscribeRound(),
+//              SubscribeRoundTransition.PAY_SUCCESS,
+//              ActorType.SYSTEM
+//      );
     }
     return paymentMapper.toResponseDTO(payment);
 
