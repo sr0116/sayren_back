@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.order.service;
 
-import com.imchobo.sayren_back.domain.delivery.entity.Address;
-import com.imchobo.sayren_back.domain.delivery.repository.AddressRepository;
+import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
+import com.imchobo.sayren_back.domain.delivery.address.repository.AddressRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.domain.order.dto.OrderResponseDTO;

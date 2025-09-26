@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.delivery.entity;
+package com.imchobo.sayren_back.domain.delivery.address.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import com.imchobo.sayren_back.domain.member.entity.Member;

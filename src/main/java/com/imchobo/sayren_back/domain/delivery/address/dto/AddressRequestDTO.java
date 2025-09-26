@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.delivery.dto;
+package com.imchobo.sayren_back.domain.delivery.address.dto;
 
 import lombok.*;
 

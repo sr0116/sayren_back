@@ -1,7 +1,7 @@
-package com.imchobo.sayren_back.domain.delivery.service;
+package com.imchobo.sayren_back.domain.delivery.address.service;
 
-import com.imchobo.sayren_back.domain.delivery.dto.AddressRequestDTO;
-import com.imchobo.sayren_back.domain.delivery.dto.AddressResponseDTO;
+import com.imchobo.sayren_back.domain.delivery.address.dto.AddressRequestDTO;
+import com.imchobo.sayren_back.domain.delivery.address.dto.AddressResponseDTO;
 
 import java.util.List;
 
