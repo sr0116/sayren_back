@@ -1,7 +1,5 @@
 package com.imchobo.sayren_back.domain.delivery.service;
 
-import com.imchobo.sayren_back.domain.common.en.ActorType;
-import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.address.repository.AddressRepository;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
@@ -38,7 +36,6 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final AddressRepository addressRepository;
     private final DeliveryMapper deliveryMapper;
 
-    // 상태 변경 헬퍼( 이벤트)
     private final DeliveryFlowOrchestrator flow;
 
     /**
@@ -58,19 +55,17 @@ public class DeliveryServiceImpl implements DeliveryService {
         Delivery delivery = Delivery.builder()
           .member(currentMember)
           .address(address)
-          .type(DeliveryType.DELIVERY) // 항상 DELIVERY
+          .type(DeliveryType.DELIVERY)
           .status(DeliveryStatus.READY)
           .build();
 
         Delivery saved = deliveryRepository.save(delivery);
 
-        // 초기 READY 기록/이벤트 (oldStatus 없음)
+        // 초기 READY 이벤트 발행 (expected=null)
         flow.changeStatus(
           saved,
           null,
           DeliveryStatus.READY,
-          ReasonCode.NONE,
-          ActorType.USER,
           Map.of("source", "DeliveryService#create")
         );
 
@@ -78,18 +73,18 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     /**
-     * 결제 성공 직후 배송 자동 생성
+     * ✅ 결제 성공 직후 orderItemId 기반 배송 자동 생성
      */
     @Override
-    public void createFromOrderId(Long orderId) {
-        // 이미 배송이 생성된 주문이면 중복 생성 X
-        if (deliveryRepository.existsByDeliveryItems_OrderItem_Order_Id(orderId)) return;
+    public void createFromOrderItemId(Long orderItemId) {
+        OrderItem orderItem = orderItemRepository.findById(orderItemId)
+          .orElseThrow(() -> new EntityNotFoundException("OrderItem 없음: id=" + orderItemId));
 
-        // 주문 항목 조회
-        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
-        if (items.isEmpty()) throw new EntityNotFoundException("OrderItems 없음: orderId=" + orderId);
+        // 이미 배송이 생성된 OrderItem이면 중복 생성 방지
+        if (deliveryRepository.existsByDeliveryItems_OrderItem_Id(orderItemId)) return;
 
-        Order order = items.get(0).getOrder();
+
+        Order order = orderItem.getOrder();
 
         Delivery delivery = Delivery.builder()
           .member(order.getMember())
@@ -100,19 +95,20 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         Delivery saved = deliveryRepository.save(delivery);
 
-        // 주문 항목과 매핑
-        List<DeliveryItem> deliveryItems = items.stream()
-          .map(oi -> DeliveryItem.builder().delivery(saved).orderItem(oi).build())
-          .toList();
-        deliveryItemRepository.saveAll(deliveryItems);
+        // DeliveryItem 매핑
+        DeliveryItem deliveryItem = DeliveryItem.builder()
+          .delivery(saved)
+          .orderItem(orderItem)
+          .build();
+        deliveryItemRepository.save(deliveryItem);
 
+        // READY 이벤트 발행
         flow.changeStatus(
           saved,
           null,
           DeliveryStatus.READY,
-          ReasonCode.NONE,
-          ActorType.SYSTEM,
-          Map.of("source", "DeliveryService#createFromOrderId", "orderId", orderId)
+          Map.of("source", "DeliveryService#createFromOrderItemId",
+            "orderItemId", orderItemId)
         );
     }
 
@@ -144,10 +140,8 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         flow.changeStatus(
           d,
-          d.getStatus(),
+          DeliveryStatus.READY,
           DeliveryStatus.SHIPPING,
-          ReasonCode.NONE,
-          ActorType.SYSTEM,
           Map.of("source", "DeliveryService#ship")
         );
 
@@ -161,10 +155,8 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         flow.changeStatus(
           d,
-          d.getStatus(),
+          DeliveryStatus.SHIPPING,
           DeliveryStatus.DELIVERED,
-          ReasonCode.NONE,
-          ActorType.SYSTEM,
           Map.of("source", "DeliveryService#complete")
         );
 
@@ -178,10 +170,8 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         flow.changeStatus(
           d,
-          d.getStatus(),
+          DeliveryStatus.DELIVERED,
           DeliveryStatus.RETURN_READY,
-          ReasonCode.USER_REQUEST,
-          ActorType.USER,
           Map.of("source", "DeliveryService#returnReady")
         );
 
@@ -195,10 +185,8 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         flow.changeStatus(
           d,
-          d.getStatus(),
+          DeliveryStatus.RETURN_READY,
           DeliveryStatus.IN_RETURNING,
-          ReasonCode.NONE,
-          ActorType.SYSTEM,
           Map.of("source", "DeliveryService#inReturning")
         );
 
@@ -212,10 +200,8 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         flow.changeStatus(
           d,
-          d.getStatus(),
+          DeliveryStatus.IN_RETURNING,
           DeliveryStatus.RETURNED,
-          ReasonCode.AUTO_REFUND,
-          ActorType.SYSTEM,
           Map.of("source", "DeliveryService#returned")
         );
 

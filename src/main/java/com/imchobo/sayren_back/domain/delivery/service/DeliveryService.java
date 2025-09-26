@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.delivery.service;
 
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryResponseDTO;
+import com.imchobo.sayren_back.domain.order.entity.Order;
 
 import java.util.List;
 
@@ -35,5 +36,5 @@ public interface DeliveryService {
     DeliveryResponseDTO returned(Long id);
 
     // ----------------------------------
-    void createFromOrderId(Long orderId); // 결제 성공 직후 자동 생성
+    void createFromOrderItemId(Long orderItemId);// 결제 성공 직후 자동 생성
 }
