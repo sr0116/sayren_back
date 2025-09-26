@@ -22,16 +22,18 @@ public class SubscribeHistoryRecorder {
 
   @EventListener
   public void handleSubscribeStatusChanged(SubscribeStatusChangedEvent event) {
-    // 구독 엔티티 조회
+    // 1) 구독 엔티티 조회 (FK 저장용)
     Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
             .orElseThrow(() -> new SubscribeNotFoundException(event.getSubscribeId()));
 
-    // 히스토리 기억
+    // 2) 이력 엔티티 생성
     SubscribeHistory history = SubscribeHistory.builder()
             .subscribe(subscribe)
-            .status(subscribe.getStatus())
+            .status(event.getTransition().getStatus())    // 상태
+            .reasonCode(event.getTransition().getReason())// 변경 이유
             .build();
 
+    // 3) 저장
     subscribeHistoryRepository.save(history);
   }
 }

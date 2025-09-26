@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.delivery.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
+import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.member.entity.Member;

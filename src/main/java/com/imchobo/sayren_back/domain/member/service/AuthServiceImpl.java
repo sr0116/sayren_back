@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.member.service;
 
+import com.imchobo.sayren_back.domain.common.exception.RedisKeyNotFoundException;
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
@@ -117,7 +118,7 @@ public class AuthServiceImpl implements AuthService {
   public MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
     SocialUser socialUser = socialLinkRequestDTO.getSocialUser();
 
-    String email = SecurityUtil.getMemberAuthDTO() != null ?  SecurityUtil.getMemberAuthDTO().getEmail() : socialUser.email();
+    String email = SecurityUtil.isUser() ?  SecurityUtil.getMemberAuthDTO().getEmail() : socialUser.email();
     Member member = memberRepository.findByEmail(email).orElseThrow(EmailNotFoundException::new);
     if(!passwordEncoder.matches(socialLinkRequestDTO.getPassword(), member.getPassword())){
       throw new InvalidPasswordException();
@@ -145,5 +146,14 @@ public class AuthServiceImpl implements AuthService {
     redisUtil.setSocialLink(state, memberId);
 
     return "http://localhost:8080/oauth2/authorization/" + provider.toLowerCase() + "?state=" + state;
+  }
+
+
+  @Override
+  public void hasResetPasswordKey(String token) {
+    boolean check = redisUtil.hasResetPasswordKey(token);
+    if(!check) {
+      throw new RedisKeyNotFoundException();
+    }
   }
 }

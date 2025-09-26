@@ -84,4 +84,10 @@ public class AuthController {
     }
     return ResponseEntity.ok(Map.of("redirectUrl", authService.socialLinkRedirectUrl(provider)));
   }
+
+  @GetMapping("reset-pw/validate")
+  public ResponseEntity<?> resetPassword(@RequestParam String token) {
+    authService.hasResetPasswordKey(token);
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
 }

@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.common.service;
 
 import com.imchobo.sayren_back.domain.common.util.MailUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
+import com.imchobo.sayren_back.domain.member.entity.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -34,19 +35,24 @@ public class MailService {
     mailUtil.sendMail(email, title, content);
   }
 
-  public void passwordReset(String email) {
+
+  public void passwordResetEmail(String email, Long memberId) {
     String token = UUID.randomUUID().toString();
 
-    String verificationUrl = "http://localhost:8080/api/auth/password-reset/" + token;
+    redisUtil.setResetPassword(token, memberId);
+
+    String verificationUrl = "http://localhost:8080/api/user/member/reset-pw/" + token;
 
     String title = "귀하의 세이렌 계정 비밀번호를 변경해 주십시오.";
     String content = buildEmail(
       "세이렌 계정 비밀번호 재설정",
-      "아래 버튼을 클릭하여 비밀번호를 재설정해 주세요.",
+      "아래 버튼을 클릭하여 비밀번호를 재설정해 주세요. 링크는 15분간 유효합니다.",
       "비밀번호 재설정",
       "비밀번호 변경하기",
       verificationUrl
     );
+
+    mailUtil.sendMail(email, title, content);
   }
 
 

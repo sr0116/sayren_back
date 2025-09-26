@@ -4,7 +4,7 @@ package com.imchobo.sayren_back.domain.subscribe.mapper;
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
-import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;

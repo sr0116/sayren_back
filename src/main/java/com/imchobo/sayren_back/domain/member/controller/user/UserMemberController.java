@@ -1,13 +1,16 @@
 package com.imchobo.sayren_back.domain.member.controller.user;
 
 
+import com.imchobo.sayren_back.domain.member.dto.FindPasswordRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
 import com.imchobo.sayren_back.domain.member.dto.MemberTelDTO;
+import com.imchobo.sayren_back.domain.member.dto.ResetPasswordRequestDTO;
 import com.imchobo.sayren_back.domain.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.Map;
 
@@ -44,4 +47,24 @@ public class UserMemberController {
   public ResponseEntity<?> getTel(){
     return ResponseEntity.ok(memberService.getTel());
   }
+
+
+  @PostMapping("find-pw")
+  public ResponseEntity<?> findPassword(@RequestBody @Valid FindPasswordRequestDTO findPasswordRequestDTO){
+    memberService.findPassword(findPasswordRequestDTO);
+    return ResponseEntity.ok().build();
+  }
+
+  @GetMapping("reset-pw/{token}")
+  public RedirectView resetPassword(@PathVariable String token) {
+    String url = "http://localhost:3000/member/reset-pw/" + token;
+    return new RedirectView(url);
+  }
+
+  @PostMapping("reset-pw")
+  public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO resetPasswordRequestDTO) {
+    memberService.changePassword(resetPasswordRequestDTO);
+    return ResponseEntity.ok().build();
+  }
+
 }
