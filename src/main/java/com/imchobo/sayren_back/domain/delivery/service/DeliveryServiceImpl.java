@@ -38,7 +38,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final AddressRepository addressRepository;
     private final DeliveryMapper deliveryMapper;
 
-    // 상태 변경 헬퍼 (히스토리 + 이벤트)
+    // 상태 변경 헬퍼( 이벤트)
     private final DeliveryFlowOrchestrator flow;
 
     /**
