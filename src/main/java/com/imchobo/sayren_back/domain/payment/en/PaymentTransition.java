@@ -21,7 +21,7 @@ public enum PaymentTransition {
   FAIL_USER(PaymentStatus.FAILED, ReasonCode.USER_REQUEST),  // 사용자가 결제 취소
   FAIL_SYSTEM(PaymentStatus.FAILED, ReasonCode.SYSTEM_ERROR),// 시스템 장애
   FAIL_PAYMENT(PaymentStatus.FAILED, ReasonCode.PAYMENT_FAILURE), // 잔액 부족, 한도 초과
-  FAIL_TIMEOUT(PaymentStatus.FAILED, ReasonCode.PAYMENT_FAILURE), // 유예기간 초과 미납
+  FAIL_TIMEOUT(PaymentStatus.FAILED, ReasonCode.PAYMENT_TIMEOUT), // 유예기간 초과 미납
   REFUND(PaymentStatus.REFUNDED, ReasonCode.AUTO_REFUND),    // 환불 확정
   PARTIAL_REFUND(PaymentStatus.PARTIAL_REFUNDED, ReasonCode.USER_REQUEST); // 부분 환불
 
