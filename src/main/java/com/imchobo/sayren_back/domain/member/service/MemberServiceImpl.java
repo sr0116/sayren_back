@@ -4,14 +4,10 @@ import com.imchobo.sayren_back.domain.common.annotation.ActiveMemberOnly;
 import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
-import com.imchobo.sayren_back.domain.member.dto.FindEmailResponseDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberTelDTO;
+import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.entity.Member;
-import com.imchobo.sayren_back.domain.member.exception.EmailAlreadyExistsException;
-import com.imchobo.sayren_back.domain.member.exception.SocialEmailAlreadyLinkedException;
-import com.imchobo.sayren_back.domain.member.exception.TelNotMatchException;
+import com.imchobo.sayren_back.domain.member.exception.*;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
@@ -38,6 +34,8 @@ public class MemberServiceImpl implements MemberService {
   private final MailService mailService;
   private final SolapiUtil solapiUtil;
   private final MemberTermService memberTermService;
+
+
   @Override
   @Transactional
   public void register(MemberSignupDTO memberSignupDTO) {
@@ -72,19 +70,18 @@ public class MemberServiceImpl implements MemberService {
   // 이메일 인증 체크하기
   @Transactional
   @Override
-  public boolean emailVerify(String token) {
+  public void emailVerify(String token) {
     String email = redisUtil.getEmailByToken(token);
     log.info(email);
     log.info(token);
 
     if (email == null) {
-      return false;
+      return;
     }
 
     Member member = findByEmail(email);
     member.setEmailVerified(true);
     redisUtil.deleteEmailToken(token);
-    return true;
   }
 
   @Override
@@ -129,5 +126,24 @@ public class MemberServiceImpl implements MemberService {
   public Map<?, ?> getTel() {
     String tel = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new).getTel();
     return Map.of("telinfo", tel);
+  }
+
+
+  @Override
+  public void findPassword(FindPasswordRequestDTO findPasswordRequestDTO) {
+    Member member = memberRepository.findByEmail(findPasswordRequestDTO.getEmail()).orElseThrow(EmailNotFoundException::new);
+    mailService.passwordResetEmail(findPasswordRequestDTO.getEmail(), member.getId());
+  }
+
+  @Override
+  @Transactional
+  public void changePassword(ResetPasswordRequestDTO resetPasswordRequestDTO) {
+    Long memberId = redisUtil.getResetPassword(resetPasswordRequestDTO.getToken());
+    redisUtil.deleteResetPassword(resetPasswordRequestDTO.getToken());
+    Member member = memberRepository.findById(memberId).orElseThrow(IllegalArgumentException::new);
+    if(passwordEncoder.matches(resetPasswordRequestDTO.getNewPassword(), member.getPassword())) {
+      throw new PasswordAlreadyUseException();
+    }
+    member.setPassword(passwordEncoder.encode(resetPasswordRequestDTO.getNewPassword()));
   }
 }

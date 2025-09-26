@@ -16,4 +16,5 @@ public interface AuthService {
   MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response);
   MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response);
   String socialLinkRedirectUrl(String provider);
+  void hasResetPasswordKey(String token);
 }
