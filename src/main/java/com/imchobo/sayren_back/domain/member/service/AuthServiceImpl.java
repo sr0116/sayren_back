@@ -19,6 +19,7 @@ import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class AuthServiceImpl implements AuthService {
 
   private final MemberRepository memberRepository;
@@ -118,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
   public MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
     SocialUser socialUser = socialLinkRequestDTO.getSocialUser();
 
-    String email = SecurityUtil.isUser() ?  SecurityUtil.getMemberAuthDTO().getEmail() : socialUser.email();
+    String email = SecurityUtil.isUser() ? SecurityUtil.getMemberAuthDTO().getEmail() : socialUser.email();
     Member member = memberRepository.findByEmail(email).orElseThrow(EmailNotFoundException::new);
     if(!passwordEncoder.matches(socialLinkRequestDTO.getPassword(), member.getPassword())){
       throw new InvalidPasswordException();
