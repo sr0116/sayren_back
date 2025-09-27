@@ -18,6 +18,7 @@ import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClien
 import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentHistoryRepository;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
@@ -60,7 +61,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final PortOnePaymentClient portOnePaymentClient;
   // 상태 변경 컴포넌트 이벤트 처리
   private final HistoryRecorder historyRecorder;
-//  private final StatusChanger statusChanger;
+  private final SubscribeStatusChanger subscribeStatusChanger;
 
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
@@ -77,7 +78,7 @@ public class PaymentServiceImpl implements PaymentService {
     OrderPlanType planType = orderItem.getOrderPlan().getType();
 
     //  구독 결제(Rental)일 경우 → 구독 + 회차 생성
-    Subscribe subscribe = getSubscribe(planType, orderItem);
+    Subscribe subscribe = createSubscribe(planType, orderItem);
 
     // portOne 고유 식별자 (merchantUid) 생성
     String merchantUid = "pay_" + UUID.randomUUID().toString().replace("-", "");
@@ -116,12 +117,15 @@ public class PaymentServiceImpl implements PaymentService {
   }
 
   // 구독 생성
-  private Subscribe getSubscribe(OrderPlanType planType, OrderItem orderItem) {
+  private Subscribe createSubscribe(OrderPlanType planType, OrderItem orderItem) {
     if (planType == OrderPlanType.RENTAL) {
-      SubscribeRequestDTO subscribeRequestDTO =
-              subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
-      // 구독 생성 (엔티티 리턴) → OrderItem도 함께 전달
-      return subscribeService.createSubscribe(subscribeRequestDTO, orderItem);
+      // 같은 아이디로 구독 아이디가 있는지
+      return subscribeRepository.findByOrderItem(orderItem)
+              .orElseGet(() -> {
+                SubscribeRequestDTO dto =
+                        subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
+                return subscribeService.createSubscribe(dto, orderItem);
+              });
     }
     return null;
   }
@@ -158,15 +162,11 @@ public class PaymentServiceImpl implements PaymentService {
 // 6. 성공일 때만 구독/회차 처리
     if (transition == PaymentTransition.COMPLETE && payment.getSubscribeRound() != null) {
       Subscribe subscribe = payment.getSubscribeRound().getSubscribe();
-//      statusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
-//      statusChanger.changeSubscribeRound(
-//              payment.getSubscribeRound(),
-//              SubscribeRoundTransition.PAY_SUCCESS,
-//              ActorType.SYSTEM
-//      );
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE , ActorType.SYSTEM);
+      SubscribeRound subscribeRound = payment.getSubscribeRound();
+      subscribeStatusChanger.changeSubscribeRound(subscribeRound, SubscribeRoundTransition.PAY_SUCCESS);
     }
     return paymentMapper.toResponseDTO(payment);
-
   }
 
   @Override

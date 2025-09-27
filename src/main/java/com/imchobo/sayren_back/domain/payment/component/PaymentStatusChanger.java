@@ -37,7 +37,10 @@ public class PaymentStatusChanger {
 
     eventPublisher.publishEvent(
             new PaymentStatusChangedEvent(
-                    payment.getId(), transition.getStatus(), orderItemId)
+                    payment.getId(),
+                    transition,
+                    orderItemId,
+                    actor)
     );
   }
 }
