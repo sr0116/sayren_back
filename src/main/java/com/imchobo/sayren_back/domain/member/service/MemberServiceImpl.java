@@ -1,16 +1,17 @@
 package com.imchobo.sayren_back.domain.member.service;
 
-import com.imchobo.sayren_back.domain.common.util.MailUtil;
+import com.imchobo.sayren_back.domain.common.annotation.ActiveMemberOnly;
+import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
-import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
+import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
+import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
-import com.imchobo.sayren_back.domain.member.en.Role;
 import com.imchobo.sayren_back.domain.member.entity.Member;
-import com.imchobo.sayren_back.domain.member.exception.EmailAlreadyExistsException;
-import com.imchobo.sayren_back.domain.member.exception.SocialEmailAlreadyLinkedException;
+import com.imchobo.sayren_back.domain.member.exception.*;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -18,8 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +31,10 @@ public class MemberServiceImpl implements MemberService {
   private final PasswordEncoder passwordEncoder;
   private final MemberProviderRepository memberProviderRepository;
   private final RedisUtil redisUtil;
-  private final MailUtil mailUtil;
+  private final MailService mailService;
+  private final SolapiUtil solapiUtil;
+  private final MemberTermService memberTermService;
+
 
   @Override
   @Transactional
@@ -52,8 +55,10 @@ public class MemberServiceImpl implements MemberService {
     log.info(entity);
 
 
-    memberRepository.save(entity);
-    mailUtil.emailVerification(entity.getEmail());
+    Member member = memberRepository.save(entity);
+    mailService.emailVerification(entity.getEmail());
+
+    memberTermService.saveTerm(member);
   }
 
   @Override
@@ -65,21 +70,80 @@ public class MemberServiceImpl implements MemberService {
   // 이메일 인증 체크하기
   @Transactional
   @Override
-  public boolean emailVerify(String token) {
+  public void emailVerify(String token) {
     String email = redisUtil.getEmailByToken(token);
+    log.info(email);
+    log.info(token);
 
     if (email == null) {
-      return false;
+      return;
     }
 
     Member member = findByEmail(email);
     member.setEmailVerified(true);
     redisUtil.deleteEmailToken(token);
-    return true;
   }
 
   @Override
   public Member findById(Long id) {
     return memberRepository.findById(id).orElseThrow(IllegalArgumentException::new);
+  }
+
+  @Override
+  public void sendTel(String newTel) {
+    solapiUtil.sendSms(newTel);
+  }
+
+
+
+  @Override
+  public void telVerify(MemberTelDTO memberTelDTO) {
+    String saveTel = redisUtil.getPhoneAuth(memberTelDTO.getPhoneAuthCode());
+    if (saveTel == null || saveTel.isBlank() || !saveTel.equals(memberTelDTO.getTel())) {
+      throw new TelNotMatchException();
+    }
+  }
+
+
+  @Override
+  @Transactional
+  public void modifyTel(MemberTelDTO memberTelDTO) {
+    telVerify(memberTelDTO);
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+    member.setTel(memberTelDTO.getTel());
+    member.setStatus(MemberStatus.ACTIVE);
+  }
+
+  @Override
+  public FindEmailResponseDTO findEmail(MemberTelDTO memberTelDTO) {
+    telVerify(memberTelDTO);
+    Member member = memberRepository.findByTel(memberTelDTO.getTel()).orElse(null);
+    return memberMapper.toFindEmailResponseDTO(member);
+  }
+
+  @Override
+  @ActiveMemberOnly
+  public Map<?, ?> getTel() {
+    String tel = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new).getTel();
+    return Map.of("telinfo", tel);
+  }
+
+
+  @Override
+  public void findPassword(FindPasswordRequestDTO findPasswordRequestDTO) {
+    Member member = memberRepository.findByEmail(findPasswordRequestDTO.getEmail()).orElseThrow(EmailNotFoundException::new);
+    mailService.passwordResetEmail(findPasswordRequestDTO.getEmail(), member.getId());
+  }
+
+  @Override
+  @Transactional
+  public void changePassword(ResetPasswordRequestDTO resetPasswordRequestDTO) {
+    Long memberId = redisUtil.getResetPassword(resetPasswordRequestDTO.getToken());
+    redisUtil.deleteResetPassword(resetPasswordRequestDTO.getToken());
+    Member member = memberRepository.findById(memberId).orElseThrow(IllegalArgumentException::new);
+    if(passwordEncoder.matches(resetPasswordRequestDTO.getNewPassword(), member.getPassword())) {
+      throw new PasswordAlreadyUseException();
+    }
+    member.setPassword(passwordEncoder.encode(resetPasswordRequestDTO.getNewPassword()));
   }
 }

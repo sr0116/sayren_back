@@ -53,13 +53,13 @@ public class Subscribe extends BaseEntity {
   private Long depositSnapshot;
 
   // 구독 시작일
-  // NOT NULL
-  @Column(name = "start_date", nullable = false)
+  // 배송 후에 시작이라 not null 허용
+  @Column(name = "start_date")
   private LocalDate startDate;
 
   // 구독 종료일
-  // NOT NULL
-  @Column(name = "end_date", nullable = false)
+  // 배송 후에 계산이라 not null 허용
+  @Column(name = "end_date")
   private LocalDate endDate;
 
   // 생성일(regDate), 수정일(modDate)은 BaseEntity 상속

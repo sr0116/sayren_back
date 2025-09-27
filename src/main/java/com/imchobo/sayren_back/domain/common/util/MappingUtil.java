@@ -1,13 +1,13 @@
 package com.imchobo.sayren_back.domain.common.util;
 
 import com.imchobo.sayren_back.domain.attach.entity.Attach;
-import com.imchobo.sayren_back.domain.board.entity.Board;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
-import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import org.mapstruct.Named;
@@ -52,6 +52,14 @@ public class MappingUtil {
   public OrderPlan orderPlanIdToEntity(Long planId) {
     return planId != null ? OrderPlan.builder().id(planId).build() : null;
   }
+
+  @Named("mapAttachUrl")
+  public static String mapAttachUrl(Attach attach) {
+    if (attach == null) return null;
+
+    return "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+            + attach.getPath() + "/" + attach.getUuid();
+  }
   //  엔티티 → ID 변환 (DTO 응답용)
   @Named("mapPaymentId")
   public Long paymentEntityToId(Payment payment) {
@@ -93,42 +101,6 @@ public class MappingUtil {
     }
   }
 
-  // === Product ===
-  // DTO -> product Entity
-  @Named("mapProduct")
-  public Product productIdToEntity(Long productId) {
-    if (productId == null) return null;
-    return Product.builder().id(productId).build();
-  }
-
-  // Entity(Product) -> DTO(productId)
-  @Named("mapProductId")
-  public Long productEntityToId(Product product) {
-    return product != null ? product.getId() : null;
-  }
-
-  // === Board ===
-  // DTO -> board Entity
-  @Named("mapProduct")
-  public Product boardIdToEntity(Long boardId) {
-    if (boardId == null) return null;
-    return Product.builder().id(boardId).build();
-  }
-
-  // Entity(Board) -> DTO(boardId)
-  @Named("mapProductId")
-  public Long boardEntityToId(Board board) {
-    return board != null ? board.getId() : null;
-  }
-
-  // Attach Url
-  @Named("mapAttachUrl")
-  public String mapAttachUrl(Attach attach) {
-    if (attach == null) return null;
-
-    return "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
-            + attach.getPath() + "/" + attach.getUuid();
-  }
 
   // === 공통 변환 ===
   @Named("toStringSafe")
@@ -142,4 +114,19 @@ public class MappingUtil {
     if (value != null) return Long.parseLong(value.toString());
     return null;
   }
-}
+
+
+            //배송 필요매핑 DeliveryMapper
+    @Named("mapDeliveryTypeToString")
+    public String mapDeliveryTypeToString(DeliveryType type) {
+      return type != null ? type.name() : null;
+    }
+
+    @Named("mapDeliveryStatusToString")
+    public String mapDeliveryStatusToString(DeliveryStatus status) {
+      return status != null ? status.name() : null;
+    }
+  }
+
+
+

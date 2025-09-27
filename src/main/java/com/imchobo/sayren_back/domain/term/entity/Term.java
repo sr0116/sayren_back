@@ -13,6 +13,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
 public class Term extends CreatedEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

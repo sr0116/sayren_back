@@ -11,7 +11,7 @@ public interface PaymentService {
   PaymentResponseDTO prepare(PaymentRequestDTO dto);
 
   // 결제 완료 검증
-  PaymentResponseDTO complete(Long paymentId, String imUid);
+  PaymentResponseDTO complete(Long paymentId, String impUid);
 
   // 환불 처리
   void refund(Long paymentId, Long amount, String reason);

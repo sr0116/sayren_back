@@ -25,7 +25,6 @@ public interface PaymentHistoryMapper {
   default PaymentHistory fromPayment(Payment payment){
     return PaymentHistory.builder()
             .payment(payment)
-
             .build();
   }
 }

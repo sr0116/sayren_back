@@ -18,6 +18,7 @@ public interface SubscribeRoundMapper {
   @Mapping(source = "subscribeId", target = "subscribe", qualifiedByName = "mapSubscribe")
   @Mapping(target = "payStatus", ignore = true)   // 기본값 PENDING (@Builder.Default)
   @Mapping(target = "paidDate", ignore = true)
+//  @Mapping(target = "endDate", ignore = true) // 종료 일 일단 무시
   SubscribeRound toEntity(SubscribeRoundRequestDTO dto);
 
   List<SubscribeRoundResponseDTO> toEntities(List<SubscribeRoundRequestDTO> dtos);

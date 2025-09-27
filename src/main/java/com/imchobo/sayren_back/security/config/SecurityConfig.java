@@ -13,8 +13,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -28,6 +30,7 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final CustomOAuth2UserService customOAuth2UserService;
@@ -51,11 +54,22 @@ public class SecurityConfig {
     http
       .cors(Customizer.withDefaults())
       .csrf(AbstractHttpConfigurer::disable) // REST API라면 CSRF 비활성화
+//      .authorizeHttpRequests(auth -> auth
+//              .requestMatchers("/api/user/**", "/api/auth/**", "/oauth2/**").permitAll() // 누구나 접근 가능
+//              .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용
+//              .anyRequest().authenticated() // 나머지는 로그인 필요
+//      )
+
       .authorizeHttpRequests(auth -> auth
-              .requestMatchers("/api/user/**", "/api/auth/**", "/oauth2/**").permitAll() // 누구나 접근 가능
-              .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용
-              .anyRequest().authenticated() // 나머지는 로그인 필요
+          .requestMatchers("/api/user/**", "/api/auth/**", "/oauth2/**").permitAll()
+          .requestMatchers("/api/admin/**").hasRole("ADMIN")
+//      .anyRequest().authenticated() // 나머지는 로그인 필요 (원래 설정)
+          .anyRequest().permitAll() // 테스트용: 모든 API 접근 허용
       )
+
+
+
+
       .formLogin(AbstractHttpConfigurer::disable) // 기본 로그인 폼 안씀
       .oauth2Login(oauth2 -> oauth2
         .authorizationEndpoint(auth -> auth
@@ -67,6 +81,7 @@ public class SecurityConfig {
         .successHandler(oAuthSuccessHandler)
         .failureHandler(oAuthFailureHandler))
       .httpBasic(AbstractHttpConfigurer::disable) // Basic 인증도 안씀
+      .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();

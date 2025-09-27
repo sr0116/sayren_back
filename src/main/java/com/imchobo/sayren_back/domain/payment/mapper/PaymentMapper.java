@@ -23,6 +23,11 @@ public interface PaymentMapper {
 
   @Mapping(source = "id", target = "paymentId")
   @Mapping(source = "orderItem", target = "orderItemId", qualifiedByName = "mapOrderItemId")
+  @Mapping(source = "merchantUid", target = "merchantUid")
+  @Mapping(source = "impUid", target = "impUid")
+  @Mapping(source = "amount", target = "amount")
+  @Mapping(source = "paymentType", target = "paymentType")
+  @Mapping(source = "paymentStatus", target = "paymentStatus")
   @Mapping(source = "receipt", target = "receiptUrl")
   PaymentResponseDTO  toResponseDTO(Payment entity);
 

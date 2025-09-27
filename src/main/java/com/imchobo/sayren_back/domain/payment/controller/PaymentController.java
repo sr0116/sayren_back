@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/user/payments")
 @RequiredArgsConstructor
 @Log4j2
 public class PaymentController {
@@ -26,13 +26,14 @@ public class PaymentController {
   public PaymentResponseDTO prepare(@RequestBody PaymentRequestDTO dto) {
     return paymentService.prepare(dto);
   }
-//
-//  // 결제 완료시 상태 변경
-//  @PostMapping("/{paymentId}/complete")
-//  public ApiResponse<PaymentResponseDTO> complete(@PathVariable Long paymentId, @RequestParam("imp_uid") String impUid) {
-//
-//    return paymentService.complete(paymentId, impUid);
-//  }
+
+  // 결제 완료시 상태 변경
+  @PostMapping("/{paymentId}/complete")
+  public PaymentResponseDTO complete(@PathVariable Long paymentId, @RequestParam("imp_uid") String impUid) {
+    //
+    return paymentService.complete(paymentId, impUid);
+  }
+
 //// 결제 환불
 //  @PostMapping("/{paymentId}/refund")
 //  public ApiResponse<Void> refund(@PathVariable Long paymentId, @RequestParam(required = false) Long amount, @RequestParam String reason) {
