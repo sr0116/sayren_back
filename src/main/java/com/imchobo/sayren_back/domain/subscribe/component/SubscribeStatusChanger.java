@@ -2,11 +2,7 @@ package com.imchobo.sayren_back.domain.subscribe.component;
 
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
-import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
-import com.imchobo.sayren_back.domain.payment.component.recorder.HistoryRecorder;
-import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
-import com.imchobo.sayren_back.domain.payment.entity.Payment;
-import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
+
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeRoundStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;

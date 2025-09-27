@@ -28,7 +28,7 @@ public class PaymentHistoryRecorder {
               .orElseThrow(() -> new PaymentNotFoundException(event.getPaymentId()));
 
       // 최근 히스토리 상태 확인 (중복 방지)
-      PaymentHistory lastHistory = paymentHistoryRepository.findTopByPaymentOrderByCreatedAtDesc(payment);
+      PaymentHistory lastHistory = paymentHistoryRepository.findTopByPaymentOrderByRegDateDesc(payment);
 
       if (lastHistory != null && lastHistory.getStatus() == payment.getPaymentStatus()) {
         log.warn("중복 이벤트 무시 - paymentId={}, status={}", payment.getId(), payment.getPaymentStatus());
