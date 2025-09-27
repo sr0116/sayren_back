@@ -82,7 +82,7 @@ public class RedisUtil {
 
 
   public void emailVerification(String token, String email) {
-    set("EMAIL_VERIFY:" +  token, email, 5, TimeUnit.MINUTES);
+    set("EMAIL_VERIFY:" +  token, email, 30, TimeUnit.MINUTES);
   }
 
   public String getEmailByToken(String token) {
