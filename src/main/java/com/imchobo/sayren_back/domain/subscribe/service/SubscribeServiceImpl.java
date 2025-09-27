@@ -6,7 +6,6 @@ import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
-import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundException;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
@@ -24,7 +23,6 @@ import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
-import com.imchobo.sayren_back.domain.payment.component.recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
@@ -68,14 +66,12 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     //dto -> entity (기본값 세팅 PENDING_PAYMENT)
     Subscribe subscribe = subscribeMapper.toEntity(dto);
-
     // 보증금 및 월 렌탈료 저장
     Long productPrice = orderItem.getProductPriceSnapshot(); //상품 총 가격
     // 월렌탈료 먼저 계산
     Long monthlyFee = productPrice / dto.getTotalMonths();
     // 보증금 계산
     Long depositSnapshot = calculateDeposit(productPrice);
-
     // 스냅샷 값
     subscribe.setMonthlyFeeSnapshot(monthlyFee); // 렌탈료
     subscribe.setDepositSnapshot(depositSnapshot); // 보증금
@@ -145,32 +141,32 @@ public class SubscribeServiceImpl implements SubscribeService {
     }
 
     // 시작일/종료일 확정
-    LocalDate startDate = LocalDate.now();
-    subscribe.setStartDate(startDate);
-    subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
+//    LocalDate startDate = LocalDate.now();
+//    subscribe.setStartDate(startDate);
+//    subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
+//
+//    // (나중에 배송 이벤트 처리 할거고 지금은 임시 )
+//    // 상태 ACTIVE 전환 (이 안에서 save + event + history 기록까지 자동 처리)
+//    // orderItem에서 deliveryItems를 통해 배송 추적
+//    List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
+//    Delivery delivery = deliveryItems.stream()
+//            .map(DeliveryItem::getDelivery)
+//            .findFirst()
+//            .orElseThrow(() -> new DeliveryNotFoundException(orderItem.getId()));
+//
+//    if (delivery.getStatus() == DeliveryStatus.DELIVERED) {
+//      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
 
-    // (나중에 배송 이벤트 처리 할거고 지금은 임시 )
-    // 상태 ACTIVE 전환 (이 안에서 save + event + history 기록까지 자동 처리)
-    // orderItem에서 deliveryItems를 통해 배송 추적
-    List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
-    Delivery delivery = deliveryItems.stream()
-            .map(DeliveryItem::getDelivery)
-            .findFirst()
-            .orElseThrow(() -> new DeliveryNotFoundException(orderItem.getId()));
 
-    if (delivery.getStatus() == DeliveryStatus.DELIVERED) {
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
 
-    }
-
-    // 회차 dueDate 확정
-    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
-    for (SubscribeRound round : rounds) {
-      round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
-    }
-
-    log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
-            subscribeId, startDate, subscribe.getEndDate(), rounds.size());
+//    // 회차 dueDate 확정
+//    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
+//    for (SubscribeRound round : rounds) {
+//      round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
+//    }
+//
+//    log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
+//            subscribeId, startDate, subscribe.getEndDate(), rounds.size());
   }
 
 

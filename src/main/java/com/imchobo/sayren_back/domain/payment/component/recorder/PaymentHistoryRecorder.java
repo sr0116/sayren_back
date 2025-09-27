@@ -1,11 +1,14 @@
 package com.imchobo.sayren_back.domain.payment.component.recorder;
 
+import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentHistoryRepository;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
+import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
@@ -20,6 +23,17 @@ public class PaymentHistoryRecorder {
   private final PaymentHistoryRepository paymentHistoryRepository;
   private final PaymentRepository paymentRepository;
 
+
+  // 최초 로그 기록
+  public void recordInitPayment(Payment payment) {
+    PaymentHistory history = PaymentHistory.builder()
+            .payment(payment)
+            .status(payment.getPaymentStatus())
+            .reasonCode(ReasonCode.NONE)// 처음 상태 기본값
+            .build();
+    paymentHistoryRepository.save(history);
+  }
+
   // 트랜잭션이 성공적으로 끝난 뒤에만 실행
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
@@ -28,7 +42,7 @@ public class PaymentHistoryRecorder {
               .orElseThrow(() -> new PaymentNotFoundException(event.getPaymentId()));
 
       // 최근 히스토리 상태 확인 (중복 방지)
-      PaymentHistory lastHistory = paymentHistoryRepository.findTopByPaymentOrderByRegDateDesc(payment);
+      PaymentHistory lastHistory = paymentHistoryRepository.findTopByPaymentOrderByCreatedAtDesc(payment);
 
       if (lastHistory != null && lastHistory.getStatus() == payment.getPaymentStatus()) {
         log.warn("중복 이벤트 무시 - paymentId={}, status={}", payment.getId(), payment.getPaymentStatus());

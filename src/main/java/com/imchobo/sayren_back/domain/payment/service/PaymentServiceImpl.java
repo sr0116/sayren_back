@@ -5,25 +5,24 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
+import com.imchobo.sayren_back.domain.payment.component.PaymentStatusChanger;
+import com.imchobo.sayren_back.domain.payment.component.recorder.PaymentHistoryRecorder;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
-import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentAlreadyExistsException;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentHistoryMapper;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
-import com.imchobo.sayren_back.domain.payment.repository.PaymentHistoryRepository;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
-import com.imchobo.sayren_back.domain.payment.component.recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
@@ -48,7 +47,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final OrderItemRepository orderItemRepository;
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final SubscribeRepository subscribeRepository;
-  private final PaymentHistoryRepository paymentHistoryRepository;
+
   // 서비스
   private final SubscribeService subscribeService;
 
@@ -60,8 +59,10 @@ public class PaymentServiceImpl implements PaymentService {
   // PortOne api 호출 및 연동
   private final PortOnePaymentClient portOnePaymentClient;
   // 상태 변경 컴포넌트 이벤트 처리
-  private final HistoryRecorder historyRecorder;
   private final SubscribeStatusChanger subscribeStatusChanger;
+  private final PaymentStatusChanger paymentStatusChanger;
+  private final PaymentHistoryRecorder paymentHistoryRecorder;
+
 
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
@@ -109,9 +110,9 @@ public class PaymentServiceImpl implements PaymentService {
     Payment savedPayment = paymentRepository.save(payment);
 
     // DTO -> 엔티티 변환 결제 로그 테이블  생성 savedPayment 기반
-    PaymentHistory paymentHistory = paymentHistoryMapper.fromPayment(savedPayment);
-    paymentHistoryRepository.save(paymentHistory);
+    paymentHistoryRecorder.recordInitPayment(savedPayment);
 
+    paymentStatusChanger.changePayment(savedPayment, PaymentTransition.COMPLETE, payment.getOrderItem().getId(), ActorType.SYSTEM);
     // 응답
     return paymentMapper.toResponseDTO(savedPayment);
   }
@@ -126,7 +127,7 @@ public class PaymentServiceImpl implements PaymentService {
         // 이미 있으면 그대로 반환
         return subscribe;
       }
-    // 없으면 새로 생성
+      // 없으면 새로 생성
       SubscribeRequestDTO dto =
               subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
       return subscribeService.createSubscribe(dto, orderItem);
@@ -146,27 +147,22 @@ public class PaymentServiceImpl implements PaymentService {
     log.info("PortOne 결제 정보: {}", paymentInfo);
 
     // 매핑 확인 로그
-    log.info("PortOne 매핑 확인: status={}, errorCode={}, errorMsg={}",
-            paymentInfo.getStatus(),
-            paymentInfo.getErrorCode(),
-            paymentInfo.getFailReason());
+//    log.info("PortOne 매핑 확인: status={}, errorCode={}, errorMsg={}",
+//            paymentInfo.getStatus(),
+//            paymentInfo.getErrorCode(),
+//            paymentInfo.getFailReason());
+    // 포트원 매핑
+    PaymentTransition transition = PaymentTransition.fromPortOne(paymentInfo, payment.getAmount());
 
-    PaymentTransition transition = PaymentTransition.fromPortOne(paymentInfo);
-
-    if (transition == PaymentTransition.COMPLETE &&
-            !paymentInfo.getAmount().equals(payment.getAmount())) {
-      log.warn("결제 금액 불일치: 요청 금액={}, PortOne 금액={}",
-              payment.getAmount(), paymentInfo.getAmount());
-      transition = PaymentTransition.FAIL_SYSTEM;
-    }
-// 5. 상태 반영
+//  상태 반영
     payment.setImpUid(impUid);
-//    statusChanger.changePayment(payment, transition, ActorType.SYSTEM);
 
-// 6. 성공일 때만 구독/회차 처리
+    paymentStatusChanger.changePayment(payment, transition, payment.getOrderItem().getId(), ActorType.SYSTEM);
+
+// 성공일 때만 구독/회차 처리
     if (transition == PaymentTransition.COMPLETE && payment.getSubscribeRound() != null) {
       Subscribe subscribe = payment.getSubscribeRound().getSubscribe();
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE , ActorType.SYSTEM);
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
       SubscribeRound subscribeRound = payment.getSubscribeRound();
       subscribeStatusChanger.changeSubscribeRound(subscribeRound, SubscribeRoundTransition.PAY_SUCCESS);
     }
