@@ -31,4 +31,8 @@ public class MemberSignupDTO {
 
   @AssertTrue(message = "개인정보 수집 및 이용에 동의해야 합니다")
   private boolean privacyAgree;
+
+
+  @NotBlank(message = "토큰이 필요합니다.")
+  private String token;
 }

@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.common.service;
 
 import com.imchobo.sayren_back.domain.common.util.MailUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
+import com.imchobo.sayren_back.domain.member.dto.EmailVerifyRequestDTO;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,24 +16,24 @@ public class MailService {
   private final RedisUtil redisUtil;
 
 
-  public void emailVerification(String email) {
+  public void emailVerification(EmailVerifyRequestDTO emailVerifyRequestDTO) {
     String token = UUID.randomUUID().toString();
 
-    redisUtil.emailVerification(token, email);
+    redisUtil.emailVerification(token, emailVerifyRequestDTO.getEmail());
 
     String verificationUrl = "http://localhost:8080/api/auth/email-verify/" + token;
 
-    String title = "귀하의 세이렌 계정 이메일 주소를 확인해 주십시오.";
+    String title = "귀하의 세이렌 회원가입을 위해 이메일 주소를 확인해 주십시오.";
     String content = buildEmail(
-      "세이렌 계정 이메일 인증",
-      "아래 버튼을 클릭하여 이메일 주소를 인증해 주세요.",
-      "이메일인증",
+      "세이렌 회원가입 이메일 인증",
+      "아래 버튼을 클릭하여 회원가입을 계속 진행해주세요.",
+      "회원가입",
       "이메일 인증하기",
       verificationUrl
     );
 
 
-    mailUtil.sendMail(email, title, content);
+    mailUtil.sendMail(emailVerifyRequestDTO.getEmail(), title, content);
   }
 
 

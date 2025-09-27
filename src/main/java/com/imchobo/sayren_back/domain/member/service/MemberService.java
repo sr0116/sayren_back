@@ -17,4 +17,6 @@ public interface MemberService {
   Map<?, ?> getTel();
   void findPassword(FindPasswordRequestDTO findPasswordRequestDTO);
   void changePassword(ResetPasswordRequestDTO resetPasswordRequestDTO);
+  void checkMail(EmailVerifyRequestDTO emailVerifyRequestDTO);
+  String signupNext(String token);
 }

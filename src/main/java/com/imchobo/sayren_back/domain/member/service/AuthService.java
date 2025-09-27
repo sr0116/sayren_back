@@ -13,8 +13,8 @@ public interface AuthService {
   MemberLoginResponseDTO getUser();
   void logout(HttpServletResponse response, String refreshToken);
   AccessToken accessToken(HttpServletResponse response, String refreshToken);
-  MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response);
-  MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response);
+  MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response, HttpServletRequest request);
+  MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response, HttpServletRequest request);
   String socialLinkRedirectUrl(String provider);
   void hasResetPasswordKey(String token);
 }
