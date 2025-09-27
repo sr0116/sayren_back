@@ -1,10 +1,8 @@
 package com.imchobo.sayren_back.domain.member.controller.user;
 
 
-import com.imchobo.sayren_back.domain.member.dto.FindPasswordRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberSignupDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberTelDTO;
-import com.imchobo.sayren_back.domain.member.dto.ResetPasswordRequestDTO;
+import com.imchobo.sayren_back.domain.member.dto.*;
+import com.imchobo.sayren_back.domain.member.service.MemberProviderService;
 import com.imchobo.sayren_back.domain.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +17,7 @@ import java.util.Map;
 @RequestMapping("api/user/member")
 public class UserMemberController {
   private final MemberService memberService;
+  private final MemberProviderService memberProviderService;
 
   @PostMapping("register")
   public ResponseEntity<?> register(@RequestBody @Valid MemberSignupDTO memberSignupDTO) {
@@ -64,6 +63,17 @@ public class UserMemberController {
   @PostMapping("reset-pw")
   public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO resetPasswordRequestDTO) {
     memberService.changePassword(resetPasswordRequestDTO);
+    return ResponseEntity.ok().build();
+  }
+
+  @GetMapping("social-list")
+  public ResponseEntity<?> getSocialList(){
+    return ResponseEntity.ok(memberProviderService.getMemberSocialList());
+  }
+
+  @PostMapping("social-disconnect")
+  public ResponseEntity<?> socialDisconnect(@RequestBody @Valid SocialDisconnectDTO socialDisconnectDTO) {
+    memberProviderService.disconnect(socialDisconnectDTO);
     return ResponseEntity.ok().build();
   }
 
