@@ -1,6 +1,7 @@
-package com.imchobo.sayren_back.domain.order.entity;
+package com.imchobo.sayren_back.domain.order.cart.entity;
 
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;

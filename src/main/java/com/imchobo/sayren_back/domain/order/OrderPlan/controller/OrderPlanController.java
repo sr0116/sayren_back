@@ -1,8 +1,8 @@
-package com.imchobo.sayren_back.domain.order.controller;
+package com.imchobo.sayren_back.domain.order.OrderPlan.controller;
 
-import com.imchobo.sayren_back.domain.order.dto.OrderPlanRequestDTO;
-import com.imchobo.sayren_back.domain.order.dto.OrderPlanResponseDTO;
-import com.imchobo.sayren_back.domain.order.service.OrderPlanService;
+import com.imchobo.sayren_back.domain.order.OrderPlan.dto.OrderPlanRequestDTO;
+import com.imchobo.sayren_back.domain.order.OrderPlan.dto.OrderPlanResponseDTO;
+import com.imchobo.sayren_back.domain.order.OrderPlan.service.OrderPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

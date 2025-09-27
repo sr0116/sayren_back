@@ -1,7 +1,7 @@
-package com.imchobo.sayren_back.domain.order.service;
+package com.imchobo.sayren_back.domain.order.OrderPlan.service;
 
-import com.imchobo.sayren_back.domain.order.dto.OrderPlanRequestDTO;
-import com.imchobo.sayren_back.domain.order.dto.OrderPlanResponseDTO;
+import com.imchobo.sayren_back.domain.order.OrderPlan.dto.OrderPlanRequestDTO;
+import com.imchobo.sayren_back.domain.order.OrderPlan.dto.OrderPlanResponseDTO;
 
 import java.util.List;
 

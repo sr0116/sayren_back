@@ -118,7 +118,7 @@ public class AuthServiceImpl implements AuthService {
   public MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
     SocialUser socialUser = socialLinkRequestDTO.getSocialUser();
 
-    String email = SecurityUtil.getMemberAuthDTO() != null ?  SecurityUtil.getMemberAuthDTO().getEmail() : socialUser.email();
+    String email = SecurityUtil.isUser() ?  SecurityUtil.getMemberAuthDTO().getEmail() : socialUser.email();
     Member member = memberRepository.findByEmail(email).orElseThrow(EmailNotFoundException::new);
     if(!passwordEncoder.matches(socialLinkRequestDTO.getPassword(), member.getPassword())){
       throw new InvalidPasswordException();

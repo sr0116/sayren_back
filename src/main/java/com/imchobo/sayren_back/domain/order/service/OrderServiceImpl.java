@@ -5,12 +5,12 @@ import com.imchobo.sayren_back.domain.delivery.address.repository.AddressReposit
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.domain.order.dto.OrderResponseDTO;
-import com.imchobo.sayren_back.domain.order.entity.CartItem;
+import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.en.OrderStatus;
 import com.imchobo.sayren_back.domain.order.mapper.OrderMapper;
-import com.imchobo.sayren_back.domain.order.repository.CartRepository;
+import com.imchobo.sayren_back.domain.order.cart.repository.CartRepository;
 import com.imchobo.sayren_back.domain.order.repository.OrderRepository;
 import com.imchobo.sayren_back.domain.order.sharedevent.OrderPlacedEvent;
 import jakarta.persistence.EntityNotFoundException;
