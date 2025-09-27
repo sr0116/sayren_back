@@ -21,10 +21,11 @@ public interface ReviewMapper {
   Board toEntity(ReviewCreateRequestDTO dto);
 
   // Update
-  @Mapping(source = "productId", target = "product.id")
+  @Mapping(target = "id", ignore = true)
   @Mapping(target = "member", ignore = true)
   @Mapping(target = "category", ignore = true)
   @Mapping(target = "status", ignore = true)
+  @Mapping(target = "product", ignore = true)
   void updateEntity(@MappingTarget Board board, ReviewModifyRequestDTO dto);
 
   // Board -> ReviewDetailsResponseDTO
