@@ -15,7 +15,6 @@ class SecurityConfigTest {
 
   @Test
   void passwordEncoder() {
-    passwordEncoder.encode("123456");
-    log.info(passwordEncoder.matches("123456",passwordEncoder.encode("123456")));
+    log.info(passwordEncoder.encode("12345678"));
   }
 }
