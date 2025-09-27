@@ -23,7 +23,7 @@ public class PaymentToDeliveryOrchestrator {
   @EventListener
   public void onPaymentStatusChanged(PaymentStatusChangedEvent event) {
     // 결제 완료 → 배송 READY 생성
-    if (event.getStatus() == PaymentStatus.PAID) {
+    if (event.getTransition().getStatus() == PaymentStatus.PAID) {
       Long orderItemId = event.getOrderItemId();
       if (orderItemId != null) {
         deliveryService.createFromOrderItemId(orderItemId);

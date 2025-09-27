@@ -1,14 +1,11 @@
 package com.imchobo.sayren_back.domain.subscribe.en;
 
 public enum SubscribeStatus {
-  PENDING_PAYMENT,   // 결제 전
-  PREPARING,         // 결제 완료, 배송 준비/중
-  ACTIVE,            // 구독 진행 중
-  OVERDUE,           // 연체 (자동 결제 실패 누적)
-  RETURN_REQUESTED,  // 회수 요청됨
-  RETURNED,          // 회수 완료
-  ENDED,             // 구독 만료 종료
-  CANCEL_REQUESTED,  // 회원 취소 요청
-  CANCELED,          // 중도 해지 (승인 시)
+  PENDING_PAYMENT,   // 결제 대기
+  PREPARING,         // 결제 완료, 배송 준비/중 (아직 구독 시작 전)
+  ACTIVE,            // 구독 진행 중 (배송 완료 시점부터)
+  OVERDUE,           // 자동 결제 실패 → 연체
+  ENDED,             // 계약 기간 만료 → 종료
+  CANCELED,          // 중도 해지 (회수 완료 시점 등)
   FAILED             // 결제 실패
 }

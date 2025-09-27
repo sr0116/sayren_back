@@ -11,6 +11,8 @@ import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -20,7 +22,16 @@ public class SubscribeHistoryRecorder {
   private final SubscribeRepository subscribeRepository;
   // 구독 이력 기록 및 상태
 
-  @EventListener
+  public void recordInit(Subscribe subscribe) {
+    SubscribeHistory history = SubscribeHistory.builder()
+            .subscribe(subscribe)
+            .status(subscribe.getStatus())   // PENDING_PAYMENT
+            .reasonCode(ReasonCode.NONE)
+            .build();
+    subscribeHistoryRepository.save(history);
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleSubscribeStatusChanged(SubscribeStatusChangedEvent event) {
     // 1) 구독 엔티티 조회 (FK 저장용)
     Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
