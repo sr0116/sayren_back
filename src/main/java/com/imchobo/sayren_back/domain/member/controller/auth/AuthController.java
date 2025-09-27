@@ -52,28 +52,19 @@ public class AuthController {
   }
 
   @PostMapping("social-signup")
-  public ResponseEntity<?> socialSignup(@RequestBody @Valid SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response) {
-    return ResponseEntity.ok(authService.socialSignup(socialSignupRequestDTO, response));
+  public ResponseEntity<?> socialSignup(@RequestBody @Valid SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response, HttpServletRequest request) {
+    return ResponseEntity.ok(authService.socialSignup(socialSignupRequestDTO, response, request));
   }
 
   @PostMapping("social-link")
-  public ResponseEntity<?> socialLink(@RequestBody @Valid SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
-    return ResponseEntity.ok(authService.socialLink(socialLinkRequestDTO, response));
+  public ResponseEntity<?> socialLink(@RequestBody @Valid SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response, HttpServletRequest request) {
+    return ResponseEntity.ok(authService.socialLink(socialLinkRequestDTO, response, request));
   }
 
   @GetMapping("email-verify/{token}")
   public RedirectView verificationEmail(@PathVariable String token) {
-    log.info("받은 토큰: {}", token);
-    String url = "http://localhost:3000/mypage/emailverify";
-    memberService.emailVerify(token);
-
+    String url = "http://localhost:3000/member/signup/" + token;
     return new RedirectView(url);
-  }
-
-  @PostMapping("email-verify")
-  public ResponseEntity<?> resendVerificationEmail() {
-    mailService.emailVerification(SecurityUtil.getMemberAuthDTO().getEmail());
-    return ResponseEntity.ok(Map.of("message", "success"));
   }
 
 

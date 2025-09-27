@@ -6,6 +6,7 @@ import com.imchobo.sayren_back.domain.member.service.MemberProviderService;
 import com.imchobo.sayren_back.domain.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
@@ -15,6 +16,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/user/member")
+@Log4j2
 public class UserMemberController {
   private final MemberService memberService;
   private final MemberProviderService memberProviderService;
@@ -23,6 +25,12 @@ public class UserMemberController {
   public ResponseEntity<?> register(@RequestBody @Valid MemberSignupDTO memberSignupDTO) {
     memberService.register(memberSignupDTO);
     return ResponseEntity.ok(Map.of("message", "회원가입에 성공했습니다. 이메일 인증을 완료해주세요."));
+  }
+
+  @PostMapping("email-verify")
+  public ResponseEntity<?> emailSend(@RequestBody @Valid EmailVerifyRequestDTO emailVerifyRequestDTO) {
+    memberService.checkMail(emailVerifyRequestDTO);
+    return ResponseEntity.ok(Map.of("message", "인증 메일을 발송했습니다."));
   }
 
   @PostMapping("modify-tel")
@@ -75,6 +83,11 @@ public class UserMemberController {
   public ResponseEntity<?> socialDisconnect(@RequestBody @Valid SocialDisconnectDTO socialDisconnectDTO) {
     memberProviderService.disconnect(socialDisconnectDTO);
     return ResponseEntity.ok().build();
+  }
+
+  @GetMapping("signup-next")
+  public ResponseEntity<?> signupNext(@RequestParam String token) {
+    return ResponseEntity.ok(Map.of("email", memberService.signupNext(token)));
   }
 
 }
