@@ -165,4 +165,16 @@ public class MemberServiceImpl implements MemberService {
     }
     return email;
   }
+
+
+  @Override
+  @Transactional
+  public MemberLoginResponseDTO changeName(ChangeNameDTO changeNameDTO) {
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+    if(member.getName().equals(changeNameDTO.getName())) {
+      throw new RuntimeException();
+    }
+    member.setName(changeNameDTO.getName());
+    return memberMapper.toLoginResponseDTO(memberMapper.toAuthDTO(member));
+  }
 }

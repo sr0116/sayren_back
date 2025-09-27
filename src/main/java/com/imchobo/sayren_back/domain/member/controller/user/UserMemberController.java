@@ -68,7 +68,7 @@ public class UserMemberController {
     return new RedirectView(url);
   }
 
-  @PostMapping("reset-pw")
+  @PatchMapping("reset-pw")
   public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO resetPasswordRequestDTO) {
     memberService.changePassword(resetPasswordRequestDTO);
     return ResponseEntity.ok().build();
@@ -89,5 +89,11 @@ public class UserMemberController {
   public ResponseEntity<?> signupNext(@RequestParam String token) {
     return ResponseEntity.ok(Map.of("email", memberService.signupNext(token)));
   }
+
+  @PatchMapping("change-name")
+  public ResponseEntity<?> changeName(@RequestBody @Valid ChangeNameDTO changeNameDTO) {
+    return ResponseEntity.ok(memberService.changeName(changeNameDTO));
+  }
+
 
 }

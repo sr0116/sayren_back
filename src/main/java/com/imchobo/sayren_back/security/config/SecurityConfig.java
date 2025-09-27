@@ -55,7 +55,7 @@ public class SecurityConfig {
       .cors(Customizer.withDefaults())
       .csrf(AbstractHttpConfigurer::disable) // REST API라면 CSRF 비활성화
       .authorizeHttpRequests(auth -> auth
-              .requestMatchers("/api/user/**", "/api/auth/**", "/oauth2/**").permitAll() // 누구나 접근 가능
+              .requestMatchers("/api/user/**", "/api/auth/**", "/oauth2/**", "/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll() // 누구나 접근 가능
               .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용
               .anyRequest().authenticated() // 나머지는 로그인 필요
       )
