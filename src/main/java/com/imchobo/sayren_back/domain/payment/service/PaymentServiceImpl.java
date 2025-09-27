@@ -119,13 +119,17 @@ public class PaymentServiceImpl implements PaymentService {
   // 구독 생성
   private Subscribe createSubscribe(OrderPlanType planType, OrderItem orderItem) {
     if (planType == OrderPlanType.RENTAL) {
-      // 같은 아이디로 구독 아이디가 있는지
-      return subscribeRepository.findByOrderItem(orderItem)
-              .orElseGet(() -> {
-                SubscribeRequestDTO dto =
-                        subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
-                return subscribeService.createSubscribe(dto, orderItem);
-              });
+      // 같은 orderItem으로 등록된 구독 조회
+      Subscribe subscribe = subscribeRepository.findByOrderItem(orderItem);
+
+      if (subscribe != null) {
+        // 이미 있으면 그대로 반환
+        return subscribe;
+      }
+    // 없으면 새로 생성
+      SubscribeRequestDTO dto =
+              subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
+      return subscribeService.createSubscribe(dto, orderItem);
     }
     return null;
   }
