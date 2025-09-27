@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.member.service;
 
 import com.imchobo.sayren_back.domain.common.annotation.ActiveMemberOnly;
+import com.imchobo.sayren_back.domain.common.exception.RedisKeyNotFoundException;
 import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
@@ -51,12 +52,10 @@ public class MemberServiceImpl implements MemberService {
 
     entity.setPassword(passwordEncoder.encode(entity.getPassword()));
     entity.setStatus(MemberStatus.READY);
-
-    log.info(entity);
-
+    entity.setEmailVerified(true);
+    redisUtil.deleteEmailToken(memberSignupDTO.getToken());
 
     Member member = memberRepository.save(entity);
-    mailService.emailVerification(entity.getEmail());
 
     memberTermService.saveTerm(member);
   }
@@ -145,5 +144,25 @@ public class MemberServiceImpl implements MemberService {
       throw new PasswordAlreadyUseException();
     }
     member.setPassword(passwordEncoder.encode(resetPasswordRequestDTO.getNewPassword()));
+  }
+
+
+  @Override
+  public void checkMail(EmailVerifyRequestDTO emailVerifyRequestDTO) {
+    Member member = memberRepository.findByEmail(emailVerifyRequestDTO.getEmail()).orElse(null);
+    if(member != null) {
+      throw new EmailAlreadyExistsException();
+    }
+    mailService.emailVerification(emailVerifyRequestDTO);
+  }
+
+
+  @Override
+  public String signupNext(String token) {
+    String email = redisUtil.getEmailByToken(token);
+    if(email == null) {
+      throw new RedisKeyNotFoundException();
+    }
+    return email;
   }
 }

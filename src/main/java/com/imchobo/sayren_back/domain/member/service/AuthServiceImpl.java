@@ -103,7 +103,7 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   @Transactional
-  public MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response) {
+  public MemberLoginResponseDTO socialSignup(SocialSignupRequestDTO socialSignupRequestDTO, HttpServletResponse response, HttpServletRequest request) {
     SocialUser socialUser = socialSignupRequestDTO.getSocialUser();
 
     Member member = memberRepository.save(Member.builder().name(socialUser.name()).email(socialUser.email()).status(MemberStatus.READY).emailVerified(true).build());
@@ -112,12 +112,13 @@ public class AuthServiceImpl implements AuthService {
     memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
     MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
+    memberLoginHistoryService.saveLoginHistory(memberAuthDTO.getId(), request);
     return memberTokenService.saveToken(memberAuthDTO, response, true);
   }
 
   @Override
   @Transactional
-  public MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response) {
+  public MemberLoginResponseDTO socialLink(SocialLinkRequestDTO socialLinkRequestDTO, HttpServletResponse response, HttpServletRequest request) {
     SocialUser socialUser = socialLinkRequestDTO.getSocialUser();
 
     String email = SecurityUtil.isUser() ? SecurityUtil.getMemberAuthDTO().getEmail() : socialUser.email();
@@ -129,12 +130,15 @@ public class AuthServiceImpl implements AuthService {
     if(socialUser.email().equals(member.getEmail())){
       member.setEmailVerified(true);
     }
-    if(!memberProviderRepository.findByMemberAndProvider(member, socialUser.provider()).isEmpty()){
+    if(memberProviderRepository.findByMemberAndProvider(member, socialUser.provider()).isPresent()){
       throw new AlreadyLinkedProviderException(socialUser.provider());
     }
     memberProviderRepository.save(MemberProvider.builder().providerUid(socialUser.providerUid()).member(member).provider(socialUser.provider()).email(socialUser.email()).build());
 
     MemberAuthDTO memberAuthDTO = memberMapper.toAuthDTO(member);
+    if(!SecurityUtil.isUser()){
+      memberLoginHistoryService.saveLoginHistory(memberAuthDTO.getId(), request);
+    }
 
     return memberTokenService.saveToken(memberAuthDTO, response, true);
   }
