@@ -1,5 +1,8 @@
 package com.imchobo.sayren_back.domain.board.service;
 
+import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.board.dto.faq.FaqListResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.notice.NoticeCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.notice.NoticeDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.notice.NoticeListResponseDTO;
@@ -22,4 +25,7 @@ public interface NoticeService {
 
   // 공지 목록 조회
   List<NoticeListResponseDTO> list();
+
+  // 페이징 처리
+  PageResponseDTO<NoticeListResponseDTO> getList(PageRequestDTO requestDTO);
 }

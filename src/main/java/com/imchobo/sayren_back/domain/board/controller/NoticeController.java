@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.board.controller;
 
+import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.notice.NoticeCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.notice.NoticeDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.notice.NoticeListResponseDTO;
@@ -43,5 +45,11 @@ public class NoticeController {
   @GetMapping
   public ResponseEntity<List<NoticeListResponseDTO>> list() {
     return ResponseEntity.ok(noticeService.list());
+  }
+
+  // 페이징
+  @GetMapping("/list")
+  public ResponseEntity<PageResponseDTO<NoticeListResponseDTO>> getList(PageRequestDTO requestDTO) {
+    return ResponseEntity.ok(noticeService.getList(requestDTO));
   }
 }
