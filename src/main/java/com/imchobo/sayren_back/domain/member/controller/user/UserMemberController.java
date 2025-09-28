@@ -59,7 +59,7 @@ public class UserMemberController {
   @PostMapping("find-pw")
   public ResponseEntity<?> findPassword(@RequestBody @Valid FindPasswordRequestDTO findPasswordRequestDTO){
     memberService.findPassword(findPasswordRequestDTO);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(Map.of("message", "success"));
   }
 
   @GetMapping("reset-pw/{token}")
@@ -70,8 +70,9 @@ public class UserMemberController {
 
   @PatchMapping("reset-pw")
   public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO resetPasswordRequestDTO) {
+    log.info(resetPasswordRequestDTO);
     memberService.changePassword(resetPasswordRequestDTO);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(Map.of("message", "success"));
   }
 
   @GetMapping("social-list")
@@ -82,7 +83,7 @@ public class UserMemberController {
   @PostMapping("social-disconnect")
   public ResponseEntity<?> socialDisconnect(@RequestBody @Valid SocialDisconnectDTO socialDisconnectDTO) {
     memberProviderService.disconnect(socialDisconnectDTO);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(Map.of("message", "success"));
   }
 
   @GetMapping("signup-next")
@@ -95,5 +96,12 @@ public class UserMemberController {
     return ResponseEntity.ok(memberService.changeName(changeNameDTO));
   }
 
+
+  @PostMapping("check-pw")
+  public ResponseEntity<?> checkPassword(@RequestBody @Valid PasswordCheckDTO passwordCheckDTO) {
+    log.info(passwordCheckDTO);
+    memberService.passwordCheck(passwordCheckDTO);
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
 
 }

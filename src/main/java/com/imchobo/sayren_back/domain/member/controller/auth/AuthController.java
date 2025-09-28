@@ -63,7 +63,7 @@ public class AuthController {
   @PostMapping("logout")
   public ResponseEntity<?> logout(HttpServletResponse response, @CookieValue(name = "SR_REFRESH", required = false) String refreshToken) {
     authService.logout(response, refreshToken);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(Map.of("message", "success"));
   }
 
   @PostMapping("social-signup")

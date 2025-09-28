@@ -20,4 +20,5 @@ public interface MemberService {
   void checkMail(EmailVerifyRequestDTO emailVerifyRequestDTO);
   String signupNext(String token);
   MemberLoginResponseDTO changeName(ChangeNameDTO changeNameDTO);
+  void passwordCheck(PasswordCheckDTO passwordCheckDTO);
 }

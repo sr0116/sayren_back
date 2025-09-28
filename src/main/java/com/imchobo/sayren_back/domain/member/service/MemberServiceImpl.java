@@ -137,13 +137,21 @@ public class MemberServiceImpl implements MemberService {
   @Override
   @Transactional
   public void changePassword(ResetPasswordRequestDTO resetPasswordRequestDTO) {
-    Long memberId = redisUtil.getResetPassword(resetPasswordRequestDTO.getToken());
-    redisUtil.deleteResetPassword(resetPasswordRequestDTO.getToken());
+    Long memberId;
+    if(SecurityUtil.isUser()){
+      memberId = SecurityUtil.getMemberAuthDTO().getId();
+    }
+    else {
+      memberId = redisUtil.getResetPassword(resetPasswordRequestDTO.getToken());
+    }
     Member member = memberRepository.findById(memberId).orElseThrow(IllegalArgumentException::new);
     if(passwordEncoder.matches(resetPasswordRequestDTO.getNewPassword(), member.getPassword())) {
       throw new PasswordAlreadyUseException();
     }
     member.setPassword(passwordEncoder.encode(resetPasswordRequestDTO.getNewPassword()));
+    if(resetPasswordRequestDTO.getToken() != null) {
+      redisUtil.deleteResetPassword(resetPasswordRequestDTO.getToken());
+    }
   }
 
 
@@ -176,5 +184,14 @@ public class MemberServiceImpl implements MemberService {
     }
     member.setName(changeNameDTO.getName());
     return memberMapper.toLoginResponseDTO(memberMapper.toAuthDTO(member));
+  }
+
+
+  @Override
+  public void passwordCheck(PasswordCheckDTO passwordCheckDTO) {
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+    if (!passwordEncoder.matches(passwordCheckDTO.getPassword(), member.getPassword())) {
+      throw new InvalidPasswordException();
+    }
   }
 }

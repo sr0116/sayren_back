@@ -84,7 +84,7 @@ public class SecurityConfig {
 
     // 주소 설정
     configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
     // 쿠키, Authorization 같은 자격 증명 정보를 포함한 요청 허용
     configuration.setAllowCredentials(true);
