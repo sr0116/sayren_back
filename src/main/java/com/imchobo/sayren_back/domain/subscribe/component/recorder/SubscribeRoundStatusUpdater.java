@@ -20,38 +20,37 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Log4j2
 public class SubscribeRoundStatusUpdater {
-
-  private final SubscribeRoundRepository subscribeRoundRepository;
-  private final PaymentRepository paymentRepository;
-
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-  public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
-    paymentRepository.findById(event.getPaymentId())
-            .map(Payment::getSubscribeRound) // Payment → SubscribeRound
-            .ifPresent(round -> {
-              SubscribeRoundTransition transition = mapToRoundTransition(event.getTransition());
-
-              round.setPayStatus(transition.getStatus());
-              if (transition == SubscribeRoundTransition.PAY_SUCCESS) {
-                round.setPaidDate(LocalDateTime.now());
-              }
-
-              subscribeRoundRepository.save(round);
-              log.info("회차 상태 자동 변경 - roundId={}, status={}", round.getId(), transition.getStatus());
-            });
-  }
-
-
-  private SubscribeRoundTransition mapToRoundTransition(PaymentTransition transition) {
-    return switch (transition) {
-      case COMPLETE -> SubscribeRoundTransition.PAY_SUCCESS;
-      case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM -> SubscribeRoundTransition.PAY_FAIL;
-      case FAIL_TIMEOUT -> SubscribeRoundTransition.PAY_TIMEOUT;
-      case REFUND, PARTIAL_REFUND -> SubscribeRoundTransition.CANCEL;
-    };
-  }
+//
+//  private final SubscribeRoundRepository subscribeRoundRepository;
+//  private final PaymentRepository paymentRepository;
+//
+//  @Transactional(propagation = Propagation.REQUIRES_NEW)
+//  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+//  public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
+//    paymentRepository.findById(event.getPaymentId())
+//            .map(Payment::getSubscribeRound) // Payment → SubscribeRound
+//            .ifPresent(round -> {
+//              SubscribeRoundTransition transition = mapToRoundTransition(event.getTransition());
+//
+//              round.setPayStatus(transition.getStatus());
+//              if (transition == SubscribeRoundTransition.PAY_SUCCESS) {
+//                round.setPaidDate(LocalDateTime.now());
+//              }
+//
+//              subscribeRoundRepository.save(round);
+//              log.info("회차 상태 자동 변경 - roundId={}, status={}", round.getId(), transition.getStatus());
+//            });
+//  }
+//
+//
+//  private SubscribeRoundTransition mapToRoundTransition(PaymentTransition transition) {
+//    return switch (transition) {
+//      case COMPLETE -> SubscribeRoundTransition.PAY_SUCCESS;
+//      case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM -> SubscribeRoundTransition.PAY_FAIL;
+//      case FAIL_TIMEOUT -> SubscribeRoundTransition.PAY_TIMEOUT;
+//      case REFUND, PARTIAL_REFUND -> SubscribeRoundTransition.CANCEL;
+//    };
+//  }
 }
-
 
 

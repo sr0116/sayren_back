@@ -137,11 +137,6 @@ public class PaymentServiceImpl implements PaymentService {
     PaymentInfoResponse paymentInfo = portOnePaymentClient.getPaymentInfo(impUid);
     log.info("PortOne 결제 정보: {}", paymentInfo);
 
-    // 매핑 확인 로그
-//    log.info("PortOne 매핑 확인: status={}, errorCode={}, errorMsg={}",
-//            paymentInfo.getStatus(),
-//            paymentInfo.getErrorCode(),
-//            paymentInfo.getFailReason());
     // 포트원 매핑
     PaymentTransition transition = PaymentTransition.fromPortOne(paymentInfo, payment.getAmount());
 
@@ -150,16 +145,27 @@ public class PaymentServiceImpl implements PaymentService {
 
     paymentStatusChanger.changePayment(payment, transition, payment.getOrderItem().getId(), ActorType.SYSTEM);
 
-// 성공일 때만 구독/회차 처리
-    if (transition == PaymentTransition.COMPLETE && payment.getSubscribeRound() != null) {
-      Subscribe subscribe = payment.getSubscribeRound().getSubscribe();
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
-      SubscribeRound subscribeRound = payment.getSubscribeRound();
-      subscribeStatusChanger.changeSubscribeRound(subscribeRound, SubscribeRoundTransition.PAY_SUCCESS);
-    }
+//// 성공일 때만 구독/회차 처리 (이벤트에서 처리하는 방향 나중에 없애기)
+//    if (payment.getSubscribeRound() != null) {
+//      Subscribe subscribe = payment.getSubscribeRound().getSubscribe();
+//      SubscribeRound round = payment.getSubscribeRound();
+//      switch (transition) {
+//        case COMPLETE -> {
+//          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+//          subscribeStatusChanger.changeSubscribeRound(round, SubscribeRoundTransition.PAY_SUCCESS);
+//        }
+//        case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM, FAIL_TIMEOUT -> {
+//          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
+//          subscribeStatusChanger.changeSubscribeRound(round, SubscribeRoundTransition.PAY_FAIL);
+//        }
+//        case REFUND, PARTIAL_REFUND -> {
+//          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
+//          subscribeStatusChanger.changeSubscribeRound(round, SubscribeRoundTransition.CANCEL);
+//        }
+//      }
+//    }
     return paymentMapper.toResponseDTO(payment);
   }
-
   @Override
   @Transactional
   public void refund(Long paymentId, Long amount, String reason) {
