@@ -8,6 +8,7 @@ import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import org.mapstruct.Named;
@@ -42,11 +43,17 @@ public class MappingUtil {
     return Subscribe.builder().id(subscribeId).build();
   }
 
-  @Named("mapSubscribePayment")
-  public SubscribeRound subscribePaymentIdToEntity(Long SubscribeRoundId) {
-    if (SubscribeRoundId == null) throw new IllegalArgumentException("subscribePaymentId가 null입니다.");
-    return SubscribeRound.builder().id(SubscribeRoundId).build();
+  @Named("mapRefundRequest")
+  public RefundRequest refundRequestIdToEntity(Long refundRequestId) {
+    if (refundRequestId == null) return null; // 자동 환불일 경우 null 허용
+    return RefundRequest.builder().id(refundRequestId).build();
   }
+
+  @Named("mapRefundRequestId")
+  public Long refundRequestEntityToId(RefundRequest refundRequest) {
+    return refundRequest != null ? refundRequest.getId() : null;
+  }
+
 
   @Named("mapOrderPlan")
   public OrderPlan orderPlanIdToEntity(Long planId) {

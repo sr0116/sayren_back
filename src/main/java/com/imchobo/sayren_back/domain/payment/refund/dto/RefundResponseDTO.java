@@ -17,5 +17,6 @@ public class RefundResponseDTO {
   private Long paymentId;
   private Long amount;
   private ReasonCode reasonCode;
+  private Long refundRequestId; // 자동 환불시에는 null
   private LocalDateTime regDate;
 }

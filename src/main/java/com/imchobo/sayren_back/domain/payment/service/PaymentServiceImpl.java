@@ -20,8 +20,6 @@ import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoRes
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
-import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
-import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
