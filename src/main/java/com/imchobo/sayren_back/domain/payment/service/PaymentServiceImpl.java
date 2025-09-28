@@ -107,27 +107,18 @@ public class PaymentServiceImpl implements PaymentService {
       payment.setAmount(orderItem.getProductPriceSnapshot());
     }
     // DB 저장
-    Payment savedPayment = paymentRepository.save(payment);
+    Payment savedPayment = paymentRepository.saveAndFlush(payment);
 
-    // DTO -> 엔티티 변환 결제 로그 테이블  생성 savedPayment 기반
+    // 최초 결제 이력 기록 (동기, 원자성)
     paymentHistoryRecorder.recordInitPayment(savedPayment);
 
-    paymentStatusChanger.changePayment(savedPayment, PaymentTransition.COMPLETE, payment.getOrderItem().getId(), ActorType.SYSTEM);
-    // 응답
     return paymentMapper.toResponseDTO(savedPayment);
   }
 
   // 구독 생성
   private Subscribe createSubscribe(OrderPlanType planType, OrderItem orderItem) {
     if (planType == OrderPlanType.RENTAL) {
-      // 같은 orderItem으로 등록된 구독 조회
-      Subscribe subscribe = subscribeRepository.findByOrderItem(orderItem);
-
-      if (subscribe != null) {
-        // 이미 있으면 그대로 반환
-        return subscribe;
-      }
-      // 없으면 새로 생성
+      // 무조건 새 구독 생성
       SubscribeRequestDTO dto =
               subscribeMapper.toRequestDTO(orderItem, orderItem.getOrder(), orderItem.getOrderPlan());
       return subscribeService.createSubscribe(dto, orderItem);
@@ -172,7 +163,7 @@ public class PaymentServiceImpl implements PaymentService {
   @Override
   @Transactional
   public void refund(Long paymentId, Long amount, String reason) {
-    // 나중에 payment 에서 refund 서비스 위임해서 히스토리만 기록하거나 
+    // 나중에 payment 에서 refund 서비스 위임해서 히스토리만 기록하거나
     // reason code만 따로 변경하게 상태값 변경
     // 구독 일반 결제 구분해서
 //    refundService.requestRefund(paymentId, amount, reason);

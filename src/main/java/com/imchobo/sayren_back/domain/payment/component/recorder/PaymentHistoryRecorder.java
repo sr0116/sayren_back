@@ -12,6 +12,8 @@ import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -34,7 +36,7 @@ public class PaymentHistoryRecorder {
     paymentHistoryRepository.save(history);
   }
 
-  // 트랜잭션이 성공적으로 끝난 뒤에만 실행
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
     try {
@@ -42,7 +44,7 @@ public class PaymentHistoryRecorder {
               .orElseThrow(() -> new PaymentNotFoundException(event.getPaymentId()));
 
       // 최근 히스토리 상태 확인 (중복 방지)
-      PaymentHistory lastHistory = paymentHistoryRepository.findTopByPaymentOrderByCreatedAtDesc(payment);
+      PaymentHistory lastHistory = paymentHistoryRepository.findTopByPaymentOrderByRegDateDesc(payment);
 
       if (lastHistory != null && lastHistory.getStatus() == payment.getPaymentStatus()) {
         log.warn("중복 이벤트 무시 - paymentId={}, status={}", payment.getId(), payment.getPaymentStatus());
@@ -52,7 +54,7 @@ public class PaymentHistoryRecorder {
       // 새로운 히스토리 생성
       PaymentHistory history = PaymentHistory.builder()
               .payment(payment)
-              .status(payment.getPaymentStatus())
+              .status(event.getTransition().getStatus())
               .reasonCode(event.getTransition().getReason()) // 전환 사유 코드 기록
               .build();
 

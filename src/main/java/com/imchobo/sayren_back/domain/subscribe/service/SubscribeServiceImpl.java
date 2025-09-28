@@ -81,7 +81,7 @@ public class SubscribeServiceImpl implements SubscribeService {
     subscribe.setMember(currentMember);
 
     // 구독 저장
-    Subscribe savedSubscribe = subscribeRepository.save(subscribe);
+    Subscribe savedSubscribe = subscribeRepository.saveAndFlush(subscribe);
 
     // 회차 테이블 생성
     subscribeRoundService.createRounds(savedSubscribe, dto, orderItem);
@@ -89,7 +89,7 @@ public class SubscribeServiceImpl implements SubscribeService {
     // 최초 상태(PENDING_PAYMENT) 기록
     subscribeHistoryRecorder.recordInit(savedSubscribe);
 
-    subscribeStatusChanger.changeSubscribe(savedSubscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+//    subscribeStatusChanger.changeSubscribe(savedSubscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
     return savedSubscribe;
   }
 
