@@ -141,7 +141,7 @@ public class CrawlingService {
         product = productRepository.save(Product.builder()
                 .name(name)
                 .description(description)
-                .price(price)
+                .price((long)price)
                 .productCategory(category)
                 .modelName(modelName)
                 .isUse(false)

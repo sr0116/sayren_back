@@ -35,7 +35,7 @@ public class Product extends CreatedEntity {
 
     // 판매가, 정상가
     @Column(nullable = false)
-    private Integer price;
+    private Long price;
 
     // 상품 상태
     @Column(nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
