@@ -162,9 +162,11 @@ public class RedisUtil {
 
   public String getMember2fa(Long memberId) {
     String secret = get("MEMBER_2FA:" +  memberId);
-    delete("MEMBER_2FA:" +  memberId);
     return secret;
   }
 
+  public void deleteMember2fa(Long memberId) {
+    delete("MEMBER_2FA:" +  memberId);
+  }
 
 }

@@ -2,9 +2,11 @@ package com.imchobo.sayren_back.domain.member.service;
 
 import com.imchobo.sayren_back.domain.common.exception.RedisKeyNotFoundException;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
-import com.imchobo.sayren_back.domain.member.dto.Member2FARegisterDTO;
+import com.imchobo.sayren_back.domain.member.dto.Member2FARequestDTO;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.Member2FA;
+import com.imchobo.sayren_back.domain.member.exception.Not2FAUserException;
+import com.imchobo.sayren_back.domain.member.exception.OTPNotMatchException;
 import com.imchobo.sayren_back.domain.member.exception.UnauthorizedException;
 import com.imchobo.sayren_back.domain.member.recode.QrCode;
 import com.imchobo.sayren_back.domain.member.repository.Member2FARepository;
@@ -49,22 +51,38 @@ public class Member2FAServiceImpl implements Member2FAService {
 
   // 등록처리
   @Override
-  public void register(Member2FARegisterDTO member2FARegisterDTO) {
+  public void register(Member2FARequestDTO member2FARequestDTO) {
     Member member = SecurityUtil.getMemberEntity();
     String secret = redisUtil.getMember2fa(member.getId());
 
-    if(!verify(secret, member2FARegisterDTO.getOtp())){
-      throw new UnauthorizedException("잘못된 otp코드입니다.");
+    if(!verify(secret, member2FARequestDTO.getOtp())){
+      throw new OTPNotMatchException();
     }
 
     member2faRepository.save(Member2FA.builder()
         .member(member)
         .secret(secret)
       .build());
+
+    redisUtil.deleteMember2fa(member.getId());
   }
 
   @Override
   public void delete(Long memberId) {
     member2faRepository.deleteByMember_Id(memberId);
+  }
+
+  @Override
+  public void checkOtp(Member2FARequestDTO member2FARequestDTO) {
+    Member2FA member2FA = member2faRepository.findByMember(SecurityUtil.getMemberEntity()).orElseThrow(IllegalArgumentException::new);
+    if(!verify(member2FA.getSecret(), member2FARequestDTO.getOtp())){
+      throw new OTPNotMatchException();
+    }
+  }
+
+
+  @Override
+  public void read() {
+    member2faRepository.findByMember(SecurityUtil.getMemberEntity()).orElseThrow(Not2FAUserException::new);
   }
 }

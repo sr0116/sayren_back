@@ -99,7 +99,6 @@ public class UserMemberController {
 
   @PostMapping("check-pw")
   public ResponseEntity<?> checkPassword(@RequestBody @Valid PasswordCheckDTO passwordCheckDTO) {
-    log.info(passwordCheckDTO);
     memberService.passwordCheck(passwordCheckDTO);
     return ResponseEntity.ok(Map.of("message", "success"));
   }

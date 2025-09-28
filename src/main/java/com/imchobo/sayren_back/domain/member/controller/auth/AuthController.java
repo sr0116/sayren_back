@@ -1,11 +1,9 @@
 package com.imchobo.sayren_back.domain.member.controller.auth;
 
 
-import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.service.AuthService;
 import com.imchobo.sayren_back.domain.member.service.Member2FAService;
-import com.imchobo.sayren_back.domain.member.service.MemberService;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,7 +16,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -104,8 +101,25 @@ public class AuthController {
 
   // 2차인증 등록
   @PostMapping("create-2fa")
-  public ResponseEntity<?> create2fa(Member2FARegisterDTO member2FARegisterDTO) {
-    member2faService.register(member2FARegisterDTO);
+  public ResponseEntity<?> create2fa(@RequestBody @Valid Member2FARequestDTO member2FARequestDTO) {
+    log.info(member2FARequestDTO);
+    member2faService.register(member2FARequestDTO);
     return ResponseEntity.ok(Map.of("message", "success"));
   }
+
+
+  // 2차인증 검증
+  @PostMapping("check-2fa")
+  public ResponseEntity<?> check2fa(@RequestBody @Valid Member2FARequestDTO member2FARequestDTO) {
+    log.info(member2FARequestDTO);
+    member2faService.checkOtp(member2FARequestDTO);
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
+
+  @GetMapping("read-2fa")
+  public ResponseEntity<?> read2fa() {
+    member2faService.read();
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
+
 }
