@@ -21,4 +21,5 @@ public interface MemberService {
   String signupNext(String token);
   MemberLoginResponseDTO changeName(ChangeNameDTO changeNameDTO);
   void passwordCheck(PasswordCheckDTO passwordCheckDTO);
+  void deleteMember();
 }

@@ -2,11 +2,9 @@ package com.imchobo.sayren_back.domain.member.controller.auth;
 
 
 import com.imchobo.sayren_back.domain.common.service.MailService;
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
-import com.imchobo.sayren_back.domain.member.dto.SocialLinkRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
+import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.service.AuthService;
+import com.imchobo.sayren_back.domain.member.service.Member2FAService;
 import com.imchobo.sayren_back.domain.member.service.MemberService;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,8 +30,8 @@ import java.util.Map;
 @Log4j2
 public class AuthController {
   private final AuthService authService;
-  private final MemberService memberService;
-  private final MailService  mailService;
+  private final Member2FAService member2faService;
+
 
   @GetMapping("me")
   @Operation(
@@ -94,6 +92,20 @@ public class AuthController {
   @GetMapping("reset-pw/validate")
   public ResponseEntity<?> resetPassword(@RequestParam String token) {
     authService.hasResetPasswordKey(token);
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
+
+
+  // qr코드 가져오기(2차인증 등록용)
+  @GetMapping("2fa-qr")
+  public ResponseEntity<?> get2faQR() {
+    return ResponseEntity.ok(member2faService.getQrCode());
+  }
+
+  // 2차인증 등록
+  @PostMapping("create-2fa")
+  public ResponseEntity<?> create2fa(Member2FARegisterDTO member2FARegisterDTO) {
+    member2faService.register(member2FARegisterDTO);
     return ResponseEntity.ok(Map.of("message", "success"));
   }
 }

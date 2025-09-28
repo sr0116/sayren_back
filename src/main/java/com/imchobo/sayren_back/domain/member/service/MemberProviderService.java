@@ -9,4 +9,5 @@ public interface MemberProviderService {
   SocialResponseDTO getSocialResponseDTO(Provider provider);
   MemberSocialList getMemberSocialList();
   void disconnect(SocialDisconnectDTO socialDisconnectDTO);
+  void deleteMemberProvider(Long memberId);
 }

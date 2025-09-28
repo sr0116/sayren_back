@@ -155,4 +155,16 @@ public class RedisUtil {
     delete("RESET_PASSWORD:" + token);
   }
 
+
+  public void setMember2fa(Long memberId, String secret) {
+    set("MEMBER_2FA:" +  memberId, secret, 15, TimeUnit.MINUTES);
+  }
+
+  public String getMember2fa(Long memberId) {
+    String secret = get("MEMBER_2FA:" +  memberId);
+    delete("MEMBER_2FA:" +  memberId);
+    return secret;
+  }
+
+
 }
