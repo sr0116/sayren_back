@@ -5,9 +5,12 @@ import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface DeliveryItemRepository extends JpaRepository<DeliveryItem, Long> {
   List<DeliveryItem> findByOrderItem_Order_Id(Long orderId);
 
   List<DeliveryItem> findByOrderItem(OrderItem orderItem);
+
+  Optional<DeliveryItem> findFirstByOrderItem(OrderItem orderItem);
 }
