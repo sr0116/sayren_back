@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.payment.repository;
 
 
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -28,6 +29,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
           "orderItem.orderPlan"
   })
   Optional<Payment> findById(Long paymentId);
+ // 일단 환불에서 사용중
+  Optional<Payment> findByOrderItem(OrderItem orderItem);
 
   // 기본 CRUD, 결제 상태로 조회
   List<Payment> findByPaymentStatus(PaymentStatus status);
