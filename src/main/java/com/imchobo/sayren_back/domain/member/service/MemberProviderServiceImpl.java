@@ -57,4 +57,10 @@ public class MemberProviderServiceImpl implements MemberProviderService {
       }
     });
   }
+
+  // 멤버 삭제시 같이 삭제
+  @Override
+  public void deleteMemberProvider(Long memberId) {
+    memberProviderRepository.deleteByMember_Id(memberId);
+  }
 }

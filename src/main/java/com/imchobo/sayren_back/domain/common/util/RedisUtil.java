@@ -4,9 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imchobo.sayren_back.domain.common.exception.RedisParseException;
 import com.imchobo.sayren_back.domain.member.dto.RedisTokenDTO;
-import com.imchobo.sayren_back.domain.member.recode.LatestTerms;
 import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
-import com.imchobo.sayren_back.domain.term.entity.Term;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -155,6 +153,20 @@ public class RedisUtil {
 
   public void deleteResetPassword(String token) {
     delete("RESET_PASSWORD:" + token);
+  }
+
+
+  public void setMember2fa(Long memberId, String secret) {
+    set("MEMBER_2FA:" +  memberId, secret, 15, TimeUnit.MINUTES);
+  }
+
+  public String getMember2fa(Long memberId) {
+    String secret = get("MEMBER_2FA:" +  memberId);
+    return secret;
+  }
+
+  public void deleteMember2fa(Long memberId) {
+    delete("MEMBER_2FA:" +  memberId);
   }
 
 }
