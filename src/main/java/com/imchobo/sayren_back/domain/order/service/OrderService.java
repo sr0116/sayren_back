@@ -15,4 +15,10 @@ public interface OrderService {
 
   // 회원별 주문 조회
   List<OrderResponseDTO> getOrdersByMemberId(Long memberId);
+
+  //  결제 성공 → 주문 상태 PAID
+  OrderResponseDTO markAsPaid(Long orderId);
+
+  //  결제 실패/취소 → 주문 상태 CANCELED
+  OrderResponseDTO cancel(Long orderId, String reason);
 }
