@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.subscribe.repository;
 
 
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,7 @@ public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
   // 멤버 아이디 조회(마이페이지)
   List<Subscribe> findByMember_Id(Long memberId);
 
+
   // 특정 회원의 구독 상태별 조회
   List<Subscribe> findByMember_IdAndStatus(Long memberId, SubscribeStatus status);
 
@@ -20,4 +22,5 @@ public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
 
   List<Subscribe> findByMemberId(Long memberId);
 
+ Subscribe findByOrderItem(OrderItem orderItem);
 }

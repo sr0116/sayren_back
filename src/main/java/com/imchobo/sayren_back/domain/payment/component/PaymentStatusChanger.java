@@ -4,7 +4,6 @@ package com.imchobo.sayren_back.domain.payment.component;
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
-import com.imchobo.sayren_back.domain.payment.component.recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
@@ -31,13 +30,16 @@ public class PaymentStatusChanger {
 
   // 결제 상태 변경
   @Transactional
-  public void changePayment(Payment payment, PaymentTransition transition, ActorType actor, Long orderItemId){
+  public void changePayment(Payment payment, PaymentTransition transition,  Long orderItemId, ActorType actor){
     payment.setPaymentStatus(transition.getStatus());
     paymentRepository.save(payment);
 
     eventPublisher.publishEvent(
             new PaymentStatusChangedEvent(
-                    payment.getId(), transition.getStatus(), orderItemId)
+                    payment.getId(),
+                    transition,
+                    orderItemId,
+                    actor)
     );
   }
 }

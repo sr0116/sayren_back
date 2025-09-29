@@ -19,7 +19,7 @@ public interface SubscribeService {
   // 구독시 보증금 계산
 
   // 배송 완료시 상태 변경
-  void  activateAfterDelivery(Long subscribeId);
+  void  activateAfterDelivery(Long subscribeId, OrderItem orderItem);
 
   // 구독 단건 조회
   SubscribeResponseDTO getSubscribe(Long subscribeId);

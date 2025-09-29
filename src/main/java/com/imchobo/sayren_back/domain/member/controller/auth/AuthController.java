@@ -3,11 +3,17 @@ package com.imchobo.sayren_back.domain.member.controller.auth;
 
 import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
+import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
 import com.imchobo.sayren_back.domain.member.dto.SocialLinkRequestDTO;
 import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
 import com.imchobo.sayren_back.domain.member.service.AuthService;
 import com.imchobo.sayren_back.domain.member.service.MemberService;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -30,6 +36,15 @@ public class AuthController {
   private final MailService  mailService;
 
   @GetMapping("me")
+  @Operation(
+    summary = "회원 정보 가져오기",
+    description = "엑세스 토큰정보를 확인한 후 스프링 컨텍스트에서 회원 정보를 불러옵니다."
+  )
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "회원 불러오기 성공",
+      content = @Content(schema = @Schema(implementation = MemberLoginResponseDTO.class))),
+    @ApiResponse(responseCode = "400", description = "엑세스 토큰 만료 or 없음")
+  })
   public ResponseEntity<?> getUser() {
     return ResponseEntity.ok(authService.getUser());
   }

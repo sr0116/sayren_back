@@ -28,4 +28,6 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   Optional<SubscribeRound> findBySubscribeIdAndRoundNo(Long subscribeId, int roundNo);
 
   Subscribe subscribe(Subscribe subscribe);
+  //이벤트 핸들러에서 사용
+  List<SubscribeRound> findBySubscribeId(Long subscribeId);
 }

@@ -11,6 +11,7 @@ import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.component.recorder.SubscribeHistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
@@ -24,7 +25,6 @@ import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
-import com.imchobo.sayren_back.domain.payment.component.recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
@@ -49,19 +49,16 @@ public class SubscribeServiceImpl implements SubscribeService {
   // DB 접근
   private final SubscribeRepository subscribeRepository;
   private final SubscribeHistoryRepository subscribeHistoryRepository;
-  private final SubscribeRoundRepository subscribeRoundRepository;
-  private final DeliveryRepository deliveryRepository;
-  private final DeliveryItemRepository deliveryItemRepository;
-
   // 매퍼
   private final SubscribeMapper subscribeMapper;
   private final SubscribeHistoryMapper subscribeHistoryMapper;
-  private final SubscribeRoundMapper subscribeRoundMapper;
-
   // 서비스
   private final SubscribeRoundService subscribeRoundService;
-  private final HistoryRecorder historyRecorder;
   private final SubscribeStatusChanger subscribeStatusChanger;
+  private final SubscribeEventHandler subscribeEventHandler;
+  private final DeliveryItemRepository deliveryItemRepository;
+  private final SubscribeRoundRepository subscribeRoundRepository;
+
 
   // 구독 테이블 생성
   @Transactional
@@ -70,14 +67,12 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     //dto -> entity (기본값 세팅 PENDING_PAYMENT)
     Subscribe subscribe = subscribeMapper.toEntity(dto);
-
     // 보증금 및 월 렌탈료 저장
     Long productPrice = orderItem.getProductPriceSnapshot(); //상품 총 가격
     // 월렌탈료 먼저 계산
     Long monthlyFee = productPrice / dto.getTotalMonths();
     // 보증금 계산
     Long depositSnapshot = calculateDeposit(productPrice);
-
     // 스냅샷 값
     subscribe.setMonthlyFeeSnapshot(monthlyFee); // 렌탈료
     subscribe.setDepositSnapshot(depositSnapshot); // 보증금
@@ -87,21 +82,16 @@ public class SubscribeServiceImpl implements SubscribeService {
     subscribe.setMember(currentMember);
 
     // 구독 저장
-    Subscribe savedSubscribe = subscribeRepository.save(subscribe);
+    Subscribe savedSubscribe = subscribeRepository.saveAndFlush(subscribe);
 
     // 회차 테이블 생성
     subscribeRoundService.createRounds(savedSubscribe, dto, orderItem);
 
-    // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티)
-    SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
-    subscribeHistoryRepository.save(subscribeHistory);
+    // 최초 상태(PENDING_PAYMENT) 기록
+    subscribeEventHandler.recordInit(savedSubscribe);
 
+//    subscribeStatusChanger.changeSubscribe(savedSubscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
     return savedSubscribe;
-  }
-
-  @Override
-  public void activateAfterDelivery(Long subscribeId) {
-
   }
 
   // 보증금 계산(일단 20% 고정 임시로 나중에 % 수정 가능성)
@@ -156,7 +146,6 @@ public class SubscribeServiceImpl implements SubscribeService {
     subscribe.setStartDate(startDate);
     subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
 
-
     // (나중에 배송 이벤트 처리 할거고 지금은 임시 )
     // 상태 ACTIVE 전환 (이 안에서 save + event + history 기록까지 자동 처리)
     // orderItem에서 deliveryItems를 통해 배송 추적
@@ -167,26 +156,19 @@ public class SubscribeServiceImpl implements SubscribeService {
             .orElseThrow(() -> new DeliveryNotFoundException(orderItem.getId()));
 
     if (delivery.getStatus() == DeliveryStatus.DELIVERED) {
-      subscribeStatusChanger.changeSubscribe(
-              subscribe,
-              SubscribeTransition.START,
-              ActorType.SYSTEM
-      );
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
+
+
+      // 회차 dueDate 확정
+      List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
+      for (SubscribeRound round : rounds) {
+        round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
+      }
+
+      log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
+              subscribeId, startDate, subscribe.getEndDate(), rounds.size());
     }
-
-
-
-    // 회차 dueDate 확정
-    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
-    for (SubscribeRound round : rounds) {
-      round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
-    }
-
-    log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
-            subscribeId, startDate, subscribe.getEndDate(), rounds.size());
   }
-
-
   // 사용자 구독 취소 요청
   @Override
   @Transactional
@@ -198,16 +180,8 @@ public class SubscribeServiceImpl implements SubscribeService {
             subscribe.getStatus() == SubscribeStatus.CANCELED) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
-    // 상태 변경 요청 (취소 요청)
-    subscribe.setStatus(SubscribeStatus.CANCEL_REQUESTED);
-    subscribeRepository.save(subscribe);
-
-    // 상태 변경 이력 기록
-    SubscribeHistory history = new SubscribeHistory();
-    history.setSubscribe(subscribe);
-    history.setStatus(SubscribeStatus.CANCEL_REQUESTED);
-    history.setReasonCode(ReasonCode.USER_REQUEST);// 유저 요청
-    subscribeHistoryRepository.save(history);
+    // 회원 취소 요청
+    subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.REQUEST_CANCEL, ActorType.USER);
   }
 
   //취소 승인/거절 (관리자)
@@ -216,30 +190,14 @@ public class SubscribeServiceImpl implements SubscribeService {
   public void processCancelRequest(Long subscribeId, boolean approved, ReasonCode reasonCode) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
-
-    if (subscribe.getStatus() != SubscribeStatus.CANCEL_REQUESTED) {
+    if (subscribe.getStatus() != SubscribeStatus.ACTIVE) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
     if (approved) {
       // 승인 처리시
-      subscribe.setStatus(SubscribeStatus.CANCELED);
-      subscribeRepository.save(subscribe);
-      // 기록 변경
-      SubscribeHistory history = new SubscribeHistory();
-      history.setSubscribe(subscribe);
-      history.setStatus(SubscribeStatus.CANCELED);
-      history.setReasonCode(ReasonCode.CONTRACT_CANCEL); // 승인
-      subscribeHistoryRepository.save(history);
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
     } else {
-      subscribe.setStatus(SubscribeStatus.ACTIVE);
-      subscribeRepository.save(subscribe);
-
-      // 기록
-      SubscribeHistory history = new SubscribeHistory();
-      history.setSubscribe(subscribe);
-      history.setStatus(SubscribeStatus.ACTIVE);
-      history.setReasonCode(ReasonCode.CANCEL_REJECTED); // 거절
-      subscribeHistoryRepository.save(history);
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_REJECT, ActorType.ADMIN);
     }
   }
 
@@ -261,8 +219,6 @@ public class SubscribeServiceImpl implements SubscribeService {
     Subscribe entity = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new RuntimeException("구독을 찾을 수 없습니다."));
     entity.setStatus(status);
-
     subscribeRepository.save(entity);
-
   }
 }
