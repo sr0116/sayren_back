@@ -25,4 +25,10 @@ public class ProductListResponseDTO {
   // 태그
   private List<String> tags;
 
+  // 상품 카테고리
+  private String productCategory;
+
+  // 상세설명
+  private String description;
+
 }

@@ -1,6 +1,8 @@
 package com.imchobo.sayren_back.domain.product.dto;
 
 import com.imchobo.sayren_back.domain.attach.dto.BoardAttachResponseDTO;
+import com.imchobo.sayren_back.domain.attach.dto.ProductAttachResponseDTO;
+import com.imchobo.sayren_back.domain.product.entity.Product;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -46,5 +48,5 @@ public class ProductDetailsResponseDTO {
   private List<String> productTags;
 
   // 첨부파일 목록 (썸네일, 상세 이미지 등)
-  private List<BoardAttachResponseDTO> attachList;
+  private List<ProductAttachResponseDTO> attachList;
 }

@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.product.service;
 
-import com.imchobo.sayren_back.domain.attach.dto.BoardAttachResponseDTO;
+import com.imchobo.sayren_back.domain.attach.dto.ProductAttachResponseDTO;
+import com.imchobo.sayren_back.domain.attach.repository.ProductAttachRepository;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
@@ -23,6 +24,7 @@ public class ProductServiceImpl implements ProductService{
   private final RedisUtil redisUtil;
   private final ProductStockRepository productStockRepository;
   private final ProductTagRepository productTagRepository;
+  private final ProductAttachRepository productAttachRepository;
 
   @Override
   @EventListener(ApplicationReadyEvent.class)
@@ -37,10 +39,17 @@ public class ProductServiceImpl implements ProductService{
     return productRepository.findAll().stream()
             .map(p -> ProductListResponseDTO.builder()
                     .productId(p.getId())
-                    .thumbnailUrl(null) // attach 연결
+                    .thumbnailUrl(
+                            productAttachRepository.findByProductIdAndIsThumbnailTrue(p.getId())
+                            .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                                    + a.getPath() + "/" + a.getUuid())
+                            .orElse(null)) // attach 연결
                     .productName(p.getName())
+                    .description(
+                            p.getDescription() != null ? p.getDescription() : "" )
                     .price(p.getPrice())
                     .isUse(p.getIsUse())
+                    .productCategory(p.getProductCategory())
                     .modelName(p.getModelName())
                     // 태그
                     .tags(
@@ -58,9 +67,7 @@ public class ProductServiceImpl implements ProductService{
             .map(p -> new ProductDetailsResponseDTO(
                     p.getId(),
                     p.getName(),
-                    p.getDescription() != null
-                            ? p.getDescription().replaceAll("<[^>]*>", "").trim()
-                            : "",
+                    p.getDescription() != null ? p.getDescription() : "",
                     p.getPrice().intValue(),
                     p.getIsUse(),
                     p.getProductCategory(),
@@ -73,7 +80,15 @@ public class ProductServiceImpl implements ProductService{
                     productTagRepository.findByProductId(p.getId()).stream()
                             .map(ProductTag::getTagValue)
                             .toList(),
-                    null // attachList 자리 → 지금은 안씀
+                    // attach
+                    productAttachRepository.findByProductId(p.getId()).stream()
+                            .map(a -> ProductAttachResponseDTO.builder()
+                                    .attachId(a.getId())
+                                    .url("https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                                            + a.getPath() + "/" + a.getUuid())
+                                    .build()
+                            )
+                            .toList()
             ))
             .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + id));
   }
