@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class ReviewListResponseDTO {
     private Long boardId;
     private String title;
+    private String content;
     private String productName;
     private LocalDateTime regDate;
 }

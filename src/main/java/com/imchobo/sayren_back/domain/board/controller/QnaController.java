@@ -1,5 +1,8 @@
 package com.imchobo.sayren_back.domain.board.controller;
 
+import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.board.dto.notice.NoticeListResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaListResponseDTO;
@@ -12,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/qna")
+@RequestMapping("/api/user/qna")
 @RequiredArgsConstructor
 public class QnaController {
 
@@ -43,5 +46,11 @@ public class QnaController {
   @GetMapping
   public ResponseEntity<List<QnaListResponseDTO>> list() {
     return ResponseEntity.ok(qnaService.list());
+  }
+
+  // 페이징
+  @GetMapping("/list")
+  public ResponseEntity<PageResponseDTO<QnaListResponseDTO>> getList(PageRequestDTO requestDTO) {
+    return ResponseEntity.ok(qnaService.getList(requestDTO));
   }
 }

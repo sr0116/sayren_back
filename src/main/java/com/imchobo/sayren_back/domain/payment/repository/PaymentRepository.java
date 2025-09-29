@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.payment.repository;
 
 
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -18,6 +19,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
           "JOIN FETCH p.orderItem oi " +
           "JOIN FETCH oi.order o " +
           "JOIN FETCH oi.orderPlan op " +
+          "JOIN FETCH oi.product pr " +
           "WHERE p.id = :paymentId")
   Optional<Payment> findWithOrderAndPlan(Long paymentId);
 
@@ -25,9 +27,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   @EntityGraph(attributePaths = {
           "orderItem",
           "orderItem.order",
-          "orderItem.orderPlan"
+          "orderItem.orderPlan",
+          "orderItem.product"
   })
   Optional<Payment> findById(Long paymentId);
+ // 일단 환불에서 사용중
+ List<Payment> findByOrderItem(OrderItem orderItem);
 
   // 기본 CRUD, 결제 상태로 조회
   List<Payment> findByPaymentStatus(PaymentStatus status);
@@ -38,6 +43,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   // 검증 조회용
   boolean existsByMerchantUid(String merchantUid);
 
-  // 정렬 조회
+  // 정렬 조회 (관리자용)
   List<Payment> findAllByOrderByIdDesc();
+
+  // 멤버별 결제 조회
+  List<Payment> findByMemberOrderByRegDateDesc(Member member);
+
+
+  List<Payment> findByOrderItemId(Long orderItemId);
 }

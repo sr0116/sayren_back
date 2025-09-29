@@ -1,5 +1,8 @@
 package com.imchobo.sayren_back.domain.board.service;
 
+import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.board.dto.notice.NoticeListResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaListResponseDTO;
@@ -14,6 +17,10 @@ import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,5 +81,47 @@ public class QnaServiceImpl implements QnaService{
     return boardRepository.findByCategoryType(CategoryType.QNA).stream()
             .map(qnaMapper::toListDTO)
             .toList();
+  }
+
+  @Override
+  public PageResponseDTO<QnaListResponseDTO> getList(PageRequestDTO requestDTO) {
+    Pageable pageable = PageRequest.of(
+            requestDTO.getPage() - 1,
+            requestDTO.getSize(),
+            Sort.by("id").descending()
+    );
+
+    Page<Board> result = boardRepository.findByCategoryType(
+            CategoryType.REVIEW, pageable
+    );
+
+    List<QnaListResponseDTO> dtoList = result.getContent().stream()
+            .map(qnaMapper::toListDTO)
+            .toList();
+
+    // 페이지 계산
+    int totalPage = result.getTotalPages();
+    int page = requestDTO.getPage();
+    int end = (int) (Math.ceil(page / 10.0)) * 10;
+    int start = end - 9;
+    end = Math.min(totalPage, end);
+
+    boolean prev = start > 1;
+    boolean next = totalPage > end;
+
+    List<Integer> pageList =
+            java.util.stream.IntStream.rangeClosed(start, end).boxed().toList();
+
+    return PageResponseDTO.<QnaListResponseDTO>builder()
+            .list(dtoList)
+            .page(page)
+            .size(requestDTO.getSize())
+            .totalPage(totalPage)
+            .start(start)
+            .end(end)
+            .prev(prev)
+            .next(next)
+            .pageList(pageList)
+            .build();
   }
 }

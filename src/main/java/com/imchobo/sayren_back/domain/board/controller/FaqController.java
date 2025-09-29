@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.board.controller;
 
+import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.faq.FaqCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.faq.FaqDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.faq.FaqListResponseDTO;
@@ -12,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/faqs")
+@RequestMapping("/api/admin/faqs")
 @RequiredArgsConstructor
 public class FaqController {
 
@@ -40,8 +42,15 @@ public class FaqController {
     return ResponseEntity.ok(faqService.read(id));
   }
 
+  // 전체목록 조회(페이징 전)
   @GetMapping
   public ResponseEntity<List<FaqListResponseDTO>> list() {
     return ResponseEntity.ok(faqService.list());
+  }
+
+  // 페이징 처리 전체목록 조회
+  @GetMapping("/list")
+  public ResponseEntity<PageResponseDTO<FaqListResponseDTO>> list(PageRequestDTO requestDTO) {
+    return ResponseEntity.ok(faqService.getList(requestDTO));
   }
 }

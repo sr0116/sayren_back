@@ -6,8 +6,13 @@ import lombok.Getter;
 @Getter
 public enum SubscribeTransition {
   // 결제
+  PENDING_PAYMENT(SubscribeStatus.PENDING_PAYMENT, ReasonCode.NONE), // 결제 전 대기 상태
+
   PREPARE(SubscribeStatus.PREPARING, ReasonCode.NONE),      // 결제 완료 → 배송 준비
   FAIL_PAYMENT(SubscribeStatus.FAILED, ReasonCode.PAYMENT_FAILURE), // 결제 실패
+
+  // 구독 시작 전 -> 배송 완료후에 시작
+  DELIVERY_IN_PROGRESS(SubscribeStatus.PREPARING, ReasonCode.NONE), // 배송 중
   START(SubscribeStatus.ACTIVE, ReasonCode.NONE),           // 배송 완료 → 구독 활성화
 
   // 회원 취소 요청 및 관리자 승인 여부

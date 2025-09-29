@@ -38,5 +38,6 @@ public class Attach {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "board_id") // 제약조건: FK
   private Board board;
+
 }
 

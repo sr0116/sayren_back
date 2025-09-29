@@ -59,7 +59,7 @@ public class UserMemberController {
   @PostMapping("find-pw")
   public ResponseEntity<?> findPassword(@RequestBody @Valid FindPasswordRequestDTO findPasswordRequestDTO){
     memberService.findPassword(findPasswordRequestDTO);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(Map.of("message", "success"));
   }
 
   @GetMapping("reset-pw/{token}")
@@ -68,10 +68,11 @@ public class UserMemberController {
     return new RedirectView(url);
   }
 
-  @PostMapping("reset-pw")
+  @PatchMapping("reset-pw")
   public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO resetPasswordRequestDTO) {
+    log.info(resetPasswordRequestDTO);
     memberService.changePassword(resetPasswordRequestDTO);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(Map.of("message", "success"));
   }
 
   @GetMapping("social-list")
@@ -82,12 +83,29 @@ public class UserMemberController {
   @PostMapping("social-disconnect")
   public ResponseEntity<?> socialDisconnect(@RequestBody @Valid SocialDisconnectDTO socialDisconnectDTO) {
     memberProviderService.disconnect(socialDisconnectDTO);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(Map.of("message", "success"));
   }
 
   @GetMapping("signup-next")
   public ResponseEntity<?> signupNext(@RequestParam String token) {
     return ResponseEntity.ok(Map.of("email", memberService.signupNext(token)));
+  }
+
+  @PatchMapping("change-name")
+  public ResponseEntity<?> changeName(@RequestBody @Valid ChangeNameDTO changeNameDTO) {
+    return ResponseEntity.ok(memberService.changeName(changeNameDTO));
+  }
+
+
+  @PostMapping("check-pw")
+  public ResponseEntity<?> checkPassword(@RequestBody @Valid PasswordCheckDTO passwordCheckDTO) {
+    memberService.passwordCheck(passwordCheckDTO);
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
+
+  @GetMapping("has-pw")
+  public ResponseEntity<?> hasPw() {
+    return ResponseEntity.ok(Map.of("result", memberService.hasPassword()));
   }
 
 }

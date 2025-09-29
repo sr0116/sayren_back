@@ -19,4 +19,8 @@ public interface MemberService {
   void changePassword(ResetPasswordRequestDTO resetPasswordRequestDTO);
   void checkMail(EmailVerifyRequestDTO emailVerifyRequestDTO);
   String signupNext(String token);
+  MemberLoginResponseDTO changeName(ChangeNameDTO changeNameDTO);
+  void passwordCheck(PasswordCheckDTO passwordCheckDTO);
+  void deleteMember();
+  boolean hasPassword();
 }

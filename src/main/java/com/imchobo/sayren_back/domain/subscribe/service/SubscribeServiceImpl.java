@@ -11,6 +11,7 @@ import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.component.recorder.SubscribeHistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
@@ -24,7 +25,6 @@ import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
-import com.imchobo.sayren_back.domain.payment.component.recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
@@ -49,17 +49,16 @@ public class SubscribeServiceImpl implements SubscribeService {
   // DB 접근
   private final SubscribeRepository subscribeRepository;
   private final SubscribeHistoryRepository subscribeHistoryRepository;
-  private final SubscribeRoundRepository subscribeRoundRepository;
-  private final DeliveryRepository deliveryRepository;
-  private final DeliveryItemRepository deliveryItemRepository;
   // 매퍼
   private final SubscribeMapper subscribeMapper;
   private final SubscribeHistoryMapper subscribeHistoryMapper;
-  private final SubscribeRoundMapper subscribeRoundMapper;
   // 서비스
   private final SubscribeRoundService subscribeRoundService;
   private final SubscribeStatusChanger subscribeStatusChanger;
-  private final SubscribeHistoryRecorder subscribeHistoryRecorder;
+  private final SubscribeEventHandler subscribeEventHandler;
+  private final DeliveryItemRepository deliveryItemRepository;
+  private final SubscribeRoundRepository subscribeRoundRepository;
+
 
   // 구독 테이블 생성
   @Transactional
@@ -68,14 +67,12 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     //dto -> entity (기본값 세팅 PENDING_PAYMENT)
     Subscribe subscribe = subscribeMapper.toEntity(dto);
-
     // 보증금 및 월 렌탈료 저장
     Long productPrice = orderItem.getProductPriceSnapshot(); //상품 총 가격
     // 월렌탈료 먼저 계산
     Long monthlyFee = productPrice / dto.getTotalMonths();
     // 보증금 계산
     Long depositSnapshot = calculateDeposit(productPrice);
-
     // 스냅샷 값
     subscribe.setMonthlyFeeSnapshot(monthlyFee); // 렌탈료
     subscribe.setDepositSnapshot(depositSnapshot); // 보증금
@@ -85,15 +82,15 @@ public class SubscribeServiceImpl implements SubscribeService {
     subscribe.setMember(currentMember);
 
     // 구독 저장
-    Subscribe savedSubscribe = subscribeRepository.save(subscribe);
+    Subscribe savedSubscribe = subscribeRepository.saveAndFlush(subscribe);
 
     // 회차 테이블 생성
     subscribeRoundService.createRounds(savedSubscribe, dto, orderItem);
 
     // 최초 상태(PENDING_PAYMENT) 기록
-    subscribeHistoryRecorder.recordInit(savedSubscribe);
+    subscribeEventHandler.recordInit(savedSubscribe);
 
-    subscribeStatusChanger.changeSubscribe(savedSubscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+//    subscribeStatusChanger.changeSubscribe(savedSubscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
     return savedSubscribe;
   }
 
@@ -124,8 +121,13 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Override
   @Transactional
   public List<SubscribeSummaryDTO> getSummaryList() {
-    Member member = SecurityUtil.getMemberEntity();
-    List<Subscribe> subscribes = subscribeRepository.findByMemberId(member.getId());
+    Member currentMember = SecurityUtil.getMemberEntity();
+    log.info("구독 내역 조회 - memberId={}", currentMember.getId());
+
+    // 기존: findByMemberId(member.getId())
+    List<Subscribe> subscribes = subscribeRepository.findByMember(currentMember);
+
+    log.info("조회된 구독 건수={}", subscribes.size());
     return subscribeMapper.toSummaryDTOList(subscribes);
   }
 
@@ -161,19 +163,17 @@ public class SubscribeServiceImpl implements SubscribeService {
     if (delivery.getStatus() == DeliveryStatus.DELIVERED) {
       subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
 
-    }
 
-    // 회차 dueDate 확정
-    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
-    for (SubscribeRound round : rounds) {
-      round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
-    }
+      // 회차 dueDate 확정
+      List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
+      for (SubscribeRound round : rounds) {
+        round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
+      }
 
-    log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
-            subscribeId, startDate, subscribe.getEndDate(), rounds.size());
+      log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
+              subscribeId, startDate, subscribe.getEndDate(), rounds.size());
+    }
   }
-
-
   // 사용자 구독 취소 요청
   @Override
   @Transactional

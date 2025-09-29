@@ -1,8 +1,5 @@
 package com.imchobo.sayren_back.service;
 
-import com.imchobo.sayren_back.domain.board.dto.BoardRequestDTO;
-import com.imchobo.sayren_back.domain.board.dto.BoardResponseDTO;
-import com.imchobo.sayren_back.domain.board.service.BoardService;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 @Log4j2
 public class BoardServiceImplTest {
-  @Autowired
-  private BoardService boardService;
+//  @Autowired
+//  private BoardService boardService;
 
 //  @Test
 //  public void testRegister() {
