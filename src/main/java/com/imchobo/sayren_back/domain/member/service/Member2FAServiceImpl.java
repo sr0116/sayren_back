@@ -17,6 +17,7 @@ import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import com.warrenstrange.googleauth.GoogleAuthenticatorQRGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -68,8 +69,15 @@ public class Member2FAServiceImpl implements Member2FAService {
   }
 
   @Override
+  @Transactional
   public void delete(Long memberId) {
     member2faRepository.deleteByMember_Id(memberId);
+  }
+
+  @Override
+  @Transactional
+  public void delete() {
+    delete(SecurityUtil.getMemberEntity().getId());
   }
 
   @Override

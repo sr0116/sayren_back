@@ -122,4 +122,9 @@ public class AuthController {
     return ResponseEntity.ok(Map.of("message", "success"));
   }
 
+  @DeleteMapping("delete-2fa")
+  public ResponseEntity<?> delete2fa() {
+    member2faService.delete();
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
 }

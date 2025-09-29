@@ -8,6 +8,7 @@ public interface Member2FAService {
   void register(Member2FARequestDTO member2FARequestDTO);
   boolean verify(String secret, String otp);
   void delete(Long memberId);
+  void delete();
   void checkOtp(Member2FARequestDTO member2FARequestDTO);
   void read();
 }
