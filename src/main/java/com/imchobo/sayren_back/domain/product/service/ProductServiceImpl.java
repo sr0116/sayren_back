@@ -27,20 +27,28 @@ public class ProductServiceImpl implements ProductService{
   @Override
   @EventListener(ApplicationReadyEvent.class)
   public void preloadProducts() {
-    redisUtil.setObject("PRODUCTS", productRepository.findAll());
+    List<ProductListResponseDTO> list = getAllProducts();
+    redisUtil.setObject("PRODUCTS", list);
   }
 
 
   @Override
   public List<ProductListResponseDTO> getAllProducts() {
     return productRepository.findAll().stream()
-            .map(p -> new ProductListResponseDTO(
-                    p.getId(),
-                    null, // thumbnailUrl: attach 연결 후 채워야 함
-                    p.getName(),
-                    p.getPrice().intValue(),
-                    p.getIsUse()
-            ))
+            .map(p -> ProductListResponseDTO.builder()
+                    .productId(p.getId())
+                    .thumbnailUrl(null) // attach 연결
+                    .productName(p.getName())
+                    .price(p.getPrice())
+                    .isUse(p.getIsUse())
+                    .modelName(p.getModelName())
+                    // 태그
+                    .tags(
+                    productTagRepository.findByProductId(p.getId()).stream()
+                            .map(ProductTag::getTagValue)
+                            .toList())
+                    .build()
+            )
             .toList();
   }
 
