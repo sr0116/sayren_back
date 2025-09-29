@@ -35,6 +35,7 @@ public interface PaymentMapper {
   @Mapping(source = "id", target = "paymentId")
   PaymentSummaryDTO toSummaryDTO(Payment entity);
 
+
   // 리스트 매핑
   List<PaymentResponseDTO> toResponseDTOList(List<Payment> entities);
   List<PaymentSummaryDTO> toSummaryDTOList(List<Payment> entities);

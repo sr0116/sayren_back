@@ -175,30 +175,39 @@ public class PaymentServiceImpl implements PaymentService {
 
   }
 
+  // 사용자 전용 전체 결제 내역(요약)
   @Override
   @Transactional(readOnly = true)
   public List<PaymentSummaryDTO> getSummaries() {
     Member currentMember = SecurityUtil.getMemberEntity();
-    List<Payment> payments = paymentRepository.findByMemberOrderByRegDateDesc(currentMember);
 
-    return payments.stream()
-            .map(paymentMapper::toSummaryDTO) // 요약 매퍼 필요
-            .toList();
+    List<Payment> payments = paymentRepository.findByMemberOrderByRegDateDesc(currentMember);
+    log.info("결제 내역 조회, memberId={}, size={}", currentMember.getId(), payments.size());
+
+    return paymentMapper.toSummaryDTOList(payments);
   }
 
-
+  // 사용자 전용 전체 결제 내역
   @Override
   @Transactional(readOnly = true)
   public List<PaymentResponseDTO> getAll() {
     Member currentMember = SecurityUtil.getMemberEntity();
     // 현재 로그인한 사용자 기준 최근 결제 내역 조회
-    List<Payment> payments = paymentRepository.findByMemberOrderByRegDateDesc(currentMember);
+    List<Payment> payments = paymentRepository
+            .findByMemberOrderByRegDateDesc(currentMember);
 
     return payments.stream()
             .map(paymentMapper::toResponseDTO)
             .toList();
   }
+  // 관리자용
+  @Transactional(readOnly = true)
+  @Override
+  public List<PaymentResponseDTO> getAllForAdmin() {
+    List<Payment> payments = paymentRepository.findAllByOrderByIdDesc();
 
-
-
+    return payments.stream()
+            .map(paymentMapper::toResponseDTO)
+            .toList();
+  }
 }

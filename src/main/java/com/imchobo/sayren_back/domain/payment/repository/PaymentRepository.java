@@ -41,10 +41,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   // 검증 조회용
   boolean existsByMerchantUid(String merchantUid);
 
-  // 정렬 조회
+  // 정렬 조회 (관리자용)
   List<Payment> findAllByOrderByIdDesc();
 
+  // 멤버별 결제 조회
   List<Payment> findByMemberOrderByRegDateDesc(Member member);
+
 
   List<Payment> findByOrderItemId(Long orderItemId);
 }
