@@ -12,6 +12,7 @@ public class PageResponseDTO<E> {
     private int page;      // 현재 페이지
     private int size;      // 페이지 크기
     private int totalPage; // 전체 페이지 수
+    private int total; // 전체 글 수
 
     private int start;     // 시작 페이지 번호
     private int end;       // 끝 페이지 번호

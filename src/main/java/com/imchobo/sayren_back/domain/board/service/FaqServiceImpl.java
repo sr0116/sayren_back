@@ -104,6 +104,8 @@ public class FaqServiceImpl implements  FaqService {
     boolean prev = start > 1;
     boolean next = totalPage > end;
 
+    int totalCount = (int) boardRepository.countByCategoryType(CategoryType.FAQ);
+
     List<Integer> pageList =
             java.util.stream.IntStream.rangeClosed(start, end).boxed().toList();
 
@@ -111,6 +113,7 @@ public class FaqServiceImpl implements  FaqService {
             .list(dtoList)
             .page(page)
             .size(requestDTO.getSize())
+            .total(totalCount)
             .totalPage(totalPage)
             .start(start)
             .end(end)

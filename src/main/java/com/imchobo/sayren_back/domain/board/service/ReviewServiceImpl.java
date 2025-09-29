@@ -106,6 +106,8 @@ public class ReviewServiceImpl implements ReviewService{
             CategoryType.REVIEW, pageable
     );
 
+    int totalCount = (int) boardRepository.countByCategoryType(CategoryType.REVIEW);
+
     List<ReviewListResponseDTO> dtoList = result.getContent().stream()
             .map(reviewMapper::toListDTO)
             .toList();
@@ -127,6 +129,7 @@ public class ReviewServiceImpl implements ReviewService{
             .list(dtoList)
             .page(page)
             .size(requestDTO.getSize())
+            .total(totalCount)
             .totalPage(totalPage)
             .start(start)
             .end(end)

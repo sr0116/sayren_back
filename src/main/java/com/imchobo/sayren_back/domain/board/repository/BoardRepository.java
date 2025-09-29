@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.domain.board.repository;
 import com.imchobo.sayren_back.domain.board.dto.faq.FaqListResponseDTO;
 import com.imchobo.sayren_back.domain.board.en.CategoryType;
 import com.imchobo.sayren_back.domain.board.entity.Board;
+import com.imchobo.sayren_back.domain.board.entity.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +17,9 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
   // 페이징
   Page<Board> findByCategoryType(CategoryType type, Pageable pageable);
+
+
+  long countByCategoryType(CategoryType categoryType);
+
+  CategoryType category(Category category);
 }
