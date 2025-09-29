@@ -42,14 +42,4 @@ public class PaymentController {
     return ResponseEntity.ok(paymentService.getSummaries());
   }
 
-//// 결제 환불
-//  @PostMapping("/{paymentId}/refund")
-//  public ApiResponse<Void> refund(@PathVariable Long paymentId, @RequestParam(required = false) Long amount, @RequestParam String reason) {
-//    return paymentService.refund(paymentId, amount, reason);
-//  }
-//
-//  @GetMapping
-//  public ApiResponse<List<PaymentResponseDTO> > getAll() {
-//    return paymentService.getAll();
-//  }
 }
