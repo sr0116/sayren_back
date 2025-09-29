@@ -44,5 +44,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   // 정렬 조회
   List<Payment> findAllByOrderByIdDesc();
 
+  List<Payment> findByMemberOrderByRegDateDesc(Member member);
+
   List<Payment> findByOrderItemId(Long orderItemId);
 }
