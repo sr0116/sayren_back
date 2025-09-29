@@ -7,7 +7,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class PaymentSummaryDTO {
+public class  PaymentSummaryDTO {
   // 결제 요약 DTO (결제 내역 리스트 조회)
   private Long paymentId;
   private Long amount;
