@@ -19,4 +19,5 @@ public class PageResponseDTO<E> {
     private boolean prev;  // 이전 버튼 여부
     private boolean next;  // 다음 버튼 여부
     private List<Integer> pageList; // 페이지 번호 목록
+
 }
