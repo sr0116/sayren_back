@@ -9,6 +9,7 @@ import com.imchobo.sayren_back.domain.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,19 +38,19 @@ public class PaymentController {
   }
 
   // 결제 내역 조회 (마이페이지)
-  @GetMapping("/recent")
+  @GetMapping("/summaries")
   public ResponseEntity<List<PaymentSummaryDTO>> getRecentPayments() {
     return ResponseEntity.ok(paymentService.getSummaries());
   }
 
-//// 결제 환불
-//  @PostMapping("/{paymentId}/refund")
-//  public ApiResponse<Void> refund(@PathVariable Long paymentId, @RequestParam(required = false) Long amount, @RequestParam String reason) {
-//    return paymentService.refund(paymentId, amount, reason);
-//  }
-//
-//  @GetMapping
-//  public ApiResponse<List<PaymentResponseDTO> > getAll() {
-//    return paymentService.getAll();
-//  }
+  @GetMapping
+  public ResponseEntity<List<PaymentResponseDTO>> getAll() {
+    return ResponseEntity.ok(paymentService.getAll());
+  }
+
+  @GetMapping("/admin")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<List<PaymentResponseDTO>> getAllPayments() {
+    return ResponseEntity.ok(paymentService.getAllForAdmin());
+  }
 }
