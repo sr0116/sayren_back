@@ -13,4 +13,7 @@ public interface DeliveryItemRepository extends JpaRepository<DeliveryItem, Long
   List<DeliveryItem> findByOrderItem(OrderItem orderItem);
 
   Optional<DeliveryItem> findFirstByOrderItem(OrderItem orderItem);
+
+  Optional<DeliveryItem> findTopByOrderItemOrderByDelivery_RegDate_Desc(OrderItem orderItem);
+
 }

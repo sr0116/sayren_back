@@ -6,6 +6,6 @@ import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 
 public interface  RefundCalculator {
 // 환불 정책 계산
-  Long calculateRefundAmount(Payment payment, OrderItem orderItem, RefundRequest request);
+  Long calculateRefundAmount(Payment payment, RefundRequest request);
 
 }
