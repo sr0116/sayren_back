@@ -9,6 +9,7 @@ import com.imchobo.sayren_back.domain.payment.component.PaymentStatusChanger;
 import com.imchobo.sayren_back.domain.payment.component.recorder.PaymentHistoryRecorder;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
+import com.imchobo.sayren_back.domain.payment.dto.PaymentSummaryDTO;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentAlreadyExistsException;
@@ -175,43 +176,29 @@ public class PaymentServiceImpl implements PaymentService {
   }
 
   @Override
-  @Transactional
-  public List<PaymentResponseDTO> getAll() {
-    return List.of();
+  @Transactional(readOnly = true)
+  public List<PaymentSummaryDTO> getSummaries() {
+    Member currentMember = SecurityUtil.getMemberEntity();
+    List<Payment> payments = paymentRepository.findByMemberOrderByRegDateDesc(currentMember);
+
+    return payments.stream()
+            .map(paymentMapper::toSummaryDTO) // 요약 매퍼 필요
+            .toList();
   }
-// 나중에 삭제 예정
-//  // 환불 처리 (아직 반영 안됨)
-//  @Override
-//  @Transactional
-//  public ApiResponse<Void> refund(Long paymentId, Long amount, String reason) {
-//
-//    Payment payment = paymentRepository.findById(paymentId)
-//            .orElseThrow(() -> new RuntimeException("결제 아이디를 찾을 수 없습니다."));
-//// 환불 요청
-//    CancelRequest cancelRequest = new CancelRequest(
-//            payment.getImpUid(),
-//            payment.getMerchantUid(),
-//            reason,
-//            amount
-//    );
-//    // api 호출
-//    CancelResponse cancelResponse = portOnePaymentClient.cancelPayment(cancelRequest);
-//// DB 저장
-//    payment.setPayStatus(PaymentStatus.REFUNDED);
-//    paymentRepository.save(payment);
-//
-//    return ApiResponse.ok(null);
-//  }
-//
-////  조회 리스트 (JPA)
-//
-//
-//  @Override
-//  public ApiResponse<List<PaymentResponseDTO>> getAll() {
-//    List<PaymentResponseDTO> list = paymentRepository.findAll(Sort.by(Sort.Direction.DESC, "regdate"))
-//            .stream()
-//            .map(paymentMapper::toResponseDTO)
-//            .toList();
-//    return ApiResponse.ok(list);
-//  }
+
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<PaymentResponseDTO> getAll() {
+    Member currentMember = SecurityUtil.getMemberEntity();
+    // 현재 로그인한 사용자 기준 최근 결제 내역 조회
+    List<Payment> payments = paymentRepository.findByMemberOrderByRegDateDesc(currentMember);
+
+    return payments.stream()
+            .map(paymentMapper::toResponseDTO)
+            .toList();
+  }
+
+
+
 }
