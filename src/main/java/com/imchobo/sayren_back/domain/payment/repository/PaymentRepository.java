@@ -30,7 +30,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   })
   Optional<Payment> findById(Long paymentId);
  // 일단 환불에서 사용중
-  Optional<Payment> findByOrderItem(OrderItem orderItem);
+ List<Payment> findByOrderItem(OrderItem orderItem);
 
   // 기본 CRUD, 결제 상태로 조회
   List<Payment> findByPaymentStatus(PaymentStatus status);
@@ -43,4 +43,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
   // 정렬 조회
   List<Payment> findAllByOrderByIdDesc();
+
+  List<Payment> findByOrderItemId(Long orderItemId);
 }
