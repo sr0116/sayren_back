@@ -14,6 +14,7 @@ import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentAlreadyExistsException;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
+import com.imchobo.sayren_back.domain.payment.exception.PaymentVerificationFailedException;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentHistoryMapper;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -188,6 +190,21 @@ public class PaymentServiceImpl implements PaymentService {
   }
 
   // 사용자 전용 전체 결제 내역
+  @Override
+  @Transactional
+  public PaymentResponseDTO getOne(Long paymentId) {
+    Payment payment = paymentRepository.findById(paymentId)
+            .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+
+    // 로그인 사용자와 결제 소유자 일치 여부 확인
+    Member currentMember = SecurityUtil.getMemberEntity();
+    if (!Objects.equals(payment.getMember().getId(), currentMember.getId())) {
+      throw new RuntimeException("본인 결제 내역만 조회할 수 있습니다.");
+    }
+
+    return paymentMapper.toResponseDTO(payment);
+  }
+
   @Override
   @Transactional(readOnly = true)
   public List<PaymentResponseDTO> getAll() {

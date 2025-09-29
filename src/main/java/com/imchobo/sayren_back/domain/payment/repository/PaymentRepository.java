@@ -19,6 +19,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
           "JOIN FETCH p.orderItem oi " +
           "JOIN FETCH oi.order o " +
           "JOIN FETCH oi.orderPlan op " +
+          "JOIN FETCH oi.product pr " +
           "WHERE p.id = :paymentId")
   Optional<Payment> findWithOrderAndPlan(Long paymentId);
 
@@ -26,7 +27,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   @EntityGraph(attributePaths = {
           "orderItem",
           "orderItem.order",
-          "orderItem.orderPlan"
+          "orderItem.orderPlan",
+          "orderItem.product"
   })
   Optional<Payment> findById(Long paymentId);
  // 일단 환불에서 사용중

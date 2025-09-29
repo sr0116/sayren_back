@@ -79,7 +79,7 @@ public class MappingUtil {
   }
 
   @Named("mapOrderItemId")
-  public Long orderItemEntityToId(OrderItem orderItem) {
+  public Long mapOrderItemId(OrderItem orderItem) {
     return orderItem != null ? orderItem.getId() : null;
   }
 

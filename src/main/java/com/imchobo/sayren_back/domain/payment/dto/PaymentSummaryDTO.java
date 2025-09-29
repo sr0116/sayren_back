@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.payment.dto;
 
 
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -10,8 +11,11 @@ import java.time.LocalDateTime;
 public class  PaymentSummaryDTO {
   // 결제 요약 DTO (결제 내역 리스트 조회)
   private Long paymentId;
+  private Long orderItemId;
   private Long amount;
   private PaymentStatus paymentStatus;
   private LocalDateTime regDate;
 
+  private String productName;
+  private Long priceSnapshot;
 }

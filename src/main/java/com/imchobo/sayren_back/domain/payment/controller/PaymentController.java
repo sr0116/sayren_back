@@ -43,9 +43,15 @@ public class PaymentController {
     return ResponseEntity.ok(paymentService.getSummaries());
   }
 
+  // 사용자 본인 결제 내역 조회
   @GetMapping
   public ResponseEntity<List<PaymentResponseDTO>> getAll() {
     return ResponseEntity.ok(paymentService.getAll());
+  }
+
+  @GetMapping("/{paymentId}")
+  public ResponseEntity<PaymentResponseDTO> getOne(@PathVariable Long paymentId) {
+    return ResponseEntity.ok(paymentService.getOne(paymentId));
   }
 
   @GetMapping("/admin")
