@@ -30,29 +30,28 @@ import java.util.Map;
 @Transactional
 public class DeliveryServiceImpl implements DeliveryService {
 
-    private final DeliveryRepository deliveryRepository;
-    private final DeliveryItemRepository deliveryItemRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final AddressRepository addressRepository;
-    private final DeliveryMapper deliveryMapper;
+    private final DeliveryRepository deliveryRepository; // 배송 엔티티 저장/조회
+    private final DeliveryItemRepository deliveryItemRepository; // 배송아이템 저장/조회
+    private final OrderItemRepository orderItemRepository; // 주문아이템 조회
+    private final AddressRepository addressRepository; // 배송지 조회
+    private final DeliveryMapper deliveryMapper; // 엔티티 ↔ DTO 변환
+    private final DeliveryFlowOrchestrator flow; // 상태 전환 + 이벤트 발행 처리
 
-    private final DeliveryFlowOrchestrator flow;
 
-    /**
-     * 사용자 직접 생성 (테스트/예외 케이스용)
-     */
+      //사용자 직접 생성 (테스트/예외 케이스용)
+
     @Override
     public DeliveryResponseDTO create(DeliveryRequestDTO dto) {
-        Member currentMember = SecurityUtil.getMemberEntity();
+        Member currentMember = SecurityUtil.getMemberEntity(); // 로그인한 회원 가져오기
 
-        Address address = addressRepository.findById(dto.getAddressId())
+        Address address = addressRepository.findById(dto.getAddressId()) // 배송지 유효성 검사
           .orElseThrow(() -> new EntityNotFoundException("주소 없음: id=" + dto.getAddressId()));
 
         if (!address.getMember().getId().equals(currentMember.getId())) {
-            throw new IllegalStateException("본인 주소만 사용할 수 있습니다.");
+            throw new IllegalStateException("본인 주소만 사용할 수 있습니다."); // 보안 체크
         }
 
-        Delivery delivery = Delivery.builder()
+        Delivery delivery = Delivery.builder() // 초기 배송 생성 (READY 상태)
           .member(currentMember)
           .address(address)
           .type(DeliveryType.DELIVERY)
@@ -61,7 +60,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         Delivery saved = deliveryRepository.save(delivery);
 
-        // 초기 READY 이벤트 발행 (expected=null)
+        // 상태 전환 이벤트 발행 (expected=null → READY)
         flow.changeStatus(
           saved,
           null,
@@ -72,17 +71,16 @@ public class DeliveryServiceImpl implements DeliveryService {
         return deliveryMapper.toResponseDTO(saved);
     }
 
-    /**
-     * ✅ 결제 성공 직후 orderItemId 기반 배송 자동 생성
-     */
+
+    // 결제 성공 직후 orderItemId 기반 배송 자동 생성
+
     @Override
     public void createFromOrderItemId(Long orderItemId) {
         OrderItem orderItem = orderItemRepository.findById(orderItemId)
           .orElseThrow(() -> new EntityNotFoundException("OrderItem 없음: id=" + orderItemId));
 
-        // 이미 배송이 생성된 OrderItem이면 중복 생성 방지
+        // 이미 배송이 생성된 OrderItem이면 중복 방지
         if (deliveryRepository.existsByDeliveryItems_OrderItem_Id(orderItemId)) return;
-
 
         Order order = orderItem.getOrder();
 
@@ -90,12 +88,12 @@ public class DeliveryServiceImpl implements DeliveryService {
           .member(order.getMember())
           .address(order.getAddress())
           .type(DeliveryType.DELIVERY)
-          .status(DeliveryStatus.READY)
+          .status(DeliveryStatus.READY) // 초기 READY 상태
           .build();
 
         Delivery saved = deliveryRepository.save(delivery);
 
-        // DeliveryItem 매핑
+        // DeliveryItem 연결 (주문아이템 ↔ 배송 매핑)
         DeliveryItem deliveryItem = DeliveryItem.builder()
           .delivery(saved)
           .orderItem(orderItem)
@@ -115,29 +113,31 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Override
     @Transactional(readOnly = true)
     public DeliveryResponseDTO get(Long id) {
-        return deliveryMapper.toResponseDTO(mustFind(id));
+        return deliveryMapper.toResponseDTO(mustFind(id)); // 단건 조회
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DeliveryResponseDTO> getByMember(Long memberId) {
         return deliveryRepository.findByMember_Id(memberId)
-          .stream().map(deliveryMapper::toResponseDTO).toList();
+          .stream().map(deliveryMapper::toResponseDTO).toList(); // 회원별 조회
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DeliveryResponseDTO> getByOrder(Long orderId) {
         return deliveryRepository.findByDeliveryItems_OrderItem_Order_Id(orderId)
-          .stream().map(deliveryMapper::toResponseDTO).toList();
+          .stream().map(deliveryMapper::toResponseDTO).toList(); // 주문별 조회
     }
 
     // ===== 상태 전환 =====
+
     @Override
     public DeliveryResponseDTO ship(Long id) {
         Delivery d = mustFind(id);
         ensure(d.getStatus() == DeliveryStatus.READY, "READY → SHIPPING만 가능");
 
+        // READY → SHIPPING 전환 + 이벤트 발행
         flow.changeStatus(
           d,
           DeliveryStatus.READY,
@@ -153,6 +153,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         Delivery d = mustFind(id);
         ensure(d.getStatus() == DeliveryStatus.SHIPPING, "SHIPPING → DELIVERED만 가능");
 
+        // SHIPPING → DELIVERED 전환 + 이벤트 발행
         flow.changeStatus(
           d,
           DeliveryStatus.SHIPPING,
@@ -168,6 +169,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         Delivery d = mustFind(id);
         ensure(d.getStatus() == DeliveryStatus.DELIVERED, "DELIVERED → RETURN_READY만 가능");
 
+        // DELIVERED → RETURN_READY 전환 + 이벤트 발행
         flow.changeStatus(
           d,
           DeliveryStatus.DELIVERED,
@@ -183,6 +185,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         Delivery d = mustFind(id);
         ensure(d.getStatus() == DeliveryStatus.RETURN_READY, "RETURN_READY → IN_RETURNING만 가능");
 
+        // RETURN_READY → IN_RETURNING 전환 + 이벤트 발행
         flow.changeStatus(
           d,
           DeliveryStatus.RETURN_READY,
@@ -198,6 +201,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         Delivery d = mustFind(id);
         ensure(d.getStatus() == DeliveryStatus.IN_RETURNING, "IN_RETURNING → RETURNED만 가능");
 
+        // IN_RETURNING → RETURNED 전환 + 이벤트 발행
         flow.changeStatus(
           d,
           DeliveryStatus.IN_RETURNING,
@@ -215,6 +219,6 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     private void ensure(boolean cond, String msg) {
-        if (!cond) throw new IllegalStateException(msg);
+        if (!cond) throw new IllegalStateException(msg); // 상태 전환 유효성 검사
     }
 }

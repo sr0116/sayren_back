@@ -121,8 +121,13 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Override
   @Transactional
   public List<SubscribeSummaryDTO> getSummaryList() {
-    Member member = SecurityUtil.getMemberEntity();
-    List<Subscribe> subscribes = subscribeRepository.findByMemberId(member.getId());
+    Member currentMember = SecurityUtil.getMemberEntity();
+    log.info("구독 내역 조회 - memberId={}", currentMember.getId());
+
+    // 기존: findByMemberId(member.getId())
+    List<Subscribe> subscribes = subscribeRepository.findByMember(currentMember);
+
+    log.info("조회된 구독 건수={}", subscribes.size());
     return subscribeMapper.toSummaryDTOList(subscribes);
   }
 
