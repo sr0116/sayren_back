@@ -216,4 +216,11 @@ public class MemberServiceImpl implements MemberService {
     member.setTel(null);
     member.setStatus(MemberStatus.DELETED);
   }
+
+
+  @Override
+  public boolean hasPassword() {
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+    return member.getPassword() != null;
+  }
 }

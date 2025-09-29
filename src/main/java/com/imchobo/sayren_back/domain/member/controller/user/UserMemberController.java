@@ -103,4 +103,9 @@ public class UserMemberController {
     return ResponseEntity.ok(Map.of("message", "success"));
   }
 
+  @GetMapping("has-pw")
+  public ResponseEntity<?> hasPw() {
+    return ResponseEntity.ok(Map.of("result", memberService.hasPassword()));
+  }
+
 }
