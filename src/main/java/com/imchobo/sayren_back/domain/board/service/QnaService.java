@@ -1,5 +1,8 @@
 package com.imchobo.sayren_back.domain.board.service;
 
+import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.board.dto.notice.NoticeListResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaListResponseDTO;
@@ -18,4 +21,8 @@ public interface QnaService {
   QnaDetailsResponseDTO read(Long id);
   // 목록 조회
   List<QnaListResponseDTO> list();
+
+  // 페이징 처리
+  PageResponseDTO<QnaListResponseDTO> getList(PageRequestDTO requestDTO);
+
 }
