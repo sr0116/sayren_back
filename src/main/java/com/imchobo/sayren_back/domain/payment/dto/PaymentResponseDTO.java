@@ -20,4 +20,6 @@ public class PaymentResponseDTO {
   private String receiptUrl; // 영수증 url
   private LocalDateTime regDate;
   private LocalDateTime voidDate;
+  private String productName;
+  private Long priceSnapshot;
 }

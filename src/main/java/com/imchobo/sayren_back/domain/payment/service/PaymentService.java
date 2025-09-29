@@ -20,6 +20,9 @@ public interface PaymentService {
   void refund(Long paymentId, Long amount, String reason);
 
 //  전체 결제 내용 조회 (최근순 - 본인 것만)
+
+  PaymentResponseDTO getOne(Long paymentId);
+
   List<PaymentResponseDTO> getAll();
 
   // 사용자별 결제 요약 조회 (마이페이지)
