@@ -25,13 +25,14 @@ import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Log4j2
-public class RefundRequestServiceImpl implements RefundRequestService{
+public class RefundRequestServiceImpl implements RefundRequestService {
 
   private final RefundRequestMapper refundRequestMapper;
   private final RefundRequestRepository refundRequestRepository;
@@ -40,8 +41,10 @@ public class RefundRequestServiceImpl implements RefundRequestService{
 
   private final PurchaseRefundCalculator purchaseRefundCalculator;
   private final RentalRefundCalculator rentalRefundCalculator;
+  private final RefundService refundService;
 
   // 환불 요청 생성(멤버 정보는 시큐리티 유틸에서 멤버 아이디 가져오기)
+  @Transactional
   @Override
   public RefundRequestResponseDTO createRefundRequest(RefundRequestDTO dto) {
     Member member = SecurityUtil.getMemberEntity();
@@ -55,6 +58,7 @@ public class RefundRequestServiceImpl implements RefundRequestService{
   }
 
   // 사용자 취소 (본인이 혼자 취소하는 경우)
+  @Transactional
   @Override
   public void cancelRefundRequest(Long refundRequestId) {
     Member member = SecurityUtil.getMemberEntity();
@@ -62,59 +66,46 @@ public class RefundRequestServiceImpl implements RefundRequestService{
             .orElseThrow(() -> new RefundRequestNotFoundException(refundRequestId));
     // 환불 권한 여부 확인
     if (!request.getMember().getId().equals(member.getId())) {
-      throw  new RefundRequestUnauthorizedException();
+      throw new RefundRequestUnauthorizedException();
     }
-    if (request.getStatus() != RefundRequestStatus.PENDING){
-      throw  new RefundRequestStatusInvalidException("이미 처리된 환불 요청");
+    if (request.getStatus() != RefundRequestStatus.PENDING) {
+      throw new RefundRequestStatusInvalidException("이미 처리된 환불 요청");
     }
     request.setStatus(RefundRequestStatus.CANCELED);
   }
 
   // 관리자 승인/ 거절 여부
+  @Transactional
   @Override
   public RefundRequestResponseDTO processRefundRequest(Long refundRequestId, RefundRequestStatus status, ReasonCode reasonCode) {
     RefundRequest request = refundRequestRepository.findById(refundRequestId)
             .orElseThrow(() -> new RefundRequestNotFoundException(refundRequestId));
-    if (request.getStatus() != RefundRequestStatus.PENDING){
+    if (request.getStatus() != RefundRequestStatus.PENDING) {
       throw new RefundRequestStatusInvalidException("이미 처리된 환불 요청");
     }
 
     request.setStatus(status);
     request.setReasonCode(reasonCode);
 
-    // 승인시 추가 처리
-    if(status == RefundRequestStatus.APPROVED){
-      Payment payment = paymentRepository.findByOrderItem(request.getOrderItem())
-              .orElseThrow(() -> new PaymentNotFoundException(
-                      request.getOrderItem().getId()));
-
-      RefundCalculator calculator = getCalculator(payment);
-      Long refundAmount = calculator.calculateRefundAmount(payment, request);
-
-      // refund 엔티티 저장
-      Refund refund = Refund.builder()
-              .payment(payment)
-              .refundRequest(request)
-              .amount(refundAmount)
-              .reasonCode(reasonCode)
-              .build();
-      refundRepository.save(refund);
-
-      // payment 상태 변경(일단 배송 고려 안하고 환불 바로)
-      payment.setPaymentStatus(PaymentStatus.REFUNDED);
+    if (status == RefundRequestStatus.APPROVED) {
+      // 환불 실행은 RefundService에 위임
+      refundService.executeRefund(request, reasonCode);
     }
+
     return refundRequestMapper.toResponseDTO(request);
+
   }
 
   // 계산 분기 처리
   private RefundCalculator getCalculator(Payment payment) {
-    if (payment.getOrderItem().getOrderPlan().getType() == OrderPlanType.RENTAL){
+    if (payment.getOrderItem().getOrderPlan().getType() == OrderPlanType.RENTAL) {
       return rentalRefundCalculator;
     } else { // 일반 계산
       return purchaseRefundCalculator;
     }
   }
-/// // 밑에 3개 조회 /// 나중에 처리
+
+  /// // 밑에 3개 조회 /// 나중에 처리
   @Override
   public RefundRequestResponseDTO getRefundRequest(Long refundRequestId) {
     return null;
