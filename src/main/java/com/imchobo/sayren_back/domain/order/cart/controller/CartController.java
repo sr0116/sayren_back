@@ -8,11 +8,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * CartController
- * - 장바구니 관련 API 컨트롤러
- *  add, get, remove, clear 기능 제공
- */
+
+//  CartController
+// - 장바구니 관련 API 컨트롤러
+//   add, get, remove, clear 기능 제공
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
@@ -20,9 +19,9 @@ public class CartController {
 
   private final CartService cartService;
 
-  /**
-   * 장바구니 담기
-   */
+
+   //장바구니 담기
+
   @PostMapping
   public ResponseEntity<CartItem> addItem(@RequestBody CartRequest request) {
     CartItem item = cartService.addItem(
@@ -34,29 +33,27 @@ public class CartController {
     return ResponseEntity.ok(item);
   }
 
-  /**
-   * 회원 장바구니 조회
-   * GET /api/cart/{memberId}
-   */
+
+//   회원 장바구니 조회
+//    GET /api/cart/{memberId}
+//
   @GetMapping("/{memberId}")
   public ResponseEntity<List<CartItem>> getCart(@PathVariable Long memberId) {
     return ResponseEntity.ok(cartService.getCartItems(memberId));
   }
 
-  /**
-   * 장바구니 단일 아이템 삭제
-   * DELETE /api/cart/item/{cartItemId}
-   */
+
+//    장바구니 단일 아이템 삭제
+//    DELETE /api/cart/item/{cartItemId}
   @DeleteMapping("/item/{cartItemId}")
   public ResponseEntity<Void> removeItem(@PathVariable Long cartItemId) {
     cartService.removeItem(cartItemId);
     return ResponseEntity.noContent().build();
   }
 
-  /**
-   * 회원 장바구니 전체 비우기
-   * DELETE /api/cart/member/{memberId}
-   */
+
+//   회원 장바구니 전체 비우기
+//   DELETE /api/cart/member/{memberId}
   @DeleteMapping("/member/{memberId}")
   public ResponseEntity<Void> clearCart(@PathVariable Long memberId) {
     cartService.clearCart(memberId);
