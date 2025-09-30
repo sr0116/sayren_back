@@ -16,8 +16,11 @@ public interface RefundRequestRepository extends JpaRepository<RefundRequest, Lo
   // 로그인 사용자 기준 정렬 조회
   List<RefundRequest> findByMemberOrderByRegDateDesc(Member member);
 
-  // 관리자용
   List<RefundRequest> findByMember_Id(Long memberId);
+
+  // 관리자 전체 조회용
+  List<RefundRequest> findAllByOrderByRegDateDesc();
+
 
   boolean existsByOrderItemAndStatusIn(OrderItem orderItem, Collection<RefundRequestStatus> statuses);
 
