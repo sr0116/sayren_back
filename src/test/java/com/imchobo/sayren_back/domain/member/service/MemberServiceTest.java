@@ -24,7 +24,7 @@ class MemberServiceTest {
     String name = "유저1";
     boolean serviceAgree = true;
     boolean privacyAgree = true;
-    MemberSignupDTO dto = new MemberSignupDTO(email, password, name, serviceAgree, privacyAgree);
+    MemberSignupDTO dto = new MemberSignupDTO(email, password, name, serviceAgree, privacyAgree, "");
     memberService.register(dto);
     log.info(memberService.findByEmail(email));
   }
@@ -36,4 +36,9 @@ class MemberServiceTest {
     
   }
 
+  @Test
+  @DisplayName("권한 부여 or 제거")
+  void changeRole(){
+    memberService.changeRole(17L);
+  }
 }
