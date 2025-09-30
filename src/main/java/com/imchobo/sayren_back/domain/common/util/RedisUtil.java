@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.common.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.imchobo.sayren_back.domain.common.exception.RedisParseException;
 import com.imchobo.sayren_back.domain.member.dto.RedisTokenDTO;
 import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
 import lombok.RequiredArgsConstructor;
@@ -45,8 +46,41 @@ public class RedisUtil {
     return redisTemplate.hasKey(key);
   }
 
+  // 오브젝트 저장(시간제한 x)
+  public <T> void setObject (String key, T value) {
+    try {
+      String json = objectMapper.writeValueAsString(value);
+      redisTemplate.opsForValue().set(key, json);
+    } catch (JsonProcessingException e) {
+      throw new RedisParseException();
+    }
+  }
+
+  // 오브젝트 저장(시간제한 o)
+  public <T> void setObject (String key, T value, long ttl, TimeUnit ttlUnit) {
+    try {
+      String json = objectMapper.writeValueAsString(value);
+      redisTemplate.opsForValue().set(key, json, ttl, ttlUnit);
+    } catch (JsonProcessingException e) {
+      throw new RedisParseException();
+    }
+  }
+
+  // 오브젝트 가져오기
+  public <T> T getObject(String key, Class<T> clazz) {
+    String json = redisTemplate.opsForValue().get(key);
+    if (json == null) return null;
+    try {
+      return objectMapper.readValue(json, clazz);
+    } catch (JsonProcessingException e) {
+      throw new RedisParseException();
+    }
+  }
+
+
+
   public void emailVerification(String token, String email) {
-    set("EMAIL_VERIFY:" +  token, email, 5, TimeUnit.MINUTES);
+    set("EMAIL_VERIFY:" +  token, email, 30, TimeUnit.MINUTES);
   }
 
   public String getEmailByToken(String token) {
@@ -92,26 +126,47 @@ public class RedisUtil {
 
   @SneakyThrows
   public void setRefreshToken(RedisTokenDTO dto) {
-
-    String json = objectMapper.writeValueAsString(dto);
     TokenMeta meta = jwtUtil.getMemberIdAndTtl(dto.getToken());
-
-    set("REFRESH_TOKEN:" + meta.memberId(), json, meta.ttlMillis(), TimeUnit.MILLISECONDS);
+    setObject("REFRESH_TOKEN:" + meta.memberId(), dto, meta.ttlMillis(), TimeUnit.MILLISECONDS);
   }
 
   public RedisTokenDTO getRefreshToken(Long memberId) {
-    String json = get("REFRESH_TOKEN:" + memberId);
-    if (json == null) {
-      return null; // 없으면 null
-    }
-    try {
-      return objectMapper.readValue(json, RedisTokenDTO.class);
-    } catch (JsonProcessingException e) {
-      throw new IllegalStateException("Failed to deserialize refresh token", e);
-    }
+    return getObject("REFRESH_TOKEN:" + memberId, RedisTokenDTO.class);
   }
 
   public void deleteRefreshToken(Long memberId) {
     delete("REFRESH_TOKEN:" + memberId);
   }
+
+
+  public void setResetPassword(String token, Long memberId) {
+    set("RESET_PASSWORD:" + token, memberId.toString(), 15, TimeUnit.MINUTES);
+  }
+
+  public Long getResetPassword(String token) {
+    return Long.valueOf(get("RESET_PASSWORD:" + token));
+  }
+
+  public boolean hasResetPasswordKey(String token) {
+    return hasKey("RESET_PASSWORD:" + token);
+  }
+
+  public void deleteResetPassword(String token) {
+    delete("RESET_PASSWORD:" + token);
+  }
+
+
+  public void setMember2fa(Long memberId, String secret) {
+    set("MEMBER_2FA:" +  memberId, secret, 15, TimeUnit.MINUTES);
+  }
+
+  public String getMember2fa(Long memberId) {
+    String secret = get("MEMBER_2FA:" +  memberId);
+    return secret;
+  }
+
+  public void deleteMember2fa(Long memberId) {
+    delete("MEMBER_2FA:" +  memberId);
+  }
+
 }

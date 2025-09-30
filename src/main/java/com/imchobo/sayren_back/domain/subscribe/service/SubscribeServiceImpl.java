@@ -3,19 +3,28 @@ package com.imchobo.sayren_back.domain.subscribe.service;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
+import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
+import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundException;
+import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
+import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
-import com.imchobo.sayren_back.domain.payment.entity.PaymentHistory;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
+import com.imchobo.sayren_back.domain.subscribe.component.recorder.SubscribeHistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
-import com.imchobo.sayren_back.domain.subscribe.history_recorder.HistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
@@ -26,69 +35,69 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.Subsc
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribeRoundService;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class SubscribeServiceImpl implements SubscribeService {
   // DB 접근
   private final SubscribeRepository subscribeRepository;
   private final SubscribeHistoryRepository subscribeHistoryRepository;
-  private final SubscribeRoundRepository subscribeRoundRepository;
-
   // 매퍼
   private final SubscribeMapper subscribeMapper;
   private final SubscribeHistoryMapper subscribeHistoryMapper;
-  private final SubscribeRoundMapper subscribeRoundMapper;
-
   // 서비스
   private final SubscribeRoundService subscribeRoundService;
-  private final HistoryRecorder historyRecorder;
+  private final SubscribeStatusChanger subscribeStatusChanger;
+  private final SubscribeEventHandler subscribeEventHandler;
+  private final DeliveryItemRepository deliveryItemRepository;
+  private final SubscribeRoundRepository subscribeRoundRepository;
+
 
   // 구독 테이블 생성
   @Transactional
   @Override
-  public Subscribe createSubscribe(SubscribeRequestDTO dto) {
-    try {
-      //dto -> entity (기본값 세팅 PENDING_PAYMENT)
-      Subscribe subscribe = subscribeMapper.toEntity(dto);
+  public Subscribe createSubscribe(SubscribeRequestDTO dto, OrderItem orderItem) {
 
-      // 보증금 및 월 렌탈료 저장
-      int monthlyFee = dto.getMonthlyFeeSnapshot();
-      int depositSnapshot = calculateDeposit(monthlyFee);
+    //dto -> entity (기본값 세팅 PENDING_PAYMENT)
+    Subscribe subscribe = subscribeMapper.toEntity(dto);
+    // 보증금 및 월 렌탈료 저장
+    Long productPrice = orderItem.getProductPriceSnapshot(); //상품 총 가격
+    // 월렌탈료 먼저 계산
+    Long monthlyFee = productPrice / dto.getTotalMonths();
+    // 보증금 계산
+    Long depositSnapshot = calculateDeposit(productPrice);
+    // 스냅샷 값
+    subscribe.setMonthlyFeeSnapshot(monthlyFee); // 렌탈료
+    subscribe.setDepositSnapshot(depositSnapshot); // 보증금
 
-      // 스냅샷 값
-      subscribe.setMonthlyFeeSnapshot((long) monthlyFee);
-      subscribe.setDepositSnapshot((long) depositSnapshot);
+    // 로그인 유저 주입
+    Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
+    subscribe.setMember(currentMember);
 
-      // 로그인 유저 주입
-      Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
-      subscribe.setMember(currentMember);
+    // 구독 저장
+    Subscribe savedSubscribe = subscribeRepository.saveAndFlush(subscribe);
 
-      // 구독 저장
-      Subscribe savedSubscribe = subscribeRepository.save(subscribe);
-      // 회차 테이블 생성
-      subscribeRoundService.createRounds(savedSubscribe, dto);
+    // 회차 테이블 생성
+    subscribeRoundService.createRounds(savedSubscribe, dto, orderItem);
 
-      // 구독 히스토리 테이블 생성(매퍼에 엔티티 -> 엔티티 )
-      SubscribeHistory subscribeHistory = subscribeHistoryMapper.fromSubscribe(savedSubscribe);
-      subscribeHistoryRepository.save(subscribeHistory);
+    // 최초 상태(PENDING_PAYMENT) 기록
+    subscribeEventHandler.recordInit(savedSubscribe);
 
-
-      return savedSubscribe;
-
-    } catch (Exception e) {
-      throw new SubscribeCreationException("구독 생성 실패");
-    }
+//    subscribeStatusChanger.changeSubscribe(savedSubscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+    return savedSubscribe;
   }
 
   // 보증금 계산(일단 20% 고정 임시로 나중에 % 수정 가능성)
-  private int calculateDeposit(int monthlyFee) {
-    return (int) (monthlyFee * 0.2);
+  private Long calculateDeposit(Long monthlyFee) {
+    if (monthlyFee == null) return 0L;
+    return Math.round(monthlyFee * 0.2);
   }
 
   // 구독 단건 조회
@@ -112,31 +121,59 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Override
   @Transactional
   public List<SubscribeSummaryDTO> getSummaryList() {
-    Member member = SecurityUtil.getMemberEntity();
-    List<Subscribe> subscribes = subscribeRepository.findByMemberId(member.getId());
+    Member currentMember = SecurityUtil.getMemberEntity();
+    log.info("구독 내역 조회 - memberId={}", currentMember.getId());
+
+    // 기존: findByMemberId(member.getId())
+    List<Subscribe> subscribes = subscribeRepository.findByMember(currentMember);
+
+    log.info("조회된 구독 건수={}", subscribes.size());
     return subscribeMapper.toSummaryDTOList(subscribes);
   }
 
   // 배송 완료 후 상태 변경 (ACTIVE)
-  @Override
   @Transactional
-  public void activateAfterDelivery(Long subscribeId) {
+  public void activateAfterDelivery(Long subscribeId, OrderItem orderItem) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
-
-    //  // 구독 준비중
+    //   구독 준비중
     if (subscribe.getStatus() != SubscribeStatus.PREPARING) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
+    // 구독 개월 수 가져오기
+    Integer months = subscribe.getOrderItem().getOrderPlan().getMonth();
+    if (months == null || months <= 0) {
+      throw new IllegalStateException("구독 기간(month)이 잘못 설정됨");
+    }
 
-    subscribe.setStatus(SubscribeStatus.ACTIVE);
-    subscribeRepository.save(subscribe);
+    // 시작일/종료일 확정
+    LocalDate startDate = LocalDate.now();
+    subscribe.setStartDate(startDate);
+    subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
 
-    // 이력 기록
-    historyRecorder.recordSubscribe(subscribe, ReasonCode.NONE, ActorType.SYSTEM);
+    // (나중에 배송 이벤트 처리 할거고 지금은 임시 )
+    // 상태 ACTIVE 전환 (이 안에서 save + event + history 기록까지 자동 처리)
+    // orderItem에서 deliveryItems를 통해 배송 추적
+    List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
+    Delivery delivery = deliveryItems.stream()
+            .map(DeliveryItem::getDelivery)
+            .findFirst()
+            .orElseThrow(() -> new DeliveryNotFoundException(orderItem.getId()));
 
+    if (delivery.getStatus() == DeliveryStatus.DELIVERED) {
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
+
+
+      // 회차 dueDate 확정
+      List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
+      for (SubscribeRound round : rounds) {
+        round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
+      }
+
+      log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
+              subscribeId, startDate, subscribe.getEndDate(), rounds.size());
+    }
   }
-
   // 사용자 구독 취소 요청
   @Override
   @Transactional
@@ -148,16 +185,8 @@ public class SubscribeServiceImpl implements SubscribeService {
             subscribe.getStatus() == SubscribeStatus.CANCELED) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
-    // 상태 변경 요청 (취소 요청)
-    subscribe.setStatus(SubscribeStatus.CANCEL_REQUESTED);
-    subscribeRepository.save(subscribe);
-
-    // 상태 변경 이력 기록
-    SubscribeHistory history = new SubscribeHistory();
-    history.setSubscribe(subscribe);
-    history.setStatus(SubscribeStatus.CANCEL_REQUESTED);
-    history.setReasonCode(ReasonCode.USER_REQUEST);// 유저 요청
-    subscribeHistoryRepository.save(history);
+    // 회원 취소 요청
+    subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.REQUEST_CANCEL, ActorType.USER);
   }
 
   //취소 승인/거절 (관리자)
@@ -166,31 +195,14 @@ public class SubscribeServiceImpl implements SubscribeService {
   public void processCancelRequest(Long subscribeId, boolean approved, ReasonCode reasonCode) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
-
-    if (subscribe.getStatus() != SubscribeStatus.CANCEL_REQUESTED) {
+    if (subscribe.getStatus() != SubscribeStatus.ACTIVE) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
     if (approved) {
       // 승인 처리시
-      subscribe.setStatus(SubscribeStatus.CANCELED);
-      subscribeRepository.save(subscribe);
-      // 기록 변경
-      SubscribeHistory history = new SubscribeHistory();
-      history.setSubscribe(subscribe);
-      history.setStatus(SubscribeStatus.CANCELED);
-      history.setReasonCode(ReasonCode.CONTRACT_CANCEL); // 승인
-      subscribeHistoryRepository.save(history);
-    }
-    else {
-      subscribe.setStatus(SubscribeStatus.ACTIVE);
-      subscribeRepository.save(subscribe);
-
-      // 기록
-      SubscribeHistory history = new SubscribeHistory();
-      history.setSubscribe(subscribe);
-      history.setStatus(SubscribeStatus.ACTIVE);
-      history.setReasonCode(ReasonCode.CANCEL_REJECTED); // 거절
-      subscribeHistoryRepository.save(history);
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
+    } else {
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_REJECT, ActorType.ADMIN);
     }
   }
 
@@ -199,7 +211,7 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Transactional
   public List<SubscribeHistoryResponseDTO> getHistories(Long subscribeId) {
     List<SubscribeHistory> histories = subscribeHistoryRepository.findBySubscribe_Id(subscribeId);
-    if(histories.isEmpty()) {
+    if (histories.isEmpty()) {
       throw new SubscribeNotFoundException(subscribeId);
     }
     return subscribeHistoryMapper.toResponseDTOList(histories);
@@ -212,8 +224,6 @@ public class SubscribeServiceImpl implements SubscribeService {
     Subscribe entity = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new RuntimeException("구독을 찾을 수 없습니다."));
     entity.setStatus(status);
-
     subscribeRepository.save(entity);
-
   }
 }

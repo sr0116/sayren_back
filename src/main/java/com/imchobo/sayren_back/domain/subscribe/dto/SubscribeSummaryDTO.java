@@ -17,5 +17,5 @@ public class SubscribeSummaryDTO {
   private SubscribeStatus status;
   private LocalDate startDate;
   private LocalDate endDate;
-  private Integer monthlyFeeSnapshot;
+  private Long monthlyFeeSnapshot;
 }

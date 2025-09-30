@@ -16,6 +16,8 @@ public class RefundCreateDTO {
   @NotNull(message = "결제 ID는 필수입니다.")
   private Long paymentId;
 
+  private Long refundRequestId;
+
   @NotNull(message = "환불 금액은 필수입니다.")
   @Positive(message = "환불 금액은 양수여야 합니다.")
   private Long amount;

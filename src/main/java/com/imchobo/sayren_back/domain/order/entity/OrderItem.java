@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.order.entity;
 
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
@@ -31,6 +32,6 @@ public class OrderItem {
   private OrderPlan orderPlan;
 
   @Column(nullable = false)
-  private Integer productPriceSnapshot; // 주문 시점 상품 가격 (NOT NULL)
+  private Long productPriceSnapshot; // 주문 시점 상품 가격 (NOT NULL)
 //   주문 시점 상품 가격 (스냅샷)
 }

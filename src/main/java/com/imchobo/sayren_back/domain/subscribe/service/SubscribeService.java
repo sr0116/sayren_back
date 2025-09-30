@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.subscribe.service;
 
 
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -13,12 +14,12 @@ import java.util.List;
 
 public interface SubscribeService {
   // 구독 신청
-  Subscribe createSubscribe(SubscribeRequestDTO dto);
+  Subscribe createSubscribe(SubscribeRequestDTO dto, OrderItem orderItem);
 
   // 구독시 보증금 계산
 
   // 배송 완료시 상태 변경
-  void  activateAfterDelivery(Long subscribeId);
+  void  activateAfterDelivery(Long subscribeId, OrderItem orderItem);
 
   // 구독 단건 조회
   SubscribeResponseDTO getSubscribe(Long subscribeId);

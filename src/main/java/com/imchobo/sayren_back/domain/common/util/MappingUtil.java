@@ -1,10 +1,14 @@
 package com.imchobo.sayren_back.domain.common.util;
 
+import com.imchobo.sayren_back.domain.attach.entity.Attach;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
-import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import org.mapstruct.Named;
@@ -39,15 +43,29 @@ public class MappingUtil {
     return Subscribe.builder().id(subscribeId).build();
   }
 
-  @Named("mapSubscribePayment")
-  public SubscribeRound subscribePaymentIdToEntity(Long SubscribeRoundId) {
-    if (SubscribeRoundId == null) throw new IllegalArgumentException("subscribePaymentId가 null입니다.");
-    return SubscribeRound.builder().id(SubscribeRoundId).build();
+  @Named("mapRefundRequest")
+  public RefundRequest refundRequestIdToEntity(Long refundRequestId) {
+    if (refundRequestId == null) return null; // 자동 환불일 경우 null 허용
+    return RefundRequest.builder().id(refundRequestId).build();
   }
+
+  @Named("mapRefundRequestId")
+  public Long refundRequestEntityToId(RefundRequest refundRequest) {
+    return refundRequest != null ? refundRequest.getId() : null;
+  }
+
 
   @Named("mapOrderPlan")
   public OrderPlan orderPlanIdToEntity(Long planId) {
     return planId != null ? OrderPlan.builder().id(planId).build() : null;
+  }
+
+  @Named("mapAttachUrl")
+  public static String mapAttachUrl(Attach attach) {
+    if (attach == null) return null;
+
+    return "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+            + attach.getPath() + "/" + attach.getUuid();
   }
   //  엔티티 → ID 변환 (DTO 응답용)
   @Named("mapPaymentId")
@@ -61,7 +79,7 @@ public class MappingUtil {
   }
 
   @Named("mapOrderItemId")
-  public Long orderItemEntityToId(OrderItem orderItem) {
+  public Long mapOrderItemId(OrderItem orderItem) {
     return orderItem != null ? orderItem.getId() : null;
   }
 
@@ -103,4 +121,19 @@ public class MappingUtil {
     if (value != null) return Long.parseLong(value.toString());
     return null;
   }
-}
+
+
+            //배송 필요매핑 DeliveryMapper
+    @Named("mapDeliveryTypeToString")
+    public String mapDeliveryTypeToString(DeliveryType type) {
+      return type != null ? type.name() : null;
+    }
+
+    @Named("mapDeliveryStatusToString")
+    public String mapDeliveryStatusToString(DeliveryStatus status) {
+      return status != null ? status.name() : null;
+    }
+  }
+
+
+

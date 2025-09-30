@@ -22,7 +22,7 @@ public class SubscribeRoundRequestDTO {
   @Min(value = 1, message = "최소 1회차 이상이어야 합니다.")
   private Integer roundNo;
 
-  @NotNull(message = "납부 예정일은 필수입니다.")
-  @FutureOrPresent(message = "납부 예정일은 오늘 이후여야 합니다.")
+//  @NotNull(message = "납부 예정일은 필수입니다.")
+//  @FutureOrPresent(message = "납부 예정일은 오늘 이후여야 합니다.")
   private LocalDate dueDate;
 }

@@ -24,7 +24,7 @@ public class RefundRequest extends TimeRangeEntity {
 
   // 주문 아이템
   @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "order_item_id", nullable = false)
+  @JoinColumn(name = "order_item_id") // 자동 환불 고려하려면 nullable 허용
   private OrderItem orderItem;
 
   // 환불 요청 회원 FK (필수)
@@ -37,11 +37,13 @@ public class RefundRequest extends TimeRangeEntity {
   // NOT NULL
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private RefundRequestStatus status;
+  @Builder.Default
+  private RefundRequestStatus status = RefundRequestStatus.PENDING;
 
   // 환불 사유 코드 (Enum 관리)
   //  NOT NULL
   @Enumerated(EnumType.STRING)
   @Column(name = "reason_code", nullable = false)
-  private ReasonCode reasonCode;
+  @Builder.Default
+  private ReasonCode reasonCode = ReasonCode.USER_REQUEST;
 }

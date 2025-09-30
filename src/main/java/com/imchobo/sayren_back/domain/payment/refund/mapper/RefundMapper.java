@@ -15,6 +15,7 @@ public interface RefundMapper {
   //  ㄹDTO 요청엔티티
   @Mapping(target = "id", ignore = true)   // PK 자동 생성
   @Mapping(source = "paymentId", target = "payment", qualifiedByName = "mapPayment")
+  @Mapping(source = "refundRequestId", target = "refundRequest", qualifiedByName = "mapRefundRequest")
   Refund toEntity(RefundCreateDTO dto);
 
   List<Refund> toEntities(List<RefundCreateDTO> dtos);
@@ -22,6 +23,7 @@ public interface RefundMapper {
   // 엔티티 → 응답 DTO
   @Mapping(source = "id", target = "refundId")
   @Mapping(source = "payment.id", target = "paymentId")
+  @Mapping(source = "refundRequest.id", target = "refundRequestId")
   RefundResponseDTO toDto(Refund entity);
 
   List<RefundResponseDTO> toResponseDTOs(List<Refund> entities);

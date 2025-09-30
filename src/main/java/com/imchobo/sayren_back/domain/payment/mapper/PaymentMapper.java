@@ -23,14 +23,25 @@ public interface PaymentMapper {
 
   @Mapping(source = "id", target = "paymentId")
   @Mapping(source = "orderItem", target = "orderItemId", qualifiedByName = "mapOrderItemId")
-  @Mapping(source = "receipt", target = "receiptUrl")
   @Mapping(source = "merchantUid", target = "merchantUid")
+  @Mapping(source = "impUid", target = "impUid")
   @Mapping(source = "amount", target = "amount")
-  PaymentResponseDTO  toResponseDTO(Payment entity);
+  @Mapping(source = "paymentType", target = "paymentType")
+  @Mapping(source = "paymentStatus", target = "paymentStatus")
+  @Mapping(source = "receipt", target = "receiptUrl")
+  @Mapping(source = "orderItem.product.name", target = "productName")
+  @Mapping(source = "orderItem.productPriceSnapshot", target = "priceSnapshot")
+  @Mapping(source = "orderItem.orderPlan.type", target = "orderPlanType")
+  PaymentResponseDTO toResponseDTO(Payment entity);
 
   //  Entity → SummaryDTO (목록 조회)
   @Mapping(source = "id", target = "paymentId")
+  @Mapping(source = "orderItem.id", target = "orderItemId")
+  @Mapping(source = "orderItem.product.name", target = "productName")
+  @Mapping(source = "orderItem.productPriceSnapshot", target = "priceSnapshot")
+  @Mapping(source = "orderItem.orderPlan.type", target = "orderPlanType")
   PaymentSummaryDTO toSummaryDTO(Payment entity);
+
 
   // 리스트 매핑
   List<PaymentResponseDTO> toResponseDTOList(List<Payment> entities);

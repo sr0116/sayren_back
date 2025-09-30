@@ -4,7 +4,7 @@ package com.imchobo.sayren_back.domain.subscribe.mapper;
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
-import com.imchobo.sayren_back.domain.order.entity.OrderPlan;
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
@@ -28,10 +28,8 @@ public interface SubscribeMapper {
   @Mapping(source = "orderItem.id", target = "orderItemId")
   @Mapping(source = "orderItem.productPriceSnapshot", target = "monthlyFeeSnapshot")
   @Mapping(source = "plan.month", target = "totalMonths")
-  @Mapping(target = "depositSnapshot", constant = "0")
-  @Mapping(target = "startDate", expression = "java(LocalDate.now())")
-  @Mapping(target = "endDate", expression = "java(LocalDate.now().plusMonths(plan.getMonth()))")
   SubscribeRequestDTO toRequestDTO(OrderItem orderItem, Order order, OrderPlan plan);
+
 
   // 응답 DTO
   @Mapping(source = "orderItem.id", target = "orderItemId")
@@ -46,7 +44,7 @@ public interface SubscribeMapper {
   @Mapping(source = "endDate", target = "endDate")
   @Mapping(source = "monthlyFeeSnapshot", target = "monthlyFeeSnapshot")
   SubscribeSummaryDTO toSummaryDTO(Subscribe entity);
-
+ // 조회 리스트(요약)
   List<SubscribeSummaryDTO> toSummaryDTOList(List<Subscribe> entities);
 
 }

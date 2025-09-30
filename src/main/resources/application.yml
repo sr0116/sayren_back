@@ -10,12 +10,7 @@ spring:
       - optional:classpath:secret/mail.yml
       - optional:classpath:secret/solapi.yml
       - optional:classpath:secret/redis.yml
-
-  jackson:
-    property-naming-strategy: SNAKE_CASE
-    serialization:
-      write-dates-as-timestamps: false
-
+      - optional:classpath:secret/next.yml
   jpa:
     hibernate:
       ddl-auto: none
