@@ -37,6 +37,12 @@ dependencies {
   implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
   implementation 'org.springframework.boot:spring-boot-starter-mail:3.5.5'
 
+  // 암호화 해시
+  implementation 'commons-codec:commons-codec:1.19.0'
+
+  // 구글 authenticator
+  implementation 'com.warrenstrange:googleauth:1.5.0'
+
   // 버전 비교용 라이브러리
   implementation 'org.apache.maven:maven-artifact:3.9.9'
 

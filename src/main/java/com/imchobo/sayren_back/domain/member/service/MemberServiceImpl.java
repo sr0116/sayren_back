@@ -35,6 +35,10 @@ public class MemberServiceImpl implements MemberService {
   private final MailService mailService;
   private final SolapiUtil solapiUtil;
   private final MemberTermService memberTermService;
+  private final MemberTokenService memberTokenService;
+  private final MemberProviderService memberProviderService;
+  private final DeletedMemberService deletedMemberService;
+  private final Member2FAService member2FAService;
 
 
   @Override
@@ -137,13 +141,21 @@ public class MemberServiceImpl implements MemberService {
   @Override
   @Transactional
   public void changePassword(ResetPasswordRequestDTO resetPasswordRequestDTO) {
-    Long memberId = redisUtil.getResetPassword(resetPasswordRequestDTO.getToken());
-    redisUtil.deleteResetPassword(resetPasswordRequestDTO.getToken());
+    Long memberId;
+    if(SecurityUtil.isUser()){
+      memberId = SecurityUtil.getMemberAuthDTO().getId();
+    }
+    else {
+      memberId = redisUtil.getResetPassword(resetPasswordRequestDTO.getToken());
+    }
     Member member = memberRepository.findById(memberId).orElseThrow(IllegalArgumentException::new);
     if(passwordEncoder.matches(resetPasswordRequestDTO.getNewPassword(), member.getPassword())) {
       throw new PasswordAlreadyUseException();
     }
     member.setPassword(passwordEncoder.encode(resetPasswordRequestDTO.getNewPassword()));
+    if(resetPasswordRequestDTO.getToken() != null) {
+      redisUtil.deleteResetPassword(resetPasswordRequestDTO.getToken());
+    }
   }
 
 
@@ -176,5 +188,39 @@ public class MemberServiceImpl implements MemberService {
     }
     member.setName(changeNameDTO.getName());
     return memberMapper.toLoginResponseDTO(memberMapper.toAuthDTO(member));
+  }
+
+
+  @Override
+  public void passwordCheck(PasswordCheckDTO passwordCheckDTO) {
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+    if (!passwordEncoder.matches(passwordCheckDTO.getPassword(), member.getPassword())) {
+      throw new InvalidPasswordException();
+    }
+  }
+
+
+  // 멤버 탈퇴
+  @Override
+  @Transactional
+  public void deleteMember() {
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+    memberTokenService.deleteMemberToken(member.getId());
+    memberProviderService.deleteMemberProvider(member.getId());
+    member2FAService.delete(member.getId());
+    deletedMemberService.deleteMember(member);
+
+    member.setEmail("deleted_" + member.getId());
+    member.setName("탈퇴회원");
+    member.setPassword(null);
+    member.setTel(null);
+    member.setStatus(MemberStatus.DELETED);
+  }
+
+
+  @Override
+  public boolean hasPassword() {
+    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+    return member.getPassword() != null;
   }
 }

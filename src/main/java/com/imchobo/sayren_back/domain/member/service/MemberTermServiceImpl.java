@@ -1,12 +1,9 @@
 package com.imchobo.sayren_back.domain.member.service;
 
-import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberTerm;
 import com.imchobo.sayren_back.domain.member.recode.LatestTerms;
 import com.imchobo.sayren_back.domain.member.repository.MemberTermRepository;
-import com.imchobo.sayren_back.domain.term.en.TermType;
-import com.imchobo.sayren_back.domain.term.entity.Term;
 import com.imchobo.sayren_back.domain.term.service.TermService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;

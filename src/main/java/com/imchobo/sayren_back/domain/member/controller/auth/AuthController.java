@@ -1,13 +1,9 @@
 package com.imchobo.sayren_back.domain.member.controller.auth;
 
 
-import com.imchobo.sayren_back.domain.common.service.MailService;
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
-import com.imchobo.sayren_back.domain.member.dto.SocialLinkRequestDTO;
-import com.imchobo.sayren_back.domain.member.dto.SocialSignupRequestDTO;
+import com.imchobo.sayren_back.domain.member.dto.*;
 import com.imchobo.sayren_back.domain.member.service.AuthService;
-import com.imchobo.sayren_back.domain.member.service.MemberService;
+import com.imchobo.sayren_back.domain.member.service.Member2FAService;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,7 +16,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -32,8 +27,8 @@ import java.util.Map;
 @Log4j2
 public class AuthController {
   private final AuthService authService;
-  private final MemberService memberService;
-  private final MailService  mailService;
+  private final Member2FAService member2faService;
+
 
   @GetMapping("me")
   @Operation(
@@ -63,7 +58,7 @@ public class AuthController {
   @PostMapping("logout")
   public ResponseEntity<?> logout(HttpServletResponse response, @CookieValue(name = "SR_REFRESH", required = false) String refreshToken) {
     authService.logout(response, refreshToken);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(Map.of("message", "success"));
   }
 
   @PostMapping("social-signup")
@@ -94,6 +89,42 @@ public class AuthController {
   @GetMapping("reset-pw/validate")
   public ResponseEntity<?> resetPassword(@RequestParam String token) {
     authService.hasResetPasswordKey(token);
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
+
+
+  // qr코드 가져오기(2차인증 등록용)
+  @GetMapping("2fa-qr")
+  public ResponseEntity<?> get2faQR() {
+    return ResponseEntity.ok(member2faService.getQrCode());
+  }
+
+  // 2차인증 등록
+  @PostMapping("create-2fa")
+  public ResponseEntity<?> create2fa(@RequestBody @Valid Member2FARequestDTO member2FARequestDTO) {
+    log.info(member2FARequestDTO);
+    member2faService.register(member2FARequestDTO);
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
+
+
+  // 2차인증 검증
+  @PostMapping("check-2fa")
+  public ResponseEntity<?> check2fa(@RequestBody @Valid Member2FARequestDTO member2FARequestDTO) {
+    log.info(member2FARequestDTO);
+    member2faService.checkOtp(member2FARequestDTO);
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
+
+  @GetMapping("read-2fa")
+  public ResponseEntity<?> read2fa() {
+    member2faService.read();
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
+
+  @DeleteMapping("delete-2fa")
+  public ResponseEntity<?> delete2fa() {
+    member2faService.delete();
     return ResponseEntity.ok(Map.of("message", "success"));
   }
 }
