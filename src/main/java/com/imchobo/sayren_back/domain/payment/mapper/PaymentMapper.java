@@ -31,6 +31,7 @@ public interface PaymentMapper {
   @Mapping(source = "receipt", target = "receiptUrl")
   @Mapping(source = "orderItem.product.name", target = "productName")
   @Mapping(source = "orderItem.productPriceSnapshot", target = "priceSnapshot")
+  @Mapping(source = "orderItem.orderPlan.type", target = "orderPlanType")
   PaymentResponseDTO toResponseDTO(Payment entity);
 
   //  Entity → SummaryDTO (목록 조회)
@@ -38,6 +39,7 @@ public interface PaymentMapper {
   @Mapping(source = "orderItem.id", target = "orderItemId")
   @Mapping(source = "orderItem.product.name", target = "productName")
   @Mapping(source = "orderItem.productPriceSnapshot", target = "priceSnapshot")
+  @Mapping(source = "orderItem.orderPlan.type", target = "orderPlanType")
   PaymentSummaryDTO toSummaryDTO(Payment entity);
 
 
