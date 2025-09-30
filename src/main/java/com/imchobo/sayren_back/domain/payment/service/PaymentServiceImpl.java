@@ -20,6 +20,8 @@ import com.imchobo.sayren_back.domain.payment.mapper.PaymentHistoryMapper;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
+import com.imchobo.sayren_back.domain.payment.refund.service.RefundRequestService;
+import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
@@ -64,6 +66,8 @@ public class PaymentServiceImpl implements PaymentService {
   private final SubscribeStatusChanger subscribeStatusChanger;
   private final PaymentStatusChanger paymentStatusChanger;
   private final PaymentHistoryRecorder paymentHistoryRecorder;
+  private final RefundService refundService;
+  private final RefundRequestService refundRequestService;
 
 
   // 결제 준비
@@ -198,14 +202,20 @@ public class PaymentServiceImpl implements PaymentService {
     Payment payment = paymentRepository.findById(paymentId)
             .orElseThrow(() -> new PaymentNotFoundException(paymentId));
 
-    // 로그인 사용자와 결제 소유자 일치 여부 확인
     Member currentMember = SecurityUtil.getMemberEntity();
     if (!Objects.equals(payment.getMember().getId(), currentMember.getId())) {
       throw new RuntimeException("본인 결제 내역만 조회할 수 있습니다.");
     }
 
-    return paymentMapper.toResponseDTO(payment);
+    PaymentResponseDTO dto = paymentMapper.toResponseDTO(payment);
+
+    // 환불 요청 여부는 RefundService에 위임
+    boolean requested = refundRequestService.hasActiveRefundRequest(payment.getOrderItem());
+    dto.setRefundRequested(requested);
+
+    return dto;
   }
+
 
   @Override
   @Transactional(readOnly = true)

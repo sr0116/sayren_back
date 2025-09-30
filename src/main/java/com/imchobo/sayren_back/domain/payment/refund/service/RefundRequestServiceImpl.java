@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.domain.payment.refund.service;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.calculator.PurchaseRefundCalculator;
 import com.imchobo.sayren_back.domain.payment.calculator.RefundCalculator;
 import com.imchobo.sayren_back.domain.payment.calculator.RentalRefundCalculator;
@@ -14,6 +15,7 @@ import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestResponseDT
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
+import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestAlreadyExistsException;
 import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestNotFoundException;
 import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestStatusInvalidException;
 import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestUnauthorizedException;
@@ -48,11 +50,28 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   @Transactional
   @Override
   public RefundRequestResponseDTO createRefundRequest(RefundRequestDTO dto) {
+    // 현재 로그인 멤버
     Member member = SecurityUtil.getMemberEntity();
+    // 결제 정보 조회
+    Payment payment = paymentRepository.findById(dto.getPaymentId())
+            .orElseThrow(() -> new PaymentNotFoundException(dto.getPaymentId()));
 
+    // 이미 환불 요청이 있는지 체크
+    boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
+            payment.getOrderItem(),
+            List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
+    );
+    if (exists) {
+      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
+    }
+
+    // 엔티티 변환 저장
     RefundRequest entity = refundRequestMapper.toEntity(dto);
-    entity.setMember(member); // 로그인 멤버 주입
-    entity.setStatus(RefundRequestStatus.PENDING); // 요청 대기 상태
+    entity.setMember(member);
+    entity.setOrderItem(payment.getOrderItem());
+    entity.setOrderItem(payment.getOrderItem());
+//    entity.setStatus(RefundRequestStatus.PENDING); // r기본값
+//    entity.setReasonCode(dto.getReasonCode()); // 기본값 세팅해둠
 
     RefundRequest saved = refundRequestRepository.save(entity);
     return refundRequestMapper.toResponseDTO(saved);
@@ -73,6 +92,14 @@ public class RefundRequestServiceImpl implements RefundRequestService {
       throw new RefundRequestStatusInvalidException("이미 처리된 환불 요청");
     }
     request.setStatus(RefundRequestStatus.CANCELED);
+  }
+  @Transactional
+  @Override
+  public boolean hasActiveRefundRequest(OrderItem orderItem) {
+    return refundRequestRepository.existsByOrderItemAndStatusIn(
+            orderItem,
+            List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
+    );
   }
 
   // 관리자 승인/ 거절 여부
