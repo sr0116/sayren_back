@@ -20,6 +20,10 @@ import com.imchobo.sayren_back.domain.payment.mapper.PaymentHistoryMapper;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
+import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
+import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
+import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
+import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundRequestService;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
@@ -40,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -58,16 +63,14 @@ public class PaymentServiceImpl implements PaymentService {
   // 매퍼
   private final SubscribeMapper subscribeMapper;
   private final PaymentMapper paymentMapper;
-  private final PaymentHistoryMapper paymentHistoryMapper;
 
   // PortOne api 호출 및 연동
   private final PortOnePaymentClient portOnePaymentClient;
   // 상태 변경 컴포넌트 이벤트 처리
-  private final SubscribeStatusChanger subscribeStatusChanger;
   private final PaymentStatusChanger paymentStatusChanger;
   private final PaymentHistoryRecorder paymentHistoryRecorder;
-  private final RefundService refundService;
-  private final RefundRequestService refundRequestService;
+  private final RefundRequestRepository refundRequestRepository;
+  private final RefundRepository refundRepository;
 
 
   // 결제 준비
@@ -116,6 +119,7 @@ public class PaymentServiceImpl implements PaymentService {
     // DB 저장
     Payment savedPayment = paymentRepository.saveAndFlush(payment);
 
+
     // 최초 결제 이력 기록 (동기, 원자성)
     paymentHistoryRecorder.recordInitPayment(savedPayment);
 
@@ -143,6 +147,8 @@ public class PaymentServiceImpl implements PaymentService {
     // 결제 정보 조회
     PaymentInfoResponse paymentInfo = portOnePaymentClient.getPaymentInfo(impUid);
     log.info("PortOne 결제 정보: {}", paymentInfo);
+    log.info("DB 결제 금액={}, PortOne 결제 금액={}", payment.getAmount(), paymentInfo.getAmount());
+
 
     // 포트원 매핑
     PaymentTransition transition = PaymentTransition.fromPortOne(paymentInfo, payment.getAmount());
@@ -209,26 +215,38 @@ public class PaymentServiceImpl implements PaymentService {
 
     PaymentResponseDTO dto = paymentMapper.toResponseDTO(payment);
 
-    // 환불 요청 여부는 RefundService에 위임
-    boolean requested = refundRequestService.hasActiveRefundRequest(payment.getOrderItem());
-    dto.setRefundRequested(requested);
+    // Refund 통해 RefundRequest 가져오기
+    Refund refund = refundRepository.findFirstByPaymentOrderByRegDateDesc(payment).orElse(null);
+
+    if (refund != null) {
+      dto.setRefundStatus(refund.getRefundRequest().getStatus());
+    } else {
+      dto.setRefundStatus(null);
+    }
 
     return dto;
   }
+
+
+
 
 
   @Override
   @Transactional(readOnly = true)
   public List<PaymentResponseDTO> getAll() {
     Member currentMember = SecurityUtil.getMemberEntity();
-    // 현재 로그인한 사용자 기준 최근 결제 내역 조회
-    List<Payment> payments = paymentRepository
-            .findByMemberOrderByRegDateDesc(currentMember);
+    List<Payment> payments = paymentRepository.findByMemberOrderByRegDateDesc(currentMember);
 
-    return payments.stream()
-            .map(paymentMapper::toResponseDTO)
-            .toList();
+              return payments.stream().map(payment -> {
+                PaymentResponseDTO dto = paymentMapper.toResponseDTO(payment);
+
+                Refund refund = refundRepository.findFirstByPaymentOrderByRegDateDesc(payment).orElse(null);
+                dto.setRefundStatus(refund != null ? refund.getRefundRequest().getStatus() : null);
+
+                return dto;
+              }).collect(Collectors.toList());
   }
+
   // 관리자용
   @Transactional(readOnly = true)
   @Override

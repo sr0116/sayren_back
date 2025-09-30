@@ -9,14 +9,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 
 public interface RefundRequestRepository extends JpaRepository<RefundRequest, Long> {
   // 로그인 사용자 기준 정렬 조회
   List<RefundRequest> findByMemberOrderByRegDateDesc(Member member);
 
-  // 관리자용
   List<RefundRequest> findByMember_Id(Long memberId);
 
+  // 관리자 전체 조회용
+  List<RefundRequest> findAllByOrderByRegDateDesc();
+
+
   boolean existsByOrderItemAndStatusIn(OrderItem orderItem, Collection<RefundRequestStatus> statuses);
+
+  Optional<RefundRequest> findFirstByOrderItemOrderByRegDateDesc(OrderItem orderItem);
 }

@@ -16,7 +16,8 @@ public interface RefundRequestService {
   // 사용자 환불 취소 (본인이 취소 요청 한걸 취소)
   void cancelRefundRequest(Long refundRequestId);
 
-  // 관리자 환불 취소 요청 처리
+  // 관리자 환불  조회 취소 요청 처리
+  List<RefundRequestResponseDTO> getAllRefundRequests();
   RefundRequestResponseDTO processRefundRequest(Long refundRequestId, RefundRequestStatus status, ReasonCode reasonCode);
 
   // 환불 요청 단건 조회

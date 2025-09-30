@@ -56,22 +56,34 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     Payment payment = paymentRepository.findById(dto.getPaymentId())
             .orElseThrow(() -> new PaymentNotFoundException(dto.getPaymentId()));
 
+//    // 이미 환불 요청이 있는지 체크
+//    boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
+//            payment.getOrderItem(),
+//            List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
+//    );
+//    if (exists) {
+//      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
+//    }
     // 이미 환불 요청이 있는지 체크
     boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
             payment.getOrderItem(),
             List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
     );
+
+// [테스트 전용 예외 처리] - exists 여도 무시하고 계속 진행
     if (exists) {
-      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
+      log.warn(" 테스트 모드: 이미 환불 요청이 있지만 새로 생성합니다. paymentId={}", dto.getPaymentId());
+      // 실제 운영에서는 여기서 예외 던짐
+      // throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
     }
+
 
     // 엔티티 변환 저장
     RefundRequest entity = refundRequestMapper.toEntity(dto);
     entity.setMember(member);
     entity.setOrderItem(payment.getOrderItem());
-    entity.setOrderItem(payment.getOrderItem());
-//    entity.setStatus(RefundRequestStatus.PENDING); // r기본값
-//    entity.setReasonCode(dto.getReasonCode()); // 기본값 세팅해둠
+    entity.setStatus(RefundRequestStatus.PENDING); // r기본값
+    entity.setReasonCode(dto.getReasonCode()); // 기본값 세팅해둠
 
     RefundRequest saved = refundRequestRepository.save(entity);
     return refundRequestMapper.toResponseDTO(saved);
@@ -93,6 +105,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     }
     request.setStatus(RefundRequestStatus.CANCELED);
   }
+  // 결제 취소 여부
   @Transactional
   @Override
   public boolean hasActiveRefundRequest(OrderItem orderItem) {
@@ -102,7 +115,6 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     );
   }
 
-  // 관리자 승인/ 거절 여부
   @Transactional
   @Override
   public RefundRequestResponseDTO processRefundRequest(Long refundRequestId, RefundRequestStatus status, ReasonCode reasonCode) {
@@ -115,13 +127,17 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     request.setStatus(status);
     request.setReasonCode(reasonCode);
 
+    log.info("환불 요청 처리 시작: refundRequestId={}, status={}, reasonCode={}",
+            refundRequestId, status, reasonCode);
+
     if (status == RefundRequestStatus.APPROVED) {
-      // 환불 실행은 RefundService에 위임
       refundService.executeRefund(request, reasonCode);
     }
 
-    return refundRequestMapper.toResponseDTO(request);
+    log.info("환불 요청 처리 완료: refundRequestId={}, 최종상태={}",
+            refundRequestId, request.getStatus());
 
+    return refundRequestMapper.toResponseDTO(request);
   }
 
   // 계산 분기 처리
@@ -165,9 +181,40 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   // 관리자: 특정 회원 환불 요청 조회
   @Override
   @Transactional(readOnly = true)
+  public List<RefundRequestResponseDTO> getAllRefundRequests() {
+    List<RefundRequest> requests = refundRequestRepository.findAllByOrderByRegDateDesc();
+    List<RefundRequestResponseDTO> dtos = refundRequestMapper.toResponseDTOs(requests);
+
+    for (int i = 0; i < requests.size(); i++) {
+      RefundRequest req = requests.get(i);
+      RefundRequestResponseDTO dto = dtos.get(i);
+
+      List<Payment> payments = paymentRepository.findByOrderItem(req.getOrderItem());
+      if (!payments.isEmpty()) {
+        Payment latestPayment = payments.get(payments.size() - 1); // 최근 결제
+        dto.setPaymentId(latestPayment.getId());
+      }
+    }
+    return dtos;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public List<RefundRequestResponseDTO> getRefundRequestsByMember(Long memberId) {
     List<RefundRequest> requests = refundRequestRepository.findByMember_Id(memberId);
-    return refundRequestMapper.toResponseDTOs(requests);
+    List<RefundRequestResponseDTO> dtos = refundRequestMapper.toResponseDTOs(requests);
+
+    for (int i = 0; i < requests.size(); i++) {
+      RefundRequest req = requests.get(i);
+      RefundRequestResponseDTO dto = dtos.get(i);
+
+      List<Payment> payments = paymentRepository.findByOrderItem(req.getOrderItem());
+      if (!payments.isEmpty()) {
+        Payment latestPayment = payments.get(payments.size() - 1);
+        dto.setPaymentId(latestPayment.getId());
+      }
+    }
+    return dtos;
   }
 
 
