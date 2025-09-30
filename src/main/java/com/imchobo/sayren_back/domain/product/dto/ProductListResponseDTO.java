@@ -17,13 +17,13 @@ public class ProductListResponseDTO {
   // 상품명
   private String productName;
   // 가격
-  private Integer price;
+  private Long price;
   // 판매 여부
   private Boolean isUse;
-//  // 모델명
-//  private String modelName;
-//  // 태그
-//  private List<String> tags;
+  // 모델명
+  private String modelName;
+  // 태그
+  private List<String> tags;
 
   // 상품 카테고리
   private String productCategory;
