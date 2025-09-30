@@ -24,4 +24,6 @@ public class PaymentResponseDTO {
   private String productName;
   private Long priceSnapshot;
   private OrderPlanType orderPlanType;
+
+  private boolean refundRequested;
 }

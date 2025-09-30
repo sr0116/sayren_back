@@ -37,11 +37,13 @@ public class RefundRequest extends TimeRangeEntity {
   // NOT NULL
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private RefundRequestStatus status;
+  @Builder.Default
+  private RefundRequestStatus status = RefundRequestStatus.PENDING;
 
   // 환불 사유 코드 (Enum 관리)
   //  NOT NULL
   @Enumerated(EnumType.STRING)
   @Column(name = "reason_code", nullable = false)
-  private ReasonCode reasonCode;
+  @Builder.Default
+  private ReasonCode reasonCode = ReasonCode.USER_REQUEST;
 }
