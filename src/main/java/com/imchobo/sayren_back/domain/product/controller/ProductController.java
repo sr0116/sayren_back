@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.product.controller;
 
-import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.PurchaseProductDetailsResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.PurchaseProductListResponseDTO;
 import com.imchobo.sayren_back.domain.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,12 +18,12 @@ import java.util.List;
         private final ProductService productService;
 
         @GetMapping
-        public List<ProductListResponseDTO> list() {
+        public List<PurchaseProductListResponseDTO> list() {
             return productService.getAllProducts();
         }
 
         @GetMapping("/{id}")
-        public ProductDetailsResponseDTO getOne(@PathVariable Long id) {
+        public PurchaseProductDetailsResponseDTO getOne(@PathVariable Long id) {
             return productService.getProductById(id);
         }
 }

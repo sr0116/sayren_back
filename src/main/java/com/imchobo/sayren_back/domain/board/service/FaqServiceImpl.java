@@ -1,7 +1,7 @@
 package com.imchobo.sayren_back.domain.board.service;
 
-import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
-import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.faq.FaqCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.faq.FaqDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.faq.FaqListResponseDTO;
@@ -79,47 +79,10 @@ public class FaqServiceImpl implements  FaqService {
   }
 
   @Override
-  public PageResponseDTO<FaqListResponseDTO> getList(PageRequestDTO requestDTO) {
-    Pageable pageable = PageRequest.of(
-            requestDTO.getPage() - 1,
-            requestDTO.getSize(),
-            Sort.by("id").descending()
-    );
+  public PageResponseDTO<FaqListResponseDTO, Board> getList(PageRequestDTO requestDTO) {
 
-    Page<Board> result = boardRepository.findByCategoryType(
-            CategoryType.FAQ, pageable
-    );
+    Page<Board> result = boardRepository.findByCategoryType(CategoryType.FAQ, requestDTO.getPageable());
 
-    List<FaqListResponseDTO> dtoList = result.getContent().stream()
-            .map(faqMapper::toListDTO)
-            .toList();
-
-    // 페이지 계산
-    int totalPage = result.getTotalPages();
-    int page = requestDTO.getPage();
-    int end = (int) (Math.ceil(page / 10.0)) * 10;
-    int start = end - 9;
-    end = Math.min(totalPage, end);
-
-    boolean prev = start > 1;
-    boolean next = totalPage > end;
-
-    int totalCount = (int) boardRepository.countByCategoryType(CategoryType.FAQ);
-
-    List<Integer> pageList =
-            java.util.stream.IntStream.rangeClosed(start, end).boxed().toList();
-
-    return PageResponseDTO.<FaqListResponseDTO>builder()
-            .list(dtoList)
-            .page(page)
-            .size(requestDTO.getSize())
-            .total(totalCount)
-            .totalPage(totalPage)
-            .start(start)
-            .end(end)
-            .prev(prev)
-            .next(next)
-            .pageList(pageList)
-            .build();
+    return PageResponseDTO.of(result, faqMapper::toListDTO);
   }
 }

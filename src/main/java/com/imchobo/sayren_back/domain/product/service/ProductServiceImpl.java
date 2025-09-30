@@ -3,8 +3,8 @@ package com.imchobo.sayren_back.domain.product.service;
 import com.imchobo.sayren_back.domain.attach.dto.ProductAttachResponseDTO;
 import com.imchobo.sayren_back.domain.attach.repository.ProductAttachRepository;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
-import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.PurchaseProductDetailsResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.PurchaseProductListResponseDTO;
 import com.imchobo.sayren_back.domain.product.entity.ProductStock;
 import com.imchobo.sayren_back.domain.product.entity.ProductTag;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
@@ -29,15 +29,15 @@ public class ProductServiceImpl implements ProductService{
   @Override
   @EventListener(ApplicationReadyEvent.class)
   public void preloadProducts() {
-    List<ProductListResponseDTO> list = getAllProducts();
+    List<PurchaseProductListResponseDTO> list = getAllProducts();
     redisUtil.setObject("PRODUCTS", list);
   }
 
 
   @Override
-  public List<ProductListResponseDTO> getAllProducts() {
+  public List<PurchaseProductListResponseDTO> getAllProducts() {
     return productRepository.findAll().stream()
-            .map(p -> ProductListResponseDTO.builder()
+            .map(p -> PurchaseProductListResponseDTO.builder()
                     .productId(p.getId())
                     .thumbnailUrl(
                             productAttachRepository.findByProductIdAndIsThumbnailTrue(p.getId())
@@ -62,9 +62,9 @@ public class ProductServiceImpl implements ProductService{
   }
 
   @Override
-  public ProductDetailsResponseDTO getProductById(Long id) {
+  public PurchaseProductDetailsResponseDTO getProductById(Long id) {
     return productRepository.findById(id)
-            .map(p -> new ProductDetailsResponseDTO(
+            .map(p -> new PurchaseProductDetailsResponseDTO(
                     p.getId(),
                     p.getName(),
                     p.getDescription() != null ? p.getDescription() : "",
