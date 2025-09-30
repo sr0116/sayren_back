@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -106,18 +107,41 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   }
 
   /// // 밑에 3개 조회 /// 나중에 처리
+// 단건 조회 (본인 것만)
   @Override
+  @Transactional(readOnly = true)
   public RefundRequestResponseDTO getRefundRequest(Long refundRequestId) {
-    return null;
+    RefundRequest request = refundRequestRepository.findById(refundRequestId)
+            .orElseThrow(() -> new RefundRequestNotFoundException(refundRequestId));
+
+    Member currentMember = SecurityUtil.getMemberEntity();
+
+    if (!Objects.equals(request.getMember().getId(), currentMember.getId())) {
+      throw new RefundRequestUnauthorizedException();
+    }
+
+    return refundRequestMapper.toResponseDTO(request);
   }
 
+  // 내 환불 요청 전체 조회
   @Override
+  @Transactional(readOnly = true)
   public List<RefundRequestResponseDTO> getMyRefundRequests() {
-    return List.of();
+    Member currentMember = SecurityUtil.getMemberEntity();
+
+    List<RefundRequest> requests = refundRequestRepository
+            .findByMemberOrderByRegDateDesc(currentMember);
+
+    return refundRequestMapper.toResponseDTOs(requests);
   }
 
+  // 관리자: 특정 회원 환불 요청 조회
   @Override
+  @Transactional(readOnly = true)
   public List<RefundRequestResponseDTO> getRefundRequestsByMember(Long memberId) {
-    return List.of();
+    List<RefundRequest> requests = refundRequestRepository.findByMember_Id(memberId);
+    return refundRequestMapper.toResponseDTOs(requests);
   }
+
+
 }

@@ -11,6 +11,7 @@ import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentSummaryDTO;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
+import com.imchobo.sayren_back.domain.payment.en.PaymentType;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentAlreadyExistsException;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
@@ -94,6 +95,7 @@ public class PaymentServiceImpl implements PaymentService {
     payment.setMember(currentMember);
     payment.setMerchantUid(merchantUid);
     payment.setOrderItem(orderItem);
+    payment.setPaymentType(PaymentType.CARD);
 
     // 1회차 결제 고정
     if (planType == OrderPlanType.RENTAL) {

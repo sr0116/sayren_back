@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.payment.dto;
 
 
+import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import lombok.Builder;
 import lombok.Data;
@@ -18,4 +19,5 @@ public class  PaymentSummaryDTO {
 
   private String productName;
   private Long priceSnapshot;
+  private OrderPlanType orderPlanType;
 }

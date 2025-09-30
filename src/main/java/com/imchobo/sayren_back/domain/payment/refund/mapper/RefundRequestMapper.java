@@ -20,7 +20,8 @@ public interface RefundRequestMapper {
 
   // 엔티티 → 응답 DTO
   @Mapping(source = "id", target = "refundRequestId")
-  @Mapping(source = "orderItem.id", target = "orderItemId")
+  @Mapping(source = "orderItem.product.name", target = "productName")
+  @Mapping(source = "orderItem.orderPlan.type", target = "orderPlanType")
   RefundRequestResponseDTO toResponseDTO(RefundRequest entity);
 
   List<RefundRequestResponseDTO> toResponseDTOs(List<RefundRequest> entities);
