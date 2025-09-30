@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 
 public interface RefundRequestRepository extends JpaRepository<RefundRequest, Long> {
@@ -19,4 +20,6 @@ public interface RefundRequestRepository extends JpaRepository<RefundRequest, Lo
   List<RefundRequest> findByMember_Id(Long memberId);
 
   boolean existsByOrderItemAndStatusIn(OrderItem orderItem, Collection<RefundRequestStatus> statuses);
+
+  Optional<RefundRequest> findFirstByOrderItemOrderByRegDateDesc(OrderItem orderItem);
 }

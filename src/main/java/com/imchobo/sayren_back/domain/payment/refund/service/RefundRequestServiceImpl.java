@@ -70,7 +70,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     entity.setMember(member);
     entity.setOrderItem(payment.getOrderItem());
     entity.setOrderItem(payment.getOrderItem());
-//    entity.setStatus(RefundRequestStatus.PENDING); // r기본값
+    entity.setStatus(RefundRequestStatus.PENDING); // r기본값
 //    entity.setReasonCode(dto.getReasonCode()); // 기본값 세팅해둠
 
     RefundRequest saved = refundRequestRepository.save(entity);
