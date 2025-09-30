@@ -56,22 +56,34 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     Payment payment = paymentRepository.findById(dto.getPaymentId())
             .orElseThrow(() -> new PaymentNotFoundException(dto.getPaymentId()));
 
+//    // 이미 환불 요청이 있는지 체크
+//    boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
+//            payment.getOrderItem(),
+//            List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
+//    );
+//    if (exists) {
+//      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
+//    }
     // 이미 환불 요청이 있는지 체크
     boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
             payment.getOrderItem(),
             List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
     );
+
+// [테스트 전용 예외 처리] - exists 여도 무시하고 계속 진행
     if (exists) {
-      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
+      log.warn(" 테스트 모드: 이미 환불 요청이 있지만 새로 생성합니다. paymentId={}", dto.getPaymentId());
+      // 실제 운영에서는 여기서 예외 던짐
+      // throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
     }
+
 
     // 엔티티 변환 저장
     RefundRequest entity = refundRequestMapper.toEntity(dto);
     entity.setMember(member);
     entity.setOrderItem(payment.getOrderItem());
-    entity.setOrderItem(payment.getOrderItem());
     entity.setStatus(RefundRequestStatus.PENDING); // r기본값
-//    entity.setReasonCode(dto.getReasonCode()); // 기본값 세팅해둠
+    entity.setReasonCode(dto.getReasonCode()); // 기본값 세팅해둠
 
     RefundRequest saved = refundRequestRepository.save(entity);
     return refundRequestMapper.toResponseDTO(saved);

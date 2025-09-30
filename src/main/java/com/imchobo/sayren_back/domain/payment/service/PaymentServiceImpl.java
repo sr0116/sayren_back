@@ -20,7 +20,9 @@ import com.imchobo.sayren_back.domain.payment.mapper.PaymentHistoryMapper;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
+import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
+import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundRequestService;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
@@ -68,6 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final PaymentStatusChanger paymentStatusChanger;
   private final PaymentHistoryRecorder paymentHistoryRecorder;
   private final RefundRequestRepository refundRequestRepository;
+  private final RefundRepository refundRepository;
 
 
   // 결제 준비
@@ -116,6 +119,7 @@ public class PaymentServiceImpl implements PaymentService {
     // DB 저장
     Payment savedPayment = paymentRepository.saveAndFlush(payment);
 
+
     // 최초 결제 이력 기록 (동기, 원자성)
     paymentHistoryRecorder.recordInitPayment(savedPayment);
 
@@ -143,6 +147,8 @@ public class PaymentServiceImpl implements PaymentService {
     // 결제 정보 조회
     PaymentInfoResponse paymentInfo = portOnePaymentClient.getPaymentInfo(impUid);
     log.info("PortOne 결제 정보: {}", paymentInfo);
+    log.info("DB 결제 금액={}, PortOne 결제 금액={}", payment.getAmount(), paymentInfo.getAmount());
+
 
     // 포트원 매핑
     PaymentTransition transition = PaymentTransition.fromPortOne(paymentInfo, payment.getAmount());
@@ -209,14 +215,20 @@ public class PaymentServiceImpl implements PaymentService {
 
     PaymentResponseDTO dto = paymentMapper.toResponseDTO(payment);
 
-    // 환불 요청 상태 조회
-    RefundRequest request = refundRequestRepository
-            .findFirstByOrderItemOrderByRegDateDesc(payment.getOrderItem())
-            .orElse(null);
+    // Refund 통해 RefundRequest 가져오기
+    Refund refund = refundRepository.findFirstByPaymentOrderByRegDateDesc(payment).orElse(null);
 
-    dto.setRefundStatus(request != null ? request.getStatus() : null);
+    if (refund != null) {
+      dto.setRefundStatus(refund.getRefundRequest().getStatus());
+    } else {
+      dto.setRefundStatus(null);
+    }
+
     return dto;
   }
+
+
+
 
 
   @Override
@@ -225,19 +237,16 @@ public class PaymentServiceImpl implements PaymentService {
     Member currentMember = SecurityUtil.getMemberEntity();
     List<Payment> payments = paymentRepository.findByMemberOrderByRegDateDesc(currentMember);
 
-    return payments.stream().map(payment -> {
-      PaymentResponseDTO dto = paymentMapper.toResponseDTO(payment);
+              return payments.stream().map(payment -> {
+                PaymentResponseDTO dto = paymentMapper.toResponseDTO(payment);
 
-      // 환불 요청 상태 조회
-      RefundRequest request = refundRequestRepository
-              .findFirstByOrderItemOrderByRegDateDesc(payment.getOrderItem())
-              .orElse(null);
+                Refund refund = refundRepository.findFirstByPaymentOrderByRegDateDesc(payment).orElse(null);
+                dto.setRefundStatus(refund != null ? refund.getRefundRequest().getStatus() : null);
 
-      dto.setRefundStatus(request != null ? request.getStatus() : null);
-
-      return dto;
-    }).collect(Collectors.toList());
+                return dto;
+              }).collect(Collectors.toList());
   }
+
   // 관리자용
   @Transactional(readOnly = true)
   @Override

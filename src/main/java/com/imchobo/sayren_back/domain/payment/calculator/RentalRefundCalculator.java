@@ -41,9 +41,9 @@ public class RentalRefundCalculator implements RefundCalculator {
     Delivery delivery = deliveryItem.getDelivery();
 
     // 회수 완료 전에 환불 불가
-    if (delivery.getStatus() != DeliveryStatus.RETURNED) {
-      throw new RefundPolicyViolationException("회수 완료 전에는 환불 불가");
-    }
+//    if (delivery.getStatus() != DeliveryStatus.RETURNED) {
+//      throw new RefundPolicyViolationException("회수 완료 전에는 환불 불가");
+//    }
     // 배송일 기준 경과 일수 계산
     LocalDate deliveredAt = delivery.getModDate().toLocalDate();
     int daysAfterDelivery = (int) ChronoUnit.DAYS.between(deliveredAt, LocalDate.now());
