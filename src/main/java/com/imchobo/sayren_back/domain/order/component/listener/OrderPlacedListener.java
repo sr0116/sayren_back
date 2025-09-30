@@ -20,8 +20,7 @@ public class OrderPlacedListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(OrderPlacedEvent event) {
-    log.info("[OrderPlacedListener] AFTER_COMMIT orderId={}, memberId={}",
-      event.getOrderId(), event.getMemberId());
+    log.info("[OrderPlacedListener] AFTER_COMMIT orderId={}", event.getOrderId());
 
     deliveryCreationService.createIfAbsent(event.getOrderId());
   }

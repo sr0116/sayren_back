@@ -17,14 +17,15 @@ public class OrderItemServiceImpl implements OrderItemService {
   @Transactional(readOnly = true)
   public OrderItemResponseDTO getOrderItem(Long id) {
     OrderItem orderItem = orderItemRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("OrderItem not found: " + id));
+      .orElseThrow(() -> new IllegalArgumentException("OrderItem not found: " + id));
 
     return OrderItemResponseDTO.builder()
-            .orderItemId(orderItem.getId())
-            .productId(orderItem.getProduct().getId())
-            .productName(orderItem.getProduct().getName())
-            .priceSnapshot(orderItem.getProductPriceSnapshot())
-            .planId(orderItem.getOrderPlan() != null ? orderItem.getOrderPlan().getId() : null)
-            .build();
+      .orderItemId(orderItem.getId())
+      .productId(orderItem.getProduct().getId())
+      .productName(orderItem.getProduct().getName())
+      .priceSnapshot(orderItem.getProductPriceSnapshot())
+      .planId(orderItem.getOrderPlan() != null ? orderItem.getOrderPlan().getId() : null)
+      .planType(orderItem.getOrderPlan() != null ? orderItem.getOrderPlan().getType().name() : null) // ✅ 추가
+      .build();
   }
 }
