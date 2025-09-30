@@ -1,8 +1,8 @@
 package com.imchobo.sayren_back.domain.board.service;
 
-import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
-import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
-import com.imchobo.sayren_back.domain.board.dto.faq.FaqListResponseDTO;
+import com.imchobo.sayren_back.domain.board.entity.Board;
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.review.ReviewCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.review.ReviewDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.review.ReviewListResponseDTO;
@@ -27,5 +27,5 @@ public interface ReviewService {
   List<ReviewListResponseDTO> list();
 
   // 페이징 처리
-  PageResponseDTO<ReviewListResponseDTO> getList(PageRequestDTO requestDTO);
+  PageResponseDTO<ReviewListResponseDTO, Board> getList(PageRequestDTO requestDTO);
 }
