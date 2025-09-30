@@ -111,7 +111,10 @@ public class PaymentServiceImpl implements PaymentService {
       // 상품 가격 + 1회차(렌탈료+ 보증금) -> payment.getAmount()+firstRound.getAmount() 나중에 금액 조회시 필요
       payment.setSubscribeRound(firstRound);
       payment.setAmount(firstRound.getAmount());
-    }
+    } else {
+    // 일반 결제 금액 → 주문 아이템 가격 스냅샷 사용
+    payment.setAmount(Long.valueOf(orderItem.getProductPriceSnapshot()));
+  }
     // DB 저장
     Payment savedPayment = paymentRepository.save(payment);
 
@@ -201,7 +204,7 @@ public class PaymentServiceImpl implements PaymentService {
 //            reason,
 //            amount
 //    );
-//    // api 호출
+//     api 호출
 //    CancelResponse cancelResponse = portOnePaymentClient.cancelPayment(cancelRequest);
 //// DB 저장
 //    payment.setPayStatus(PaymentStatus.REFUNDED);

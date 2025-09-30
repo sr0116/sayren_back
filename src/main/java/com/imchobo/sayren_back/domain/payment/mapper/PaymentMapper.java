@@ -24,6 +24,8 @@ public interface PaymentMapper {
   @Mapping(source = "id", target = "paymentId")
   @Mapping(source = "orderItem", target = "orderItemId", qualifiedByName = "mapOrderItemId")
   @Mapping(source = "receipt", target = "receiptUrl")
+  @Mapping(source = "merchantUid", target = "merchantUid")
+  @Mapping(source = "amount", target = "amount")
   PaymentResponseDTO  toResponseDTO(Payment entity);
 
   //  Entity → SummaryDTO (목록 조회)
