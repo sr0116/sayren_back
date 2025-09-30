@@ -6,6 +6,7 @@ import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentSummaryDTO;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -41,6 +42,15 @@ public interface PaymentMapper {
   @Mapping(source = "orderItem.productPriceSnapshot", target = "priceSnapshot")
   @Mapping(source = "orderItem.orderPlan.type", target = "orderPlanType")
   PaymentSummaryDTO toSummaryDTO(Payment entity);
+
+  @Mapping(target = "subscribeRound", source = "round")
+  @Mapping(target = "member", source = "subscribe.member")
+  @Mapping(target = "orderItem", source = "subscribe.orderItem")
+  @Mapping(target = "amount", source = "amount")
+  @Mapping(target = "merchantUid", ignore = true)
+  @Mapping(target = "id", ignore = true)
+  Payment toEntityFromRound(SubscribeRound round);
+  // 자동 결제(구독 회차) 전용
 
 
   // 리스트 매핑
