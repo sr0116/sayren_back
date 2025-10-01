@@ -80,7 +80,7 @@ public class DeliveryServiceImpl implements DeliveryService {
           .orElseThrow(() -> new EntityNotFoundException("OrderItem 없음: id=" + orderItemId));
 
         // 이미 배송이 생성된 OrderItem이면 중복 방지
-        if (deliveryRepository.existsByDeliveryItems_OrderItem_Id(orderItemId)) return;
+//        if (deliveryRepository.existsByDeliveryItems_OrderItem_Id(orderItemId)) return;
 
         Order order = orderItem.getOrder();
 
@@ -101,13 +101,13 @@ public class DeliveryServiceImpl implements DeliveryService {
         deliveryItemRepository.save(deliveryItem);
 
         // READY 이벤트 발행
-        flow.changeStatus(
-          saved,
-          null,
-          DeliveryStatus.READY,
-          Map.of("source", "DeliveryService#createFromOrderItemId",
-            "orderItemId", orderItemId)
-        );
+//        flow.changeStatus(
+//          saved,
+//          null,
+//          DeliveryStatus.READY,
+//          Map.of("source", "DeliveryService#createFromOrderItemId",
+//            "orderItemId", orderItemId)
+//        );
     }
 
     @Override

@@ -76,6 +76,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final RefundRepository refundRepository;
 
 
+
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
   @Transactional
@@ -222,7 +223,6 @@ public class PaymentServiceImpl implements PaymentService {
     paymentHistoryRecorder.recordInitPayment(savedPayment);
     return paymentMapper.toResponseDTO(savedPayment);
   }
-
 
 
 
