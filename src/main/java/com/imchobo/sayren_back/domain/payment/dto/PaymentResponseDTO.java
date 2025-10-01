@@ -4,6 +4,7 @@ package com.imchobo.sayren_back.domain.payment.dto;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.en.PaymentType;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -24,4 +25,6 @@ public class PaymentResponseDTO {
   private String productName;
   private Long priceSnapshot;
   private OrderPlanType orderPlanType;
+
+  private RefundRequestStatus refundStatus;
 }

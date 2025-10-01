@@ -14,8 +14,7 @@ public interface RefundRequestMapper {
 
   //  DTO -> 엔티티
   @Mapping(target = "id", ignore = true) // PK 자동 생성
-  @Mapping(source = "orderItemId", target = "orderItem", qualifiedByName = "mapOrderItem")
-  @Mapping(target = "member", ignore = true)
+  @Mapping(target = "orderItem", ignore = true) // 서비스에서 주입
   RefundRequest toEntity(RefundRequestDTO dto);
 
   // 엔티티 → 응답 DTO

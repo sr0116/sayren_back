@@ -34,6 +34,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
  // 일단 환불에서 사용중
  List<Payment> findByOrderItem(OrderItem orderItem);
 
+
+
   // 기본 CRUD, 결제 상태로 조회
   List<Payment> findByPaymentStatus(PaymentStatus status);
 

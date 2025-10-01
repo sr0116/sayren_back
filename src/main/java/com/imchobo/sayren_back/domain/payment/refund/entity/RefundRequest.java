@@ -36,12 +36,12 @@ public class RefundRequest extends TimeRangeEntity {
   // 환불 요청 상태 (REQUESTED / APPROVED / REJECTED / CANCELED)
   // NOT NULL
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private RefundRequestStatus status;
+  private RefundRequestStatus status ;
 
   // 환불 사유 코드 (Enum 관리)
   //  NOT NULL
   @Enumerated(EnumType.STRING)
   @Column(name = "reason_code", nullable = false)
-  private ReasonCode reasonCode;
+  @Builder.Default
+  private ReasonCode reasonCode = ReasonCode.USER_REQUEST;
 }

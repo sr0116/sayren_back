@@ -53,9 +53,9 @@ public class RefundRequestController {
     return ResponseEntity.ok(refundRequestService.getMyRefundRequests());
   }
 
-  // 6. 관리자: 특정 회원 환불 내역
-  @GetMapping("/member/{memberId}")
-  public ResponseEntity<List<RefundRequestResponseDTO>> getRefundRequestsByMember(@PathVariable Long memberId) {
-    return ResponseEntity.ok(refundRequestService.getRefundRequestsByMember(memberId));
-  }
+//  // 6. 관리자: 특정 회원 환불 내역
+//  @GetMapping("/member/{memberId}")
+//  public ResponseEntity<List<RefundRequestResponseDTO>> getRefundRequestsByMember(@PathVariable Long memberId) {
+//    return ResponseEntity.ok(refundRequestService.getRefundRequestsByMember(memberId));
+//  }
 }
