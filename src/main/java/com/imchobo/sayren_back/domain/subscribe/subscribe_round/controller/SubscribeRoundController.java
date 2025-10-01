@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/subscribe-payments")
+@RequestMapping("/api/user/subscribe_round")
 @RequiredArgsConstructor
-public class SubscribePaymentController {
+public class SubscribeRoundController {
 
   private final SubscribeRoundService subscribeRoundService;
 
