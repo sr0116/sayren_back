@@ -1,9 +1,11 @@
 package com.imchobo.sayren_back.domain.product.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
 
 
 @Entity
@@ -46,5 +48,13 @@ public class Product extends CreatedEntity {
   // 상품 모델명(시리얼 넘버. 리스트 페이지랑 연결됨)
   @Column(nullable = false, unique = true)
   private String modelName;
+
+  @ManyToMany
+  @JoinTable(
+          name = "product_order_plan", // 중간 테이블
+          joinColumns = @JoinColumn(name = "product_id"), // 현재 엔티티(Product) FK
+          inverseJoinColumns = @JoinColumn(name = "order_plan_id") // 반대쪽 엔티티(OrderPlan) FK
+  )
+  private List<OrderPlan> orderPlans;
 
 }

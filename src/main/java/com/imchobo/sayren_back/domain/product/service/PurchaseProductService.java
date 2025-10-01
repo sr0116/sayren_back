@@ -5,7 +5,7 @@ import com.imchobo.sayren_back.domain.product.dto.PurchaseProductListResponseDTO
 
 import java.util.List;
 
-public interface ProductService {
+public interface PurchaseProductService {
   void preloadProducts();
   List<PurchaseProductListResponseDTO> getAllProducts();
   PurchaseProductDetailsResponseDTO getProductById(Long id);
