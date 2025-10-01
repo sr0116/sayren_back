@@ -6,13 +6,8 @@ import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductModifyRequestDTO;
 import com.imchobo.sayren_back.domain.product.entity.Product;
-import com.imchobo.sayren_back.domain.product.entity.ProductStock;
-import com.imchobo.sayren_back.domain.product.entity.ProductTag;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
-
-import java.util.List;
 
 @Mapper(componentModel = "spring", uses = {MappingUtil.class})
 public interface ProductMapper {
@@ -28,6 +23,10 @@ public interface ProductMapper {
   // Entity -> 상품 상세 DTO
   @Mapping(source = "id", target = "productId")
   @Mapping(source = "name", target = "productName")
+  @Mapping(target = "planTypes",
+          expression = "java(product.getOrderItems().stream()"
+                  + ".map(item -> item.getOrderPlan().getType().name())"
+                  + ".distinct().toList())")
   ProductDetailsResponseDTO toDetailsDTO(Product product);
 
   //  Entity -> 상품 목록 DTO

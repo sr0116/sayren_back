@@ -1,7 +1,8 @@
 package com.imchobo.sayren_back.domain.board.service;
 
-import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
-import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.board.dto.notice.NoticeListResponseDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.review.ReviewCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.review.ReviewDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.review.ReviewListResponseDTO;
@@ -95,47 +96,9 @@ public class ReviewServiceImpl implements ReviewService{
   }
 
   @Override
-  public PageResponseDTO<ReviewListResponseDTO> getList(PageRequestDTO requestDTO) {
-    Pageable pageable = PageRequest.of(
-            requestDTO.getPage() - 1,
-            requestDTO.getSize(),
-            Sort.by("id").descending()
-    );
+  public PageResponseDTO<ReviewListResponseDTO, Board> getList(PageRequestDTO requestDTO) {
+    Page<Board> result = boardRepository.findByCategoryType(CategoryType.REVIEW, requestDTO.getPageable());
 
-    Page<Board> result = boardRepository.findByCategoryType(
-            CategoryType.REVIEW, pageable
-    );
-
-    int totalCount = (int) boardRepository.countByCategoryType(CategoryType.REVIEW);
-
-    List<ReviewListResponseDTO> dtoList = result.getContent().stream()
-            .map(reviewMapper::toListDTO)
-            .toList();
-
-    // 페이지 계산
-    int totalPage = result.getTotalPages();
-    int page = requestDTO.getPage();
-    int end = (int) (Math.ceil(page / 10.0)) * 10;
-    int start = end - 9;
-    end = Math.min(totalPage, end);
-
-    boolean prev = start > 1;
-    boolean next = totalPage > end;
-
-    List<Integer> pageList =
-            java.util.stream.IntStream.rangeClosed(start, end).boxed().toList();
-
-    return PageResponseDTO.<ReviewListResponseDTO>builder()
-            .list(dtoList)
-            .page(page)
-            .size(requestDTO.getSize())
-            .total(totalCount)
-            .totalPage(totalPage)
-            .start(start)
-            .end(end)
-            .prev(prev)
-            .next(next)
-            .pageList(pageList)
-            .build();
+    return PageResponseDTO.of(result, reviewMapper::toListDTO);
   }
 }

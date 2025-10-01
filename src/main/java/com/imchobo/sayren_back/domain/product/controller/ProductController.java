@@ -4,10 +4,7 @@ import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
 import com.imchobo.sayren_back.domain.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -18,8 +15,8 @@ import java.util.List;
         private final ProductService productService;
 
         @GetMapping
-        public List<ProductListResponseDTO> list() {
-            return productService.getAllProducts();
+        public List<ProductListResponseDTO> list(@RequestParam(required = false) String type) {
+            return productService.getAllProducts(type);
         }
 
         @GetMapping("/{id}")

@@ -1,13 +1,18 @@
 package com.imchobo.sayren_back.domain.order.cart.controller;
 
+import com.imchobo.sayren_back.domain.order.cart.dto.CartItemAddRequestDTO;
+import com.imchobo.sayren_back.domain.order.cart.dto.CartItemResponseDTO;
 import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
 import com.imchobo.sayren_back.domain.order.cart.service.CartService;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 
 //  CartController
@@ -20,50 +25,33 @@ public class CartController {
 
   private final CartService cartService;
 
-  // 장바구니 담기
-  @PostMapping
-  public ResponseEntity<CartItem> addItem(
-    @RequestBody CartRequest request,
-    Authentication authentication) {
-    // 토큰에서 memberId 추출
-    Long memberId = Long.parseLong(authentication.getName());
+    // 장바구니 담기
+    @PostMapping("/add-item")
+    public ResponseEntity<?> addItem(@RequestBody @Valid CartItemAddRequestDTO cartItemAddRequestDTO) {
+      cartService.addItem(cartItemAddRequestDTO);
+      return ResponseEntity.ok(Map.of("message", "success"));
+    }
 
-    CartItem item = cartService.addItem(
-      memberId,
-      request.getProductId(),
-      request.getPlanId(),
-      request.getQuantity()
-    );
-    return ResponseEntity.ok(item);
-  }
-
-  // 회원 장바구니 조회
+    //회원장바구니조회
   @GetMapping
-  public ResponseEntity<List<CartItem>> getCart(Authentication authentication) {
-    Long memberId = Long.parseLong(authentication.getName());
+  public ResponseEntity<List<CartItemResponseDTO>> getCart(Authentication authentication) {
+    // 조장님 스타일: SecurityUtil에서 Member 엔티티 직접 가져오기
+    Long memberId = SecurityUtil.getMemberEntity().getId();
     return ResponseEntity.ok(cartService.getCartItems(memberId));
   }
 
   // 장바구니 단일 아이템 삭제
-  @DeleteMapping("/item/{cartItemId}")
-  public ResponseEntity<Void> removeItem(@PathVariable Long cartItemId) {
-    cartService.removeItem(cartItemId);
-    return ResponseEntity.noContent().build();
-  }
+    @DeleteMapping("/delete-item/{cartItemId}")
+    public ResponseEntity<Void> removeItem(@PathVariable Long cartItemId) {
+      cartService.removeItem(cartItemId);
+      return ResponseEntity.noContent().build();
+    }
 
-  // 회원 장바구니 전체 비우기
-  @DeleteMapping("/clear")
-  public ResponseEntity<Void> clearCart(Authentication authentication) {
-    Long memberId = Long.parseLong(authentication.getName());
-    cartService.clearCart(memberId);
-    return ResponseEntity.noContent().build();
+    // 회원 장바구니 전체 비우기
+    @DeleteMapping("/clear-item")
+    public ResponseEntity<Void> clearCart(Authentication authentication) {
+      Long memberId = Long.parseLong(authentication.getName());
+      cartService.clearCart(memberId);
+      return ResponseEntity.noContent().build();
+    }
   }
-
-  // DTO 내부 클래스 (요청 Body용)
-  @lombok.Data
-  static class CartRequest {
-    private Long productId;
-    private Long planId;
-    private int quantity;
-  }
-}

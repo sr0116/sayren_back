@@ -1,9 +1,13 @@
 package com.imchobo.sayren_back.domain.product.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Entity
@@ -46,5 +50,8 @@ public class Product extends CreatedEntity {
   // 상품 모델명(시리얼 넘버. 리스트 페이지랑 연결됨)
   @Column(nullable = false, unique = true)
   private String modelName;
+
+  @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  private List<OrderItem> orderItems = new ArrayList<>();
 
 }
