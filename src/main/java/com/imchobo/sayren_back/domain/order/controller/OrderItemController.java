@@ -13,6 +13,7 @@ public class OrderItemController {
 
   private final OrderItemService orderItemService;
 
+  // 단일 주문 아이템 조회
   @GetMapping("/{id}")
   public ResponseEntity<OrderItemResponseDTO> getOrderItem(@PathVariable Long id) {
     return ResponseEntity.ok(orderItemService.getOrderItem(id));
