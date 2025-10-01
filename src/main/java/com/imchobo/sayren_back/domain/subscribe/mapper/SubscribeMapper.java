@@ -30,14 +30,15 @@ public interface SubscribeMapper {
   @Mapping(source = "plan.month", target = "totalMonths")
   SubscribeRequestDTO toRequestDTO(OrderItem orderItem, Order order, OrderPlan plan);
 
-
-  // 응답 DTO
+  // 응답 DTO (Subscribe → SubscribeResponseDTO)
+  @Mapping(source = "id", target = "subscribeId")   // PK 매핑
   @Mapping(source = "orderItem.id", target = "orderItemId")
+  @Mapping(source = "orderItem.orderPlan.month", target = "totalMonths") // 총 개월수
   SubscribeResponseDTO toResponseDTO(Subscribe entity);
-  // 리스트 변환
+
   List<SubscribeResponseDTO> toResponseDTOList(List<Subscribe> entity);
 
-  // 마이페이지 같은 곳에서 간단 현황만 보여줄 때 사용(사용 미정)
+  // 요약 DTO
   @Mapping(source = "id", target = "subscribeId")
   @Mapping(source = "status", target = "status")
   @Mapping(source = "startDate", target = "startDate")

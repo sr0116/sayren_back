@@ -9,6 +9,7 @@ import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.dto.SubscribeRoundResponseDTO;
 
 import java.util.List;
 
@@ -41,5 +42,9 @@ public interface SubscribeService {
 
   // (추가) 구독 상태 변경 이력 조회
   List<SubscribeHistoryResponseDTO> getHistories(Long subscribeId);
+
+  List<SubscribeRoundResponseDTO> getRoundBySubscribe(Long subscribeId);
+
+  SubscribeRoundResponseDTO getRoundDetail(Long subscribeId, Integer roundNo);
 
 }

@@ -8,6 +8,5 @@ import lombok.Value;
 
 @Value
 public class OrderPlacedEvent {
-  Long orderId;
-  Long memberId;
+  Long orderId; // 주문 식별자만 전달
 }

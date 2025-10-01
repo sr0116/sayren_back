@@ -25,10 +25,12 @@ import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
+import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.SubscribeRoundNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeHistoryMapper;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.dto.SubscribeRoundResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.mapper.SubscribeRoundMapper;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
@@ -58,6 +60,7 @@ public class SubscribeServiceImpl implements SubscribeService {
   private final SubscribeEventHandler subscribeEventHandler;
   private final DeliveryItemRepository deliveryItemRepository;
   private final SubscribeRoundRepository subscribeRoundRepository;
+  private final SubscribeRoundMapper subscribeRoundMapper;
 
 
   // 구독 테이블 생성
@@ -130,9 +133,29 @@ public class SubscribeServiceImpl implements SubscribeService {
     log.info("조회된 구독 건수={}", subscribes.size());
     return subscribeMapper.toSummaryDTOList(subscribes);
   }
+  // 구독 회차 정보 리스트 조회
+  @Transactional
+  @Override
+  public List<SubscribeRoundResponseDTO> getRoundBySubscribe(Long subscribeId) {
+    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribeId);
+    return subscribeRoundMapper.toResponseDTOS(rounds);
+  }
+
+  // 구독 회차 정보 단일 조회
+  @Transactional
+  @Override
+  public SubscribeRoundResponseDTO getRoundDetail(Long subscribeId, Integer roundNo) {
+    SubscribeRound round = subscribeRoundRepository.findBySubscribeIdAndRoundNo(subscribeId, roundNo)
+            .orElseThrow(() -> new SubscribeRoundNotFoundException(roundNo));
+    return subscribeRoundMapper.toDto(round);
+  }
+
+
+
 
   // 배송 완료 후 상태 변경 (ACTIVE)
   @Transactional
+  @Override
   public void activateAfterDelivery(Long subscribeId, OrderItem orderItem) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));

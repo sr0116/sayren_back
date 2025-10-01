@@ -5,6 +5,7 @@ import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentSummaryDTO;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 
 import java.util.List;
 
@@ -30,5 +31,10 @@ public interface PaymentService {
 
   // 관리자용 전체 조회
   List<PaymentResponseDTO> getAllForAdmin();
+  // 스케줄러 처리
+  PaymentResponseDTO prepareForRound(Long subscribeRoundId);
+
+  PaymentResponseDTO prepareForRound(SubscribeRound round);
+
 
 }

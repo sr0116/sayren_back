@@ -17,7 +17,8 @@ public class RefundRequestResponseDTO {
   // 환불 응답 DTO (서버 → 클라이언트)
 
   private Long refundRequestId;       // 환불 요청 PK
-  private Long paymentId;             // 결제 PK
+  private Long paymentId;
+  private Long orderItemId;             // 주문 PK
   private RefundRequestStatus status; // 환불 요청 상태 (REQUESTED, CANCELED 등)
   private ReasonCode reasonCode;      // 사유 코드
   private LocalDateTime regDate;      // 요청일

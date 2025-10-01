@@ -7,11 +7,16 @@ import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.SubscribeRoundScheduler;
+import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +24,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @SpringBootTest
 @Transactional
+@Log4j2
 public class SubscribeTest {
   @Autowired
   private SubscribeService subscribeService;
@@ -37,6 +46,23 @@ public class SubscribeTest {
   private DeliveryRepository deliveryRepository;
 
 
+  @Autowired
+  private SubscribeRoundScheduler scheduler;
+  @Autowired
+  private SubscribeRoundRepository subscribeRoundRepository;
+
+//  @Test
+  void testSchedulerManually() {
+    // when
+    scheduler.processDueRounds();
+
+    // then
+    List<SubscribeRound> rounds = subscribeRoundRepository
+            .findByDueDateAndPayStatus(LocalDate.now(), PaymentStatus.PAID);
+
+    log.info("스케줄러 실행 후 PENDING -> PAID 로 바뀌어야 함 {}" , rounds);
+  }
+
   @Test
   @Transactional
   @Rollback(false)
@@ -51,7 +77,7 @@ public class SubscribeTest {
     deliveryRepository.save(delivery);
 
     // when: 구독 활성화 처리 호출
-    Long subscribeId = 198L;
+    Long subscribeId = 211L;
     OrderItem orderItem = delivery.getDeliveryItems()
             .get(0)
             .getOrderItem();

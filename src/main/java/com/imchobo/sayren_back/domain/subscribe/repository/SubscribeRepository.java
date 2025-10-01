@@ -3,10 +3,13 @@ package com.imchobo.sayren_back.domain.subscribe.repository;
 
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,4 +27,7 @@ public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
   List<Subscribe> findByMemberId(Long memberId);
 
   Subscribe findByOrderItem(OrderItem orderItem);
+
+
+
 }

@@ -8,6 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,4 +32,6 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   Subscribe subscribe(Subscribe subscribe);
   //이벤트 핸들러에서 사용
   List<SubscribeRound> findBySubscribeId(Long subscribeId);
+  // 스케줄 처리
+  List<SubscribeRound> findByDueDateAndPayStatus(LocalDate dueDate, PaymentStatus payStatus);
 }
