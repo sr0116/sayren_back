@@ -35,6 +35,8 @@ public class SubscribeStatusChanger {
     eventPublisher.publishEvent(new SubscribeStatusChangedEvent( subscribe.getId(), transition, actor));
   }
 
+
+
   // 구독 회차 상태 변경 (결제 상태)
   @Transactional
   public void changeSubscribeRound(SubscribeRound subscribeRound, SubscribeRoundTransition transition) {

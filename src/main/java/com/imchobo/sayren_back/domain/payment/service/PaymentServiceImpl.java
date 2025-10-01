@@ -192,35 +192,37 @@ public class PaymentServiceImpl implements PaymentService {
 //    refundService.requestRefund(paymentId, amount, reason);
 
   }
-
   @Override
   @Transactional
   public PaymentResponseDTO prepareForRound(Long subscribeRoundId) {
     SubscribeRound round = subscribeRoundRepository.findById(subscribeRoundId)
-            .orElseThrow(() -> new RuntimeException("회차 정보를 찾을 수 없습니다."));
-    return prepareForRound(round); // 아래 메서드 재사용
+            .orElseThrow(() -> new RuntimeException("회차를 찾을 수 없습니다."));
+    return prepareForRound(round);
   }
+
   @Override
   @Transactional
   public PaymentResponseDTO prepareForRound(SubscribeRound round) {
-    Payment payment = paymentMapper.toEntityFromRound(round);
+    Member currentMember = SecurityUtil.getMemberEntity();
+    OrderItem orderItem = round.getSubscribe().getOrderItem();
 
-    // PortOne 고유 식별자
     String merchantUid = "pay_" + UUID.randomUUID().toString().replace("-", "");
     if (paymentRepository.findByMerchantUid(merchantUid).isPresent()) {
       throw new PaymentAlreadyExistsException(merchantUid);
     }
 
+    Payment payment = paymentMapper.toEntityFromRound(round);
+    payment.setMember(currentMember);
+    payment.setOrderItem(orderItem);
     payment.setMerchantUid(merchantUid);
     payment.setPaymentType(PaymentType.CARD);
+    payment.setAmount(round.getAmount());
 
     Payment savedPayment = paymentRepository.saveAndFlush(payment);
-
-    // 최초 결제 이력 기록
     paymentHistoryRecorder.recordInitPayment(savedPayment);
-
     return paymentMapper.toResponseDTO(savedPayment);
   }
+
 
 
 
