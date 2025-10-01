@@ -41,4 +41,10 @@ class MemberServiceTest {
   void changeRole(){
     memberService.changeRole(17L);
   }
+
+  @Test
+  @DisplayName("멤버 상세정보가져오기")
+  void getMemberInfo() {
+    memberService.getMemberInfo(1L);
+  }
 }

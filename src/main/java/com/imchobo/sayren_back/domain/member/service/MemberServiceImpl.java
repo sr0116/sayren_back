@@ -4,27 +4,37 @@ import com.imchobo.sayren_back.domain.common.annotation.ActiveMemberOnly;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.exception.RedisKeyNotFoundException;
+import com.imchobo.sayren_back.domain.common.exception.SayrenException;
 import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
 import com.imchobo.sayren_back.domain.member.dto.*;
+import com.imchobo.sayren_back.domain.member.dto.admin.MemberDetailProviderResponseDTO;
+import com.imchobo.sayren_back.domain.member.dto.admin.MemberDetailResponseDTO;
+import com.imchobo.sayren_back.domain.member.dto.admin.MemberDetailTermResponseDTO;
+import com.imchobo.sayren_back.domain.member.dto.admin.MemberListResponseDTO;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Role;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.exception.*;
 import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
+import com.imchobo.sayren_back.domain.member.mapper.MemberProviderMapper;
+import com.imchobo.sayren_back.domain.member.mapper.MemberTermMapper;
+import com.imchobo.sayren_back.domain.member.recode.MemberDetail;
+import com.imchobo.sayren_back.domain.member.recode.MemberInfo;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,6 +55,8 @@ public class MemberServiceImpl implements MemberService {
   private final MemberProviderService memberProviderService;
   private final DeletedMemberService deletedMemberService;
   private final Member2FAService member2FAService;
+  private final MemberTermMapper memberTermMapper;
+  private final MemberProviderMapper memberProviderMapper;
 
 
   @Override
@@ -247,5 +259,37 @@ public class MemberServiceImpl implements MemberService {
   public PageResponseDTO<MemberListResponseDTO, Member> getMemberList(PageRequestDTO pageRequestDTO) {
     Page<Member> result = memberRepository.findAllByStatusNot(MemberStatus.DELETED, pageRequestDTO.getPageable());
     return PageResponseDTO.of(result, memberMapper::toMemberListResponseDTO);
+  }
+
+  // 어드민 페이지 멤버 상세 가져오기
+  @Override
+  @Transactional
+  public MemberInfo getMemberInfo(Long memberId) {
+    List<MemberDetail> memberDetails = memberRepository.findMemberDetail(memberId).orElse(null);
+    if(memberDetails == null || memberDetails.isEmpty()){
+      throw new SayrenException("USER_NOT_FOUND", "해당 유저가 없습니다.");
+    }
+    memberDetails.forEach(log::info);
+
+    MemberDetailResponseDTO member = memberMapper.toMemberDetailResponseDTO(memberDetails.getFirst().member());
+
+
+    Set<MemberDetailTermResponseDTO> terms = new HashSet<>();
+    Set<MemberDetailProviderResponseDTO> providers = new HashSet<>();
+    boolean tfa = false;
+
+    for  (MemberDetail row : memberDetails) {
+      if(row.memberTerm() != null) {
+        terms.add(memberTermMapper.toMemberDetailResponseDTO(row.memberTerm()));
+      }
+      if(row.memberProvider() != null) {
+        providers.add(memberProviderMapper.toMemberDetailResponseDTO(row.memberProvider()));
+      }
+      if(row.member2FA() != null) {
+        tfa = true;
+      }
+    }
+
+    return new MemberInfo(member, terms.stream().toList(), providers.stream().toList(), tfa);
   }
 }

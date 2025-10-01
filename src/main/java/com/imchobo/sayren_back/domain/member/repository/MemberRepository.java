@@ -31,5 +31,5 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
         left join Member2FA mt on m = mt.member
         where m.id = :id
     """)
-  List<MemberDetail> findMemberDetail(@Param("id") Long memberId);
+  Optional<List<MemberDetail>> findMemberDetail(@Param("id") Long memberId);
 }

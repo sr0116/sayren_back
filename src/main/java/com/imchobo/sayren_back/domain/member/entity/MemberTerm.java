@@ -12,7 +12,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"term"})
+@ToString(exclude = {"member"})
 public class MemberTerm extends CreatedEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

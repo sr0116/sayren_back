@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.member.dto;
+package com.imchobo.sayren_back.domain.member.dto.admin;
 
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Role;

@@ -1,7 +1,8 @@
-package com.imchobo.sayren_back.domain.member.dto;
+package com.imchobo.sayren_back.domain.member.dto.admin;
 
 import com.imchobo.sayren_back.domain.member.en.Role;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.util.Set;
 
 @Getter
 @Builder
+@EqualsAndHashCode
 public class MemberDetailResponseDTO {
   private String email;
   private String name;

@@ -1,6 +1,8 @@
 package com.imchobo.sayren_back.domain.member.mapper;
 
 import com.imchobo.sayren_back.domain.member.dto.*;
+import com.imchobo.sayren_back.domain.member.dto.admin.MemberDetailResponseDTO;
+import com.imchobo.sayren_back.domain.member.dto.admin.MemberListResponseDTO;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import org.mapstruct.Mapper;
@@ -27,5 +29,7 @@ public interface MemberMapper {
   FindEmailResponseDTO toFindEmailResponseDTO(Member entity);
 
   MemberListResponseDTO toMemberListResponseDTO(Member entity);
+
+  MemberDetailResponseDTO toMemberDetailResponseDTO(Member entity);
 
 }
