@@ -2,9 +2,11 @@ package com.imchobo.sayren_back.domain.product.entity;
 
 import com.imchobo.sayren_back.domain.common.entity.CreatedEntity;
 import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -49,12 +51,7 @@ public class Product extends CreatedEntity {
   @Column(nullable = false, unique = true)
   private String modelName;
 
-  @ManyToMany
-  @JoinTable(
-          name = "product_order_plan", // 중간 테이블
-          joinColumns = @JoinColumn(name = "product_id"), // 현재 엔티티(Product) FK
-          inverseJoinColumns = @JoinColumn(name = "order_plan_id") // 반대쪽 엔티티(OrderPlan) FK
-  )
-  private List<OrderPlan> orderPlans;
+  @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  private List<OrderItem> orderItems = new ArrayList<>();
 
 }

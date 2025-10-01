@@ -1,19 +1,16 @@
 package com.imchobo.sayren_back.domain.product.dto;
 
-import com.imchobo.sayren_back.domain.order.OrderPlan.dto.OrderPlanResponseDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.*;
-
-import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RentalProductCreateRequestDTO {
+public class ProductCreateRequestDTO {
   // 상품 이름
   @NotBlank(message = "상품명은 필수입니다.")
   private String productName;
@@ -22,28 +19,19 @@ public class RentalProductCreateRequestDTO {
   @NotBlank(message = "상품 설명은 필수입니다.")
   private String description;
 
-  // 상품 원가
-  @NotNull(message = "원가는 필수입니다.")
-  @Positive(message = "원가는 0보다 커야 합니다.")
-  private Long price;
+  // 상품 가격
+  @NotNull(message = "가격은 필수입니다.")
+  @Positive(message = "가격은 0보다 커야 합니다.")
+  private Integer price;
 
-  // 최대 혜택가
-  private Long benefitPrice;
-
-  // 보증금
-  private Long deposit;
-
-  // 렌탈 가능 여부
+  // 판매 가능 여부
   private Boolean isUse;
 
-  // 상품 카테고리
+  // 상품 카테고리 (크롤링 데이터 활용)
   @NotBlank(message = "카테고리는 필수입니다.")
   private String productCategory;
 
-  // 모델명
+  // 모델명 (시리얼 넘버 역할)
   @NotBlank(message = "모델명은 필수입니다.")
   private String modelName;
-
-  @NotNull(message = "요금제 ID는 필수입니다.")
-  private List<Long> orderPlanIds;
 }

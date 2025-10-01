@@ -1,10 +1,10 @@
 package com.imchobo.sayren_back.domain.product.mapper;
 
 import com.imchobo.sayren_back.domain.common.util.MappingUtil;
-import com.imchobo.sayren_back.domain.product.dto.PurchaseProductCreateRequestDTO;
-import com.imchobo.sayren_back.domain.product.dto.PurchaseProductDetailsResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.PurchaseProductListResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.PurchaseProductModifyRequestDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductCreateRequestDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductModifyRequestDTO;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -13,22 +13,26 @@ import org.mapstruct.Mapping;
 public interface ProductMapper {
   // 상품 등록 (DTO -> Entity)
   @Mapping(source = "productName", target = "name")
-  Product toEntity(PurchaseProductCreateRequestDTO dto);
+  Product toEntity(ProductCreateRequestDTO dto);
 
   // 상품 수정
   @Mapping(source = "productId", target = "id")
   @Mapping(source = "productName", target = "name")
-  Product toEntity (PurchaseProductModifyRequestDTO dto);
+  Product toEntity (ProductModifyRequestDTO dto);
 
   // Entity -> 상품 상세 DTO
   @Mapping(source = "id", target = "productId")
   @Mapping(source = "name", target = "productName")
-  PurchaseProductDetailsResponseDTO toDetailsDTO(Product product);
+  @Mapping(target = "planTypes",
+          expression = "java(product.getOrderItems().stream()"
+                  + ".map(item -> item.getOrderPlan().getType().name())"
+                  + ".distinct().toList())")
+  ProductDetailsResponseDTO toDetailsDTO(Product product);
 
   //  Entity -> 상품 목록 DTO
   @Mapping(source = "id", target = "productId")
   @Mapping(source = "name", target = "productName")
-  PurchaseProductListResponseDTO toListDTO(Product product);
+  ProductListResponseDTO toListDTO(Product product);
 
 
 

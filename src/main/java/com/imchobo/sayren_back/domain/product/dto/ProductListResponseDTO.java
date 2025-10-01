@@ -9,7 +9,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PurchaseProductListResponseDTO {
+public class ProductListResponseDTO {
   // 상품 번호
   private Long productId;
   // 대표 이미지 (attach에서 isThumbnail= 'true' 꺼내오기)
@@ -30,5 +30,11 @@ public class PurchaseProductListResponseDTO {
 
   // 상세설명
   private String description;
+
+  // 보증금
+  private Long deposit; // (20% 고정)
+
+  // 최대 혜택가
+  private Long rentalPrice;
 
 }
