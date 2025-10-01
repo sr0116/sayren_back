@@ -31,5 +31,4 @@ public class CartItem {
   @JoinColumn(name = "order_plan_id", nullable = false)
   private OrderPlan orderPlan; // 요금제 (일반구매 시 null 가능)
 
-  private int quantity; // 수량
 }

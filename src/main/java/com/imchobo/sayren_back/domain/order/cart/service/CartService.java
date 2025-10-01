@@ -1,15 +1,17 @@
 package com.imchobo.sayren_back.domain.order.cart.service;
 
+import com.imchobo.sayren_back.domain.order.cart.dto.CartItemAddRequestDTO;
+import com.imchobo.sayren_back.domain.order.cart.dto.CartItemResponseDTO;
 import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
 
 import java.util.List;
 
 public interface CartService {
   // 장바구니 담기
-  CartItem addItem(Long memberId, Long productId, Long planId, int quantity);
+  void addItem(CartItemAddRequestDTO requestDTO);
 
-  // 회원 장바구니 조회
-  List<CartItem> getCartItems(Long memberId);
+  // 회원 장바구니 조회 (DTO 반환)
+  List<CartItemResponseDTO> getCartItems(Long memberId);
 
   // 장바구니 단일 아이템 삭제
   void removeItem(Long cartItemId);

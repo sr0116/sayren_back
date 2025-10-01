@@ -67,6 +67,7 @@ public class RefundRequestServiceTest {
 
   // 사용자 취소 요청
 //  @Test
+  /*
   void testCreateRefundRequest() {
     // given: 임의 OrderItem + Member + Payment 세팅
     Member member = Member.builder().id(6L).build();
@@ -95,7 +96,7 @@ public class RefundRequestServiceTest {
     Assertions.assertEquals(RefundRequestStatus.PENDING, response.getStatus());
     Assertions.assertEquals(ReasonCode.USER_REQUEST, response.getReasonCode());
   }
-
+*/
   // 관리자 취소 요청
 
 //  @Test
