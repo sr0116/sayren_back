@@ -10,6 +10,7 @@ import com.imchobo.sayren_back.domain.payment.component.recorder.PaymentHistoryR
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentSummaryDTO;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.en.PaymentType;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
@@ -30,6 +31,7 @@ import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.SubscribeRoundNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
@@ -41,6 +43,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -155,31 +158,30 @@ public class PaymentServiceImpl implements PaymentService {
 
 //  상태 반영
     payment.setImpUid(impUid);
-
     paymentStatusChanger.changePayment(payment, transition, payment.getOrderItem().getId(), ActorType.SYSTEM);
 
-//// 성공일 때만 구독/회차 처리 (이벤트에서 처리하는 방향 나중에 없애기)
-//    if (payment.getSubscribeRound() != null) {
-//      Subscribe subscribe = payment.getSubscribeRound().getSubscribe();
-//      SubscribeRound round = payment.getSubscribeRound();
-//      switch (transition) {
-//        case COMPLETE -> {
-//          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
-//          subscribeStatusChanger.changeSubscribeRound(round, SubscribeRoundTransition.PAY_SUCCESS);
-//        }
-//        case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM, FAIL_TIMEOUT -> {
-//          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
-//          subscribeStatusChanger.changeSubscribeRound(round, SubscribeRoundTransition.PAY_FAIL);
-//        }
-//        case REFUND, PARTIAL_REFUND -> {
-//          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
-//          subscribeStatusChanger.changeSubscribeRound(round, SubscribeRoundTransition.CANCEL);
-//        }
-//      }
-//    }
+    // 회차 결제시 회차 상태 갱신
+    if (payment.getSubscribeRound() != null) {
+      SubscribeRound round = payment.getSubscribeRound();
+      switch (transition) {
+        case COMPLETE -> {
+          round.setPayStatus(PaymentStatus.PAID);
+          round.setPaidDate(LocalDateTime.now());
+          log.info("회차 결제 성공: roundId={}, paidDate={}", round.getId(), round.getPaidDate());
+        }
+        case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM, FAIL_TIMEOUT -> {
+          round.setPayStatus(PaymentStatus.FAILED);
+          log.warn("회차 결제 실패: roundId={}, transition={}", round.getId(), transition);
+        }
+        case REFUND, PARTIAL_REFUND -> {
+          round.setPayStatus(PaymentStatus.REFUNDED);
+          log.info("회차 환불 처리: roundId={}, transition={}", round.getId(), transition);
+
+        }
+      }
+    }
     return paymentMapper.toResponseDTO(payment);
   }
-
 
   @Override
   @Transactional
@@ -193,11 +195,17 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Override
   @Transactional
+  public PaymentResponseDTO prepareForRound(Long subscribeRoundId) {
+    SubscribeRound round = subscribeRoundRepository.findById(subscribeRoundId)
+            .orElseThrow(() -> new RuntimeException("회차 정보를 찾을 수 없습니다."));
+    return prepareForRound(round); // 아래 메서드 재사용
+  }
+  @Override
+  @Transactional
   public PaymentResponseDTO prepareForRound(SubscribeRound round) {
-    // 회차 기준으로 Payment 생성
     Payment payment = paymentMapper.toEntityFromRound(round);
 
-    // PortOne 고유 식별자 (merchantUid) 생성
+    // PortOne 고유 식별자
     String merchantUid = "pay_" + UUID.randomUUID().toString().replace("-", "");
     if (paymentRepository.findByMerchantUid(merchantUid).isPresent()) {
       throw new PaymentAlreadyExistsException(merchantUid);
@@ -205,8 +213,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     payment.setMerchantUid(merchantUid);
     payment.setPaymentType(PaymentType.CARD);
-    payment.setSubscribeRound(round);
-    payment.setAmount(round.getAmount());
 
     Payment savedPayment = paymentRepository.saveAndFlush(payment);
 
@@ -215,6 +221,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     return paymentMapper.toResponseDTO(savedPayment);
   }
+
+
 
   // 사용자 전용 전체 결제 내역(요약)
   @Override
@@ -254,24 +262,20 @@ public class PaymentServiceImpl implements PaymentService {
     return dto;
   }
 
-
-
-
-
   @Override
   @Transactional(readOnly = true)
   public List<PaymentResponseDTO> getAll() {
     Member currentMember = SecurityUtil.getMemberEntity();
     List<Payment> payments = paymentRepository.findByMemberOrderByRegDateDesc(currentMember);
 
-              return payments.stream().map(payment -> {
-                PaymentResponseDTO dto = paymentMapper.toResponseDTO(payment);
+    return payments.stream().map(payment -> {
+      PaymentResponseDTO dto = paymentMapper.toResponseDTO(payment);
 
-                Refund refund = refundRepository.findFirstByPaymentOrderByRegDateDesc(payment).orElse(null);
-                dto.setRefundStatus(refund != null ? refund.getRefundRequest().getStatus() : null);
+      Refund refund = refundRepository.findFirstByPaymentOrderByRegDateDesc(payment).orElse(null);
+      dto.setRefundStatus(refund != null ? refund.getRefundRequest().getStatus() : null);
 
-                return dto;
-              }).collect(Collectors.toList());
+      return dto;
+    }).collect(Collectors.toList());
   }
 
   // 관리자용

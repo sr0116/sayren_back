@@ -31,7 +31,10 @@ public interface PaymentService {
 
   // 관리자용 전체 조회
   List<PaymentResponseDTO> getAllForAdmin();
+  // 스케줄러 처리
+  PaymentResponseDTO prepareForRound(Long subscribeRoundId);
 
   PaymentResponseDTO prepareForRound(SubscribeRound round);
+
 
 }

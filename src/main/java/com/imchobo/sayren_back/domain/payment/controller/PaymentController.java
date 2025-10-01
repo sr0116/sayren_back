@@ -6,6 +6,8 @@ import com.imchobo.sayren_back.domain.payment.dto.PaymentSummaryDTO;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.payment.service.PaymentService;
+import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,8 @@ public class PaymentController {
   private final PaymentService paymentService;
   private final PaymentRepository paymentRepository;
   private final PaymentMapper paymentMapper;
+  private final SubscribeRepository subscribeRepository;
+  private final SubscribeRoundRepository subscribeRoundRepository;
 
   // 결제 준비
   @PostMapping("/prepare")
@@ -36,6 +40,13 @@ public class PaymentController {
     //
     return paymentService.complete(paymentId, impUid);
   }
+
+  // 회차 결제 준비
+  @PostMapping("/prepare/round/{subscribeRoundId}")
+  public PaymentResponseDTO prepareForRound(@PathVariable Long subscribeRoundId) {
+    return paymentService.prepareForRound(subscribeRoundId);
+  }
+
 
   // 결제 내역 조회 (마이페이지)
   @GetMapping("/summaries")

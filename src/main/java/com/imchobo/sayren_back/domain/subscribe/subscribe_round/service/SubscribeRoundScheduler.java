@@ -38,25 +38,24 @@ public class SubscribeRoundScheduler {
   @Transactional
   public void processDueRounds() {
     LocalDate today = LocalDate.now();
+
     List<SubscribeRound> dueRounds =
             subscribeRoundRepository.findByDueDateAndPayStatus(today, PaymentStatus.PENDING);
 
     for (SubscribeRound round : dueRounds) {
       try {
-        log.info("회차 결제 시도: subscribeId={}, roundNo={}, amount={}",
+        log.info("회차 결제 준비: subscribeId={}, roundNo={}, amount={}",
                 round.getSubscribe().getId(), round.getRoundNo(), round.getAmount());
 
-        PaymentResponseDTO prepareResult = paymentService.prepareForRound(round);
+        //  회차 기준 Payment 생성 (PENDING 상태)
+        PaymentResponseDTO paymentDto = paymentService.prepareForRound(round);
 
-        // PortOne 연동 전이므로 fake impUid 사용
-        String fakeImpUid = "test_imp_" + round.getId();
-        paymentService.complete(prepareResult.getPaymentId(), fakeImpUid);
-
-        round.setPayStatus(PaymentStatus.PAID);
-        round.setPaidDate(LocalDateTime.now());
+        //  로그만 남기고, 결제 완료는 프론트에서 impUid 전달 후 처리
+        log.info("결제 준비 완료: paymentId={}, merchantUid={}, amount={}",
+                paymentDto.getPaymentId(), paymentDto.getMerchantUid(), paymentDto.getAmount());
 
       } catch (Exception e) {
-        log.error("회차 결제 실패: roundId={}, 이유={}", round.getId(), e.getMessage());
+        log.error("회차 결제 준비 실패: roundId={}, 이유={}", round.getId(), e.getMessage());
         round.setPayStatus(PaymentStatus.FAILED);
       }
     }
