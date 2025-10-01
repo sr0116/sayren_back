@@ -179,6 +179,8 @@ public class PaymentServiceImpl implements PaymentService {
 //    }
     return paymentMapper.toResponseDTO(payment);
   }
+
+
   @Override
   @Transactional
   public void refund(Long paymentId, Long amount, String reason) {
@@ -187,6 +189,31 @@ public class PaymentServiceImpl implements PaymentService {
     // 구독 일반 결제 구분해서
 //    refundService.requestRefund(paymentId, amount, reason);
 
+  }
+
+  @Override
+  @Transactional
+  public PaymentResponseDTO prepareForRound(SubscribeRound round) {
+    // 회차 기준으로 Payment 생성
+    Payment payment = paymentMapper.toEntityFromRound(round);
+
+    // PortOne 고유 식별자 (merchantUid) 생성
+    String merchantUid = "pay_" + UUID.randomUUID().toString().replace("-", "");
+    if (paymentRepository.findByMerchantUid(merchantUid).isPresent()) {
+      throw new PaymentAlreadyExistsException(merchantUid);
+    }
+
+    payment.setMerchantUid(merchantUid);
+    payment.setPaymentType(PaymentType.CARD);
+    payment.setSubscribeRound(round);
+    payment.setAmount(round.getAmount());
+
+    Payment savedPayment = paymentRepository.saveAndFlush(payment);
+
+    // 최초 결제 이력 기록
+    paymentHistoryRecorder.recordInitPayment(savedPayment);
+
+    return paymentMapper.toResponseDTO(savedPayment);
   }
 
   // 사용자 전용 전체 결제 내역(요약)
