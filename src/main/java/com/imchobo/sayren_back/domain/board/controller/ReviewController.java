@@ -1,7 +1,8 @@
 package com.imchobo.sayren_back.domain.board.controller;
 
-import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
-import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.board.entity.Board;
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.review.ReviewCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.review.ReviewDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.review.ReviewListResponseDTO;
@@ -54,7 +55,7 @@ public class ReviewController {
   }
 
   @GetMapping("/list")
-  public ResponseEntity<PageResponseDTO<ReviewListResponseDTO>> getList(PageRequestDTO requestDTO) {
+  public ResponseEntity<PageResponseDTO<ReviewListResponseDTO, Board>> getList(PageRequestDTO requestDTO) {
     return ResponseEntity.ok(reviewService.getList(requestDTO));
   }
 }

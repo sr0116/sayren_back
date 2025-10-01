@@ -1,8 +1,7 @@
 package com.imchobo.sayren_back.domain.product.dto;
 
-import com.imchobo.sayren_back.domain.attach.dto.BoardAttachResponseDTO;
 import com.imchobo.sayren_back.domain.attach.dto.ProductAttachResponseDTO;
-import com.imchobo.sayren_back.domain.product.entity.Product;
+import com.imchobo.sayren_back.domain.order.OrderPlan.dto.OrderPlanResponseDTO;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -49,4 +48,14 @@ public class ProductDetailsResponseDTO {
 
   // 첨부파일 목록 (썸네일, 상세 이미지 등)
   private List<ProductAttachResponseDTO> attachList;
+
+  // order plan-> type
+  private List<String> planTypes; // PURCHASE, RENTAL
+
+  // 보증금
+  private Long deposit; // (20% 고정)
+
+  // 최대 혜택가
+  private Long rentalPrice;
+
 }

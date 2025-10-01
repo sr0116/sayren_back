@@ -1,8 +1,8 @@
 package com.imchobo.sayren_back.domain.board.controller;
 
-import com.imchobo.sayren_back.domain.board.dto.PageRequestDTO;
-import com.imchobo.sayren_back.domain.board.dto.PageResponseDTO;
-import com.imchobo.sayren_back.domain.board.dto.notice.NoticeListResponseDTO;
+import com.imchobo.sayren_back.domain.board.entity.Board;
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaCreateRequestDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.board.dto.qna.QnaListResponseDTO;
@@ -50,7 +50,7 @@ public class QnaController {
 
   // 페이징
   @GetMapping("/list")
-  public ResponseEntity<PageResponseDTO<QnaListResponseDTO>> getList(PageRequestDTO requestDTO) {
+  public ResponseEntity<PageResponseDTO<QnaListResponseDTO, Board>> getList(PageRequestDTO requestDTO) {
     return ResponseEntity.ok(qnaService.getList(requestDTO));
   }
 }
