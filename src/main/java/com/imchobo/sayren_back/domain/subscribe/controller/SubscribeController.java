@@ -5,6 +5,7 @@ import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.dto.SubscribeRoundResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,9 +36,20 @@ public class SubscribeController {
     subscribeService.cancelSubscribe(id);
     return ResponseEntity.noContent().build();
   }
-  // 4) 구독 상태 변경 이력 조회
+  // 구독 상태 변경 이력 조회
   @GetMapping("/{id}/histories")
   public ResponseEntity<List<SubscribeHistoryResponseDTO>> getHistories(@PathVariable Long id) {
     return ResponseEntity.ok(subscribeService.getHistories(id));
+  }
+  // 구독 회차 리스트 조회
+  @GetMapping("{subscribeId}/rounds")
+  public List<SubscribeRoundResponseDTO> getRoundBySubscribe(@PathVariable Long subscribeId) {
+    return subscribeService.getRoundBySubscribe(subscribeId);
+  }
+
+  // 구독 회차 단일 상세 조회
+  @GetMapping("{subscribeId}/rounds/{roundNo}")
+  public SubscribeRoundResponseDTO getRoundDetail(@PathVariable Long subscribeId, @PathVariable Integer roundNo) {
+   return subscribeService.getRoundDetail(subscribeId, roundNo);
   }
 }
