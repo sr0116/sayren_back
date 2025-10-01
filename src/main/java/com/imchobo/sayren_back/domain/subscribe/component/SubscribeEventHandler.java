@@ -2,6 +2,8 @@ package com.imchobo.sayren_back.domain.subscribe.component;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
 import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
@@ -38,6 +40,7 @@ public class SubscribeEventHandler {
   private final SubscribeHistoryRepository subscribeHistoryRepository;
   private final SubscribeRepository subscribeRepository;
   private final SubscribeStatusChanger subscribeStatusChanger;
+  private final DeliveryItemRepository deliveryItemRepository;
 
   // 구독 이력 기록 및 상태(히스토리 테이블 첫 생성)
   public void recordInit(Subscribe subscribe) {
@@ -66,68 +69,81 @@ public class SubscribeEventHandler {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
-    paymentRepository.findById(event.getPaymentId()).map(Payment::getSubscribeRound).ifPresent(round -> {
-      SubscribeRoundTransition transition = mapToRoundTransition(event.getTransition());
-      Subscribe subscribe = round.getSubscribe();
+    paymentRepository.findById(event.getPaymentId())
+            .map(Payment::getSubscribeRound)
+            .ifPresent(round -> {
+              SubscribeRoundTransition transition = mapToRoundTransition(event.getTransition());
+              Subscribe subscribe = round.getSubscribe();
 
-      switch (transition) {
-        // 단일 회차 처리
-        case PAY_SUCCESS, RETRY_SUCCESS -> {
-          round.setPayStatus(transition.getStatus());
-          round.setPaidDate(LocalDateTime.now());
-          subscribeRoundRepository.save(round);
+              switch (transition) {
+                case PAY_SUCCESS, RETRY_SUCCESS -> {
+                  // 회차 상태 갱신
+                  round.setPayStatus(transition.getStatus());
+                  round.setPaidDate(LocalDateTime.now());
+                  subscribeRoundRepository.save(round);
 
-          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
-          log.info("회차 [{}] 결제 성공, 구독 [{}] 상태 확인 PREPARING으로 ", round.getId(), subscribe.getId());
-        }
-        case PAY_FAIL, RETRY_FAIL -> {
-          round.setPayStatus(transition.getStatus());
-          subscribeRoundRepository.save(round);
+                  // 첫 회차 + 배송 READY → PREPARING
+                  boolean canPrepare = deliveryItemRepository
+                          .findByOrderItem(round.getSubscribe().getOrderItem())
+                          .stream()
+                          .anyMatch(di -> di.getDelivery().getStatus() == DeliveryStatus.READY);
 
-          if (round.getRoundNo() == 1) {
-            // 첫 회차 실패 → 전체 구독 실패
-            failAllRounds(subscribe, transition);
-            subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
-            log.info("구독 [{}] 1회차 실패로 전체 FAILED 처리", subscribe.getId());
-          } else {
-            // 중도 실패 → 연체
-            subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE, ActorType.SYSTEM);
-            log.info("구독 [{}] 중도 결제 실패 → OVERDUE", subscribe.getId());
-          }
-        }
-        case PAY_TIMEOUT -> {
-          round.setPayStatus(transition.getStatus());
-          subscribeRoundRepository.save(round);
+                  if (canPrepare && round.getRoundNo() == 1) {
+                    subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+                    log.info("구독 [{}] 첫 회차 결제 성공 & 배송 READY → PREPARING", subscribe.getId());
+                  } else {
+                    log.info("구독 [{}] 결제 성공했지만 PREPARING 조건 불충족 (roundNo={}, 배송READY={})",
+                            subscribe.getId(), round.getRoundNo(), canPrepare);
+                  }
+                }
+                case PAY_FAIL, RETRY_FAIL -> {
+                  round.setPayStatus(transition.getStatus());
+                  subscribeRoundRepository.save(round);
 
-          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE, ActorType.SYSTEM);
-          log.info("구독 [{}] 결제 타임아웃 → OVERDUE", subscribe.getId());
-        }
+                  if (round.getRoundNo() == 1) {
+                    failAllRounds(subscribe, transition);
+                    subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
+                    log.info("구독 [{}] 1회차 결제 실패 → 전체 FAILED", subscribe.getId());
+                  } else {
+                    subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE, ActorType.SYSTEM);
+                    log.info("구독 [{}] 중도 결제 실패 → OVERDUE", subscribe.getId());
+                  }
+                }
+                case PAY_TIMEOUT -> {
+                  round.setPayStatus(transition.getStatus());
+                  subscribeRoundRepository.save(round);
 
-        // 전체 구독/회차 처리
-        case INIT_FAIL -> {
-          failAllRounds(subscribe, transition);
-          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
-          log.info("구독 [{}] INIT_FAIL → 전체 FAILED", subscribe.getId());
-        }
-        case CANCEL_ALL -> {
-          cancelAllRounds(subscribe, transition);
-          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
-          log.info("구독 [{}] 전체 CANCEL 처리", subscribe.getId());
-        }
-        case OVERDUE_END -> {
-          failAllRounds(subscribe, transition);
-          subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE, ActorType.SYSTEM);
-          log.info("구독 [{}] OVERDUE_END → 전체 FAILED", subscribe.getId());
-        }
-      }
-    });
+                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE, ActorType.SYSTEM);
+                  log.info("구독 [{}] 결제 타임아웃 → OVERDUE", subscribe.getId());
+                }
+                case INIT_FAIL -> {
+                  failAllRounds(subscribe, transition);
+                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
+                  log.info("구독 [{}] INIT_FAIL → 전체 FAILED", subscribe.getId());
+                }
+                case CANCEL_ALL -> {
+                  cancelAllRounds(subscribe, transition);
+                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
+                  log.info("구독 [{}] 전체 CANCEL 처리", subscribe.getId());
+                }
+                case OVERDUE_END -> {
+                  failAllRounds(subscribe, transition);
+                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE, ActorType.SYSTEM);
+                  log.info("구독 [{}] OVERDUE_END → 전체 FAILED", subscribe.getId());
+                }
+              }
+            });
+
   }
+
+
   // 전체 회차 실패 처리
   private void failAllRounds(Subscribe subscribe, SubscribeRoundTransition transition) {
     List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
     rounds.forEach(r -> r.setPayStatus(transition.getStatus()));
     subscribeRoundRepository.saveAll(rounds);
   }
+
   // 전체 회차 취소 처리
   private void cancelAllRounds(Subscribe subscribe, SubscribeRoundTransition transition) {
     List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
