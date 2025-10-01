@@ -2,7 +2,7 @@ package com.imchobo.sayren_back.domain.product.controller;
 
 import com.imchobo.sayren_back.domain.product.dto.PurchaseProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.PurchaseProductListResponseDTO;
-import com.imchobo.sayren_back.domain.product.service.ProductService;
+import com.imchobo.sayren_back.domain.product.service.PurchaseProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,7 +15,7 @@ import java.util.List;
     @RequestMapping("/api/admin/products")
     @RequiredArgsConstructor
     public class ProductController {
-        private final ProductService productService;
+        private final PurchaseProductService productService;
 
         @GetMapping
         public List<PurchaseProductListResponseDTO> list() {

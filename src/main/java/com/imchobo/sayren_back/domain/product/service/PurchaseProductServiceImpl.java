@@ -19,7 +19,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ProductServiceImpl implements ProductService{
+public class PurchaseProductServiceImpl implements PurchaseProductService {
   private final ProductRepository productRepository;
   private final RedisUtil redisUtil;
   private final ProductStockRepository productStockRepository;
