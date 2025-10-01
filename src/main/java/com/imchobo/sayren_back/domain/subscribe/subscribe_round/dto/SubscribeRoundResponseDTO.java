@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Data
 public class SubscribeRoundResponseDTO {
 
-  private Long subscribePaymentId;
+  private Long subscribeRoundId;
   private Long subscribeId;
   private Long amount;
   private Integer roundNo;
