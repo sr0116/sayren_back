@@ -1,8 +1,8 @@
 package com.imchobo.sayren_back.domain.product.controller;
 
-import com.imchobo.sayren_back.domain.product.dto.PurchaseProductDetailsResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.PurchaseProductListResponseDTO;
-import com.imchobo.sayren_back.domain.product.service.PurchaseProductService;
+import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,15 +15,15 @@ import java.util.List;
     @RequestMapping("/api/admin/products")
     @RequiredArgsConstructor
     public class ProductController {
-        private final PurchaseProductService productService;
+        private final ProductService productService;
 
         @GetMapping
-        public List<PurchaseProductListResponseDTO> list() {
+        public List<ProductListResponseDTO> list() {
             return productService.getAllProducts();
         }
 
         @GetMapping("/{id}")
-        public PurchaseProductDetailsResponseDTO getOne(@PathVariable Long id) {
+        public ProductDetailsResponseDTO getOne(@PathVariable Long id) {
             return productService.getProductById(id);
         }
 }

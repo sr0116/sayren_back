@@ -9,7 +9,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PurchaseProductListResponseDTO {
+public class ProductListResponseDTO {
   // 상품 번호
   private Long productId;
   // 대표 이미지 (attach에서 isThumbnail= 'true' 꺼내오기)

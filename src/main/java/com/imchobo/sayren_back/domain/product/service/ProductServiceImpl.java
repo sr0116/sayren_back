@@ -3,8 +3,8 @@ package com.imchobo.sayren_back.domain.product.service;
 import com.imchobo.sayren_back.domain.attach.dto.ProductAttachResponseDTO;
 import com.imchobo.sayren_back.domain.attach.repository.ProductAttachRepository;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
-import com.imchobo.sayren_back.domain.product.dto.PurchaseProductDetailsResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.PurchaseProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
 import com.imchobo.sayren_back.domain.product.entity.ProductStock;
 import com.imchobo.sayren_back.domain.product.entity.ProductTag;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
@@ -19,7 +19,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class PurchaseProductServiceImpl implements PurchaseProductService {
+public class ProductServiceImpl implements ProductService {
   private final ProductRepository productRepository;
   private final RedisUtil redisUtil;
   private final ProductStockRepository productStockRepository;
@@ -29,15 +29,15 @@ public class PurchaseProductServiceImpl implements PurchaseProductService {
   @Override
   @EventListener(ApplicationReadyEvent.class)
   public void preloadProducts() {
-    List<PurchaseProductListResponseDTO> list = getAllProducts();
+    List<ProductListResponseDTO> list = getAllProducts();
     redisUtil.setObject("PRODUCTS", list);
   }
 
 
   @Override
-  public List<PurchaseProductListResponseDTO> getAllProducts() {
+  public List<ProductListResponseDTO> getAllProducts() {
     return productRepository.findAll().stream()
-            .map(p -> PurchaseProductListResponseDTO.builder()
+            .map(p -> ProductListResponseDTO.builder()
                     .productId(p.getId())
                     .thumbnailUrl(
                             productAttachRepository.findByProductIdAndIsThumbnailTrue(p.getId())
@@ -62,9 +62,9 @@ public class PurchaseProductServiceImpl implements PurchaseProductService {
   }
 
   @Override
-  public PurchaseProductDetailsResponseDTO getProductById(Long id) {
+  public ProductDetailsResponseDTO getProductById(Long id) {
     return productRepository.findById(id)
-            .map(p -> new PurchaseProductDetailsResponseDTO(
+            .map(p -> new ProductDetailsResponseDTO(
                     p.getId(),
                     p.getName(),
                     p.getDescription() != null ? p.getDescription() : "",
@@ -88,6 +88,11 @@ public class PurchaseProductServiceImpl implements PurchaseProductService {
                                             + a.getPath() + "/" + a.getUuid())
                                     .build()
                             )
+                            .toList(),
+                    // order
+                    p.getOrderItems().stream()
+                            .map(item -> item.getOrderPlan().getType().name())
+                            .distinct()
                             .toList()
             ))
             .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + id));
