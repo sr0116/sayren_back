@@ -31,4 +31,10 @@ public class ProductListResponseDTO {
   // 상세설명
   private String description;
 
+  // 보증금
+  private Long deposit; // (20% 고정)
+
+  // 최대 혜택가
+  private Long rentalPrice;
+
 }

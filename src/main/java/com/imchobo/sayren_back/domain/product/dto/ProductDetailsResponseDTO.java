@@ -52,4 +52,10 @@ public class ProductDetailsResponseDTO {
   // order plan-> type
   private List<String> planTypes; // PURCHASE, RENTAL
 
+  // 보증금
+  private Long deposit; // (20% 고정)
+
+  // 최대 혜택가
+  private Long rentalPrice;
+
 }
