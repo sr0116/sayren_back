@@ -269,7 +269,6 @@ public class MemberServiceImpl implements MemberService {
     if(memberDetails == null || memberDetails.isEmpty()){
       throw new SayrenException("USER_NOT_FOUND", "해당 유저가 없습니다.");
     }
-    memberDetails.forEach(log::info);
 
     MemberDetailResponseDTO member = memberMapper.toMemberDetailResponseDTO(memberDetails.getFirst().member());
 
