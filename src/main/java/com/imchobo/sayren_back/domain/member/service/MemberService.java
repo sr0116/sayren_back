@@ -1,7 +1,11 @@
 package com.imchobo.sayren_back.domain.member.service;
 
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.member.dto.*;
+import com.imchobo.sayren_back.domain.member.dto.admin.MemberListResponseDTO;
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.member.recode.MemberInfo;
 
 import java.util.Map;
 
@@ -23,4 +27,7 @@ public interface MemberService {
   void passwordCheck(PasswordCheckDTO passwordCheckDTO);
   void deleteMember();
   boolean hasPassword();
+  void changeRole(Long memberId);
+  PageResponseDTO<MemberListResponseDTO, Member> getMemberList(PageRequestDTO pageRequestDTO);
+  MemberInfo getMemberInfo(Long memberId);
 }

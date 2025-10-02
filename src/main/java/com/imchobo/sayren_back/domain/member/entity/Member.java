@@ -6,7 +6,9 @@ import com.imchobo.sayren_back.domain.member.en.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -51,4 +53,5 @@ public class Member extends BaseEntity {
   @Column(name = "role", nullable = false, length = 50)
   @Builder.Default
   private Set<Role> roles = new HashSet<>(Set.of(Role.USER));
+
 }

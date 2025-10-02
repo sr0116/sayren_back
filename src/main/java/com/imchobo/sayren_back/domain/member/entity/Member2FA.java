@@ -11,6 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = {"member"})
 public class Member2FA extends CreatedEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
