@@ -90,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
     Long memberId = memberTokenService.validateAndGetMemberId(refreshToken);
     if(memberId == null) {
       logout(response, refreshToken);
-      throw new UnauthorizedException("NOT_FOUND_MEMBER_TOKEN");
+      return null;
     }
     else {
       Member member = memberRepository.findById(memberId)
