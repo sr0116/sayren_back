@@ -1,13 +1,6 @@
 package com.imchobo.sayren_back.domain.common.dto;
 
-<<<<<<< HEAD
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-=======
 import lombok.*;
->>>>>>> origin/feature/member
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -16,10 +9,7 @@ import org.springframework.data.domain.Sort;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-<<<<<<< HEAD
-=======
 @ToString
->>>>>>> origin/feature/member
 public class PageRequestDTO {
     @Builder.Default
     private int page = 1;
