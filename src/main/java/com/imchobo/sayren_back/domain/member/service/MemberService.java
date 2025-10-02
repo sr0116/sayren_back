@@ -29,5 +29,6 @@ public interface MemberService {
   boolean hasPassword();
   void changeRole(Long memberId);
   PageResponseDTO<MemberListResponseDTO, Member> getMemberList(PageRequestDTO pageRequestDTO);
+  PageResponseDTO<MemberListResponseDTO, Member> getDeleteMemberList(PageRequestDTO pageRequestDTO);
   MemberInfo getMemberInfo(Long memberId);
 }

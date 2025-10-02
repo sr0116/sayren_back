@@ -26,6 +26,12 @@ public class AdminMemberController {
     return ResponseEntity.ok(memberService.getMemberList(pageRequestDTO));
   }
 
+  @GetMapping("get-deletelist")
+  public ResponseEntity<?> getDeleteMemberList(PageRequestDTO pageRequestDTO) {
+    log.info(pageRequestDTO);
+    return ResponseEntity.ok(memberService.getDeleteMemberList(pageRequestDTO));
+  }
+
 
   @GetMapping("get-info")
   public ResponseEntity<?> getMemberInfo(@RequestParam("memberId") Long memberId) {

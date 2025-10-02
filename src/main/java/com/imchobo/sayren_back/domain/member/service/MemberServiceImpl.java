@@ -261,6 +261,12 @@ public class MemberServiceImpl implements MemberService {
     return PageResponseDTO.of(result, memberMapper::toMemberListResponseDTO);
   }
 
+  @Override
+  public PageResponseDTO<MemberListResponseDTO, Member> getDeleteMemberList(PageRequestDTO pageRequestDTO) {
+    Page<Member> result = memberRepository.findAllByStatus(MemberStatus.DELETED, pageRequestDTO.getPageable());
+    return PageResponseDTO.of(result, memberMapper::toMemberListResponseDTO);
+  }
+
   // 어드민 페이지 멤버 상세 가져오기
   @Override
   @Transactional
