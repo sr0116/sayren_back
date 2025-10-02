@@ -12,22 +12,27 @@ import java.util.List;
 @Builder
 public class OrderResponseDTO {
 
-  private Long orderId;           // 주문 PK
-  private String status;          // 주문 상태
+  private Long orderId;        // 주문 PK
+  private String status;       // 주문 상태
 
-  private String memberEmail;     // 회원 이메일
-  private String memberName;      // 회원 이름
+  // 회원 정보
+  private String memberEmail;  // 주문자 이메일
+  private String memberName;   // 주문자 이름
 
   // 배송지 정보
-  private Long addressId;
-  private String addressName;
-  private String addressTel;
-  private String addressDetail;
+  private Long addressId;      // 배송지 PK
+  private String addressName;  // 수령인 이름
+  private String addressTel;   // 수령인 연락처
+  private String addressZipcode; // 우편번호
+  private String addressDetail;  // 상세주소
+  private String addressMemo;    // 배송 메모
 
   // 주문 아이템들
   private List<OrderItemResponseDTO> orderItems;
+//주문이력
+  private List<OrderHistoryResponseDTO> histories;
 
-  // 시간
+  // 등록/수정 시간
   private LocalDateTime regDate;
   private LocalDateTime modDate;
 }
