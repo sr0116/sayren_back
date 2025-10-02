@@ -23,10 +23,6 @@ import java.util.List;
 public class PaymentController {
 
   private final PaymentService paymentService;
-  private final PaymentRepository paymentRepository;
-  private final PaymentMapper paymentMapper;
-  private final SubscribeRepository subscribeRepository;
-  private final SubscribeRoundRepository subscribeRoundRepository;
 
   // 결제 준비
   @PostMapping("/prepare")

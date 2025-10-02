@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.payment.refund.service;
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.payment.calculator.PurchaseRefundCalculator;
@@ -12,6 +13,13 @@ import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
+import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
+import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
+import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -28,6 +36,9 @@ public class RefundServiceImpl implements RefundService {
   private final PaymentRepository paymentRepository;
   private final PurchaseRefundCalculator purchaseRefundCalculator;
   private final RentalRefundCalculator rentalRefundCalculator;
+  private final SubscribeMapper subscribeMapper;
+  private final SubscribeStatusChanger subscribeStatusChanger;
+  private final SubscribeRepository subscribeRepository;
 
   @Transactional
   @Override
@@ -39,6 +50,7 @@ public class RefundServiceImpl implements RefundService {
 
     Payment payment = payments.get(payments.size() - 1); // 최근 결제
     RefundCalculator calculator = getCalculator(payment);
+
 
     Long refundAmount = calculator.calculateRefundAmount(payment, request);
 

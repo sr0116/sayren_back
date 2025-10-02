@@ -16,6 +16,7 @@ import java.util.Optional;
 public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
   // 멤버 아이디 조회(마이페이지)
   List<Subscribe> findByMember_Id(Long memberId);
+  
 
   List<Subscribe> findByMember(Member member);
   // 특정 회원의 구독 상태별 조회

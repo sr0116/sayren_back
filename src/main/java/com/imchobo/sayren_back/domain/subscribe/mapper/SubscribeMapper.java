@@ -45,6 +45,7 @@ public interface SubscribeMapper {
   @Mapping(source = "endDate", target = "endDate")
   @Mapping(source = "monthlyFeeSnapshot", target = "monthlyFeeSnapshot")
   SubscribeSummaryDTO toSummaryDTO(Subscribe entity);
+
  // 조회 리스트(요약)
   List<SubscribeSummaryDTO> toSummaryDTOList(List<Subscribe> entities);
 

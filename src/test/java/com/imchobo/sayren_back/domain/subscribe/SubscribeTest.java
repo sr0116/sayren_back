@@ -68,7 +68,7 @@ public class SubscribeTest {
   @Rollback(false)
   void testActivateAfterDelivery() {
     // given
-    Long deliveryId = 1L; // 미리 insert 된 배송 ID
+    Long deliveryId = 12L; // 미리 insert 된 배송 ID
     Delivery delivery = deliveryRepository.findById(deliveryId)
             .orElseThrow();
 
@@ -77,7 +77,7 @@ public class SubscribeTest {
     deliveryRepository.save(delivery);
 
     // when: 구독 활성화 처리 호출
-    Long subscribeId = 211L;
+    Long subscribeId = 228L;
     OrderItem orderItem = delivery.getDeliveryItems()
             .get(0)
             .getOrderItem();

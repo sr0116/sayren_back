@@ -61,19 +61,18 @@ public class DeliveryServiceImpl implements DeliveryService {
         Delivery saved = deliveryRepository.save(delivery);
 
         // 상태 전환 이벤트 발행 (expected=null → READY)
-        flow.changeStatus(
-          saved,
-          null,
-          DeliveryStatus.READY,
-          Map.of("source", "DeliveryService#create")
-        );
+//        flow.changeStatus(
+//          saved,
+//          null,
+//          DeliveryStatus.READY,
+//          Map.of("source", "DeliveryService#create")
+//        );
 
         return deliveryMapper.toResponseDTO(saved);
     }
 
 
     // 결제 성공 직후 orderItemId 기반 배송 자동 생성
-
     @Override
     public void createFromOrderItemId(Long orderItemId) {
         OrderItem orderItem = orderItemRepository.findById(orderItemId)
@@ -100,14 +99,16 @@ public class DeliveryServiceImpl implements DeliveryService {
           .build();
         deliveryItemRepository.save(deliveryItem);
 
-        // READY 이벤트 발행
-        flow.changeStatus(
-          saved,
-          null,
-          DeliveryStatus.READY,
-          Map.of("source", "DeliveryService#createFromOrderItemId",
-            "orderItemId", orderItemId)
-        );
+        // READY 이벤트 발행 -> 기본 값이 ready로 .status(DeliveryStatus.READY)
+        // 상태 중복으로  변경 처리하는거라 오히려 오류 날 수 있으니 상태값만 변경 필요한거면  굳이 생성에서는 안 하셔도 됩니다.
+        // 아닐 수도 있으니 확인 부탁드립니다
+//        flow.changeStatus(
+//          saved,
+//          null,
+//          DeliveryStatus.READY,
+//          Map.of("source", "DeliveryService#createFromOrderItemId",
+//            "orderItemId", orderItemId)
+//        );
     }
 
     @Override

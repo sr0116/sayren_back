@@ -150,9 +150,6 @@ public class SubscribeServiceImpl implements SubscribeService {
     return subscribeRoundMapper.toDto(round);
   }
 
-
-
-
   // 배송 완료 후 상태 변경 (ACTIVE)
   @Transactional
   @Override
