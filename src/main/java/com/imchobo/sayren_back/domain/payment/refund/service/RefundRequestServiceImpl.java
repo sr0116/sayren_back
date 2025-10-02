@@ -10,6 +10,7 @@ import com.imchobo.sayren_back.domain.payment.calculator.RentalRefundCalculator;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
 import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestDTO;
 import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestResponseDTO;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
@@ -23,9 +24,12 @@ import com.imchobo.sayren_back.domain.payment.refund.mapper.RefundRequestMapper;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
+import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +49,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   private final PurchaseRefundCalculator purchaseRefundCalculator;
   private final RentalRefundCalculator rentalRefundCalculator;
   private final RefundService refundService;
+  private final SubscribeRepository subscribeRepository;
 
   // 환불 요청 생성(멤버 정보는 시큐리티 유틸에서 멤버 아이디 가져오기)
   @Transactional
@@ -56,25 +61,25 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     Payment payment = paymentRepository.findById(dto.getPaymentId())
             .orElseThrow(() -> new PaymentNotFoundException(dto.getPaymentId()));
 
-//    // 이미 환불 요청이 있는지 체크
-//    boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
-//            payment.getOrderItem(),
-//            List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
-//    );
-//    if (exists) {
-//      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
-//    }
     // 이미 환불 요청이 있는지 체크
     boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
             payment.getOrderItem(),
             List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
     );
-
+//    if (exists) {
+//      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
+//    }
+    // 이미 환불 요청이 있는지 체크
+//    boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
+//            payment.getOrderItem(),
+//            List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
+//    );
+//
 // [테스트 전용 예외 처리] - exists 여도 무시하고 계속 진행
     if (exists) {
       log.warn(" 테스트 모드: 이미 환불 요청이 있지만 새로 생성합니다. paymentId={}", dto.getPaymentId());
       // 실제 운영에서는 여기서 예외 던짐
-      // throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
+       throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
     }
 
 
@@ -116,6 +121,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     );
   }
 
+  // 환불
   @Transactional
   @Override
   public RefundRequestResponseDTO processRefundRequest(Long refundRequestId, RefundRequestStatus status, ReasonCode reasonCode) {
@@ -149,6 +155,9 @@ public class RefundRequestServiceImpl implements RefundRequestService {
       return purchaseRefundCalculator;
     }
   }
+
+
+
 
   /// // 밑에 3개 조회 /// 나중에 처리
 // 단건 조회 (본인 것만)

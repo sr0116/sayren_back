@@ -25,4 +25,7 @@ public interface RefundRequestRepository extends JpaRepository<RefundRequest, Lo
   boolean existsByOrderItemAndStatusIn(OrderItem orderItem, Collection<RefundRequestStatus> statuses);
 
   Optional<RefundRequest> findFirstByOrderItemOrderByRegDateDesc(OrderItem orderItem);
+
+
+  Optional<Object> findByOrderItem(OrderItem orderItem);
 }

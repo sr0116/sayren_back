@@ -2,6 +2,8 @@ package com.imchobo.sayren_back.domain.payment.refund.component;
 
 
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
+import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
@@ -22,6 +24,7 @@ public class RefundEventHandler {
   private final RefundService refundService;
   private final SubscribeRepository subscribeRepository;
   private final ApplicationEventPublisher eventPublisher;
+  private final RefundRequestRepository refundRequestRepository;
 
   // 관리자가 환불 승인 시에 호출됨
 
@@ -31,9 +34,20 @@ public class RefundEventHandler {
     Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
             .orElseThrow(() -> new RuntimeException("구독 없음: " + event.getSubscribeId()));
 
-    // 상태는 ACTIVE 유지, RefundRequest.status 만 APPROVED_WAITING_RETURN 으로 변경
-    log.info("환불 승인됨(회수 대기 중): subscribeId={}, reason={}", event.getSubscribeId(), event.getReason());
+    refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
+            .ifPresentOrElse(req -> {
+              if (req.getStatus() == RefundRequestStatus.PENDING) {
+                req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
+                req.setReasonCode(event.getReason()); // 승인 사유 기록
+                refundRequestRepository.save(req); // 명시적 저장
+                log.info("환불 요청 상태 변경 완료: refundRequestId={}, 상태=PENDING→APPROVED_WAITING_RETURN", req.getId());
+              } else {
+                log.warn("환불 요청 상태 변경 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
+              }
+            }, () -> log.warn("해당 구독에 대한 환불 요청 없음: subscribeId={}", event.getSubscribeId()));
   }
+
+
 
   // 회수 완료 되었을 때 환불 실행
 

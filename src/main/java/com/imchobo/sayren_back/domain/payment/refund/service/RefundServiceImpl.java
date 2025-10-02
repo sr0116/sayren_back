@@ -6,7 +6,9 @@ import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.payment.calculator.PurchaseRefundCalculator;
 import com.imchobo.sayren_back.domain.payment.calculator.RefundCalculator;
 import com.imchobo.sayren_back.domain.payment.calculator.RentalRefundCalculator;
+import com.imchobo.sayren_back.domain.payment.component.PaymentStatusChanger;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
 import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
@@ -39,6 +41,7 @@ public class RefundServiceImpl implements RefundService {
   private final SubscribeMapper subscribeMapper;
   private final SubscribeStatusChanger subscribeStatusChanger;
   private final SubscribeRepository subscribeRepository;
+  private final PaymentStatusChanger paymentStatusChanger;
 
 
   //  환불 결제 처리
@@ -66,7 +69,7 @@ public class RefundServiceImpl implements RefundService {
     refundRepository.save(refund);
 
     // Payment 상태 변경 (이것도 나중에 옵션 트렌지션으로 만들기)
-    payment.setPaymentStatus(PaymentStatus.REFUNDED);
+    paymentStatusChanger.changePayment(payment, PaymentTransition.REFUND, payment.getOrderItem().getId(), ActorType.SYSTEM);
 
     log.info("환불 실행 완료: paymentId={}, refundAmount={}", payment.getId(), refundAmount);
   }
@@ -102,6 +105,8 @@ public class RefundServiceImpl implements RefundService {
 
     // 4) 결제 상태 갱신(가장 최근 결제 표시). 필요 시 '관련 모든 회차 결제'에 표기하는 확장도 가능.
     latest.setPaymentStatus(PaymentStatus.REFUNDED);
+    subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
+
     log.info("구독 환불 실행 완료: subscribeId={}, refundAmount={}", subscribe.getId(), refundAmount);
   }
 
