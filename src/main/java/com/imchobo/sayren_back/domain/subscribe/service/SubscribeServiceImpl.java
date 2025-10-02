@@ -11,6 +11,9 @@ import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.component.recorder.SubscribeHistoryRecorder;
@@ -38,6 +41,7 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.Subscrib
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +65,8 @@ public class SubscribeServiceImpl implements SubscribeService {
   private final DeliveryItemRepository deliveryItemRepository;
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final SubscribeRoundMapper subscribeRoundMapper;
+  private final ApplicationEventPublisher eventPublisher;
+  private final RefundService refundService;
 
 
   // 구독 테이블 생성
@@ -207,7 +213,9 @@ public class SubscribeServiceImpl implements SubscribeService {
     }
     // 회원 취소 요청
     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.REQUEST_CANCEL, ActorType.USER);
+
   }
+
 
   //취소 승인/거절 (관리자)
   @Override
@@ -215,14 +223,24 @@ public class SubscribeServiceImpl implements SubscribeService {
   public void processCancelRequest(Long subscribeId, boolean approved, ReasonCode reasonCode) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
+    // 일단 구독 상태가 구독 중이어야 함
     if (subscribe.getStatus() != SubscribeStatus.ACTIVE) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
     if (approved) {
       // 승인 처리시
+      // 구독 상태 변경 및 결제 환불
       subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
-    } else {
+//      refundService.executeRefundForSubscribe(subscribe, reasonCode); 이거 대신에
+      // 환불 이벤트 정의
+      eventPublisher.publishEvent(
+              new RefundApprovedEvent(subscribe.getId(), reasonCode, ActorType.ADMIN)
+      );
+
+      log.info("구독 취소 승인 완료 (환불은 회수 완료 이벤트 시점에 실행): subscribeId={}", subscribe.getId());
+    } else { // 거절
       subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_REJECT, ActorType.ADMIN);
+
     }
   }
 

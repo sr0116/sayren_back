@@ -105,6 +105,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     }
     request.setStatus(RefundRequestStatus.CANCELED);
   }
+
   // 결제 취소 여부
   @Transactional
   @Override

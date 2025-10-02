@@ -31,4 +31,9 @@ public class AdminRefundRequestController {
   public ResponseEntity<List<RefundRequestResponseDTO>> getAllRequests() {
     return ResponseEntity.ok(refundRequestService.getAllRefundRequests());
   }
+
+  @GetMapping("/member/{memberId}")
+  public ResponseEntity<List<RefundRequestResponseDTO>> getRefundRequestsByMember(@PathVariable Long memberId) {
+    return ResponseEntity.ok(refundRequestService.getRefundRequestsByMember(memberId));
+  }
 }

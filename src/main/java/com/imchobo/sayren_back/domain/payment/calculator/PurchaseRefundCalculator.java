@@ -36,9 +36,10 @@ public class PurchaseRefundCalculator implements RefundCalculator {
 
     Delivery delivery = deliveryItem.getDelivery();
 
-//    if (delivery.getStatus() != DeliveryStatus.RETURNED) {
-//      throw new RefundPolicyViolationException("회수 완료 전에는 환불 불가");
-//    }
+    // 회수 전까지 환불 안됨
+    if (delivery.getStatus() != DeliveryStatus.RETURNED) {
+      throw new RefundPolicyViolationException("회수 완료 전에는 환불 불가");
+    }
     // 배송 날짜
     LocalDate deliveredAt = delivery.getModDate().toLocalDate();
     int daysAfterDelivery = (int) ChronoUnit.DAYS.between(deliveredAt, LocalDate.now());

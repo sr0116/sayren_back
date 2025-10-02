@@ -25,7 +25,7 @@ public class SubscribeAdminController {
   }
 
   //  취소 요청 승인/거절
-  @PostMapping("/{id}/admin/cancel")
+  @PostMapping("/{id}/cancel")
   public ResponseEntity<Void> processCancel(
           @PathVariable Long id,
           @RequestParam boolean approved,
