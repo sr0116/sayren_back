@@ -7,6 +7,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import com.imchobo.sayren_back.domain.common.entity.BaseEntity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 @Entity
 @Table(name = "tbl_order") // DB의 tbl_order 테이블과 매핑
@@ -36,4 +39,13 @@ public class Order extends BaseEntity {
   @Column(nullable = false, length = 20)
   @Enumerated(EnumType.STRING)
   private OrderStatus status;
+
+      //주문 아이템 연관관계 추가
+  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<OrderItem> orderItems;
+    //히스토리 주문이력
+  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<OrderHistory> histories = new ArrayList<>();
+
+
 }
