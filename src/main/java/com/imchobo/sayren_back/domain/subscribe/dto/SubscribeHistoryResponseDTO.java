@@ -16,7 +16,6 @@ public class SubscribeHistoryResponseDTO {
 // 응답
   private Long historyId;
   private Long subscribeId;
-
   private ReasonCode reasonCode;
   private ActorType changedBy;
   private LocalDateTime regDate;

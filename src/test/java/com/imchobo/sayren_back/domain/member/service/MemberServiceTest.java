@@ -19,7 +19,7 @@ class MemberServiceTest {
   @Test
   @DisplayName("회원가입 테스트")
   void register() {
-<<<<<<< HEAD
+
 //    String email = "user1@gmail.com";
 //    String password = "password";
 //    String name = "유저1";
@@ -28,7 +28,6 @@ class MemberServiceTest {
 //    MemberSignupDTO dto = new MemberSignupDTO(email, password, name, serviceAgree, privacyAgree);
 //    memberService.register(dto);
 //    log.info(memberService.findByEmail(email));
-=======
     String email = "user1@gmail.com";
     String password = "password";
     String name = "유저1";
@@ -37,7 +36,6 @@ class MemberServiceTest {
     MemberSignupDTO dto = new MemberSignupDTO(email, password, name, serviceAgree, privacyAgree, "");
     memberService.register(dto);
     log.info(memberService.findByEmail(email));
->>>>>>> origin/feature/member
   }
 
 
