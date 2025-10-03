@@ -36,6 +36,7 @@ public class PurchaseRefundCalculator implements RefundCalculator {
 
     Delivery delivery = deliveryItem.getDelivery();
 
+    // 회수 전까지 환불 안됨
 //    if (delivery.getStatus() != DeliveryStatus.RETURNED) {
 //      throw new RefundPolicyViolationException("회수 완료 전에는 환불 불가");
 //    }

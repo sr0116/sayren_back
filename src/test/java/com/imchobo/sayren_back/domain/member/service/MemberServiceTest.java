@@ -19,6 +19,7 @@ class MemberServiceTest {
   @Test
   @DisplayName("회원가입 테스트")
   void register() {
+
 //    String email = "user1@gmail.com";
 //    String password = "password";
 //    String name = "유저1";
@@ -27,6 +28,14 @@ class MemberServiceTest {
 //    MemberSignupDTO dto = new MemberSignupDTO(email, password, name, serviceAgree, privacyAgree);
 //    memberService.register(dto);
 //    log.info(memberService.findByEmail(email));
+    String email = "user1@gmail.com";
+    String password = "password";
+    String name = "유저1";
+    boolean serviceAgree = true;
+    boolean privacyAgree = true;
+    MemberSignupDTO dto = new MemberSignupDTO(email, password, name, serviceAgree, privacyAgree, "");
+    memberService.register(dto);
+    log.info(memberService.findByEmail(email));
   }
 
 
@@ -36,4 +45,15 @@ class MemberServiceTest {
     
   }
 
+  @Test
+  @DisplayName("권한 부여 or 제거")
+  void changeRole(){
+    memberService.changeRole(17L);
+  }
+
+  @Test
+  @DisplayName("멤버 상세정보가져오기")
+  void getMemberInfo() {
+    memberService.getMemberInfo(1L);
+  }
 }
