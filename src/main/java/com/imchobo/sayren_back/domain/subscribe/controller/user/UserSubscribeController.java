@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.subscribe.controller;
+package com.imchobo.sayren_back.domain.subscribe.controller.user;
 
 
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
@@ -15,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/user/subscribes")
 @RequiredArgsConstructor
-public class SubscribeController {
+public class UserSubscribeController {
   private final SubscribeService subscribeService;
 
   // 마이페이지용 요약 구독 내역 (본인)
@@ -43,13 +43,13 @@ public class SubscribeController {
     return ResponseEntity.ok(subscribeService.getHistories(id));
   }
   // 구독 회차 리스트 조회
-  @GetMapping("{subscribeId}/rounds")
+  @GetMapping("/{subscribeId}/rounds")
   public List<SubscribeRoundResponseDTO> getRoundBySubscribe(@PathVariable Long subscribeId) {
     return subscribeService.getRoundBySubscribe(subscribeId);
   }
 
   // 구독 회차 단일 상세 조회
-  @GetMapping("{subscribeId}/rounds/{roundNo}")
+  @GetMapping("/{subscribeId}/rounds/{roundNo}")
   public SubscribeRoundResponseDTO getRoundDetail(@PathVariable Long subscribeId, @PathVariable Integer roundNo) {
    return subscribeService.getRoundDetail(subscribeId, roundNo);
   }

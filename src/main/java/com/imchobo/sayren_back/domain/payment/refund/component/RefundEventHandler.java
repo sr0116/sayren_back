@@ -48,34 +48,35 @@ public class RefundEventHandler {
   }
 
 
-
   // 회수 완료 되었을 때 환불 실행
-
   @EventListener
   @Transactional
   public void onDeliveryReturned(SubscribeStatusChangedEvent event) {
-    // SubscribeStatusChangedEvent 중 RETURNED_AND_CANCELED 인 경우에만 환불 실행
     if (event.getTransition() == SubscribeTransition.RETURNED_AND_CANCELED) {
       Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
               .orElseThrow(() -> new RuntimeException("구독 없음: " + event.getSubscribeId()));
 
-      // 이미 환불 완료 상태인지 확인 (중복 방지)
-      boolean alreadyRefunded = refundRequestRepository
-              .findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
-              .map(req -> req.getStatus() == RefundRequestStatus.APPROVED || req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN)
-              .orElse(false);
-      if (alreadyRefunded) {
-        log.warn("이미 환불 처리된 구독입니다: subscribeId={}", subscribe.getId());
-        return;
-      }
-      // 실제 환불 실행
-      try {
-        refundService.executeRefundForSubscribe(subscribe, event.getTransition().getReason());
-        log.info("회수 완료 이벤트 → PortOne 환불 실행 완료: subscribeId={}", subscribe.getId());
-      } catch (Exception e) {
-        log.error("PortOne 환불 실패: subscribeId={}, message={}", subscribe.getId(), e.getMessage(), e);
-        // 필요 시 재시도 로직 or 실패 상태 기록
-      }
+      refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
+              .ifPresent(req -> {
+                if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
+                  try {
+                    refundService.executeRefundForSubscribe(subscribe, event.getTransition().getReason());
+
+                    // 환불 완료 상태 반영 (이전은 아직 회수전 상태)
+                    req.setStatus(RefundRequestStatus.APPROVED);
+                    refundRequestRepository.save(req);
+
+                    log.info("회수 완료 → 환불 성공: refundRequestId={}, 상태=APPROVED_WAITING_RETURN→APPROVED",
+                            req.getId());
+                  } catch (Exception e) {
+                    log.error("PortOne 환불 실패: refundRequestId={}, message={}", req.getId(), e.getMessage());
+                    // 선택: req.setStatus(RefundRequestStatus.FAILED);
+                  }
+                } else {
+                  log.warn("회수 완료 이벤트 무시: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
+                }
+              });
     }
   }
 }
+

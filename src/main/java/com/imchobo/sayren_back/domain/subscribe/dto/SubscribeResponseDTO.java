@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.subscribe.dto;
 
+import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import lombok.*;
 
@@ -13,6 +14,7 @@ public class SubscribeResponseDTO {
   private Long subscribeId;
   private Long orderItemId;
   private SubscribeStatus status;
+  private ReasonCode reasonCode;
 
   private Long monthlyFeeSnapshot;
   private Long depositSnapshot;
@@ -21,5 +23,7 @@ public class SubscribeResponseDTO {
   private LocalDateTime regDate; // 신청일
   private LocalDate startDate; // 구독 시작일
   private LocalDate endDate;
+
+
 
 }

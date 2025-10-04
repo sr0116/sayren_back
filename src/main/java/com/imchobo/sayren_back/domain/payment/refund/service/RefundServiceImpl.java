@@ -105,6 +105,10 @@ public class RefundServiceImpl implements RefundService {
     if (payments.isEmpty()) { // 결제 없으면 예외 처리
       throw new PaymentNotFoundException(subscribe.getOrderItem().getId());
     }
+    if (subscribe.getStatus() != SubscribeStatus.CANCELED) {
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
+    }
+
     Payment latest = payments.get(payments.size() - 1);
     // 분기 처리
     RefundRequest refundRequest = new RefundRequest();

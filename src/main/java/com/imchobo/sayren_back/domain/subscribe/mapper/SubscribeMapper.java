@@ -9,14 +9,21 @@ import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
+import lombok.RequiredArgsConstructor;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Mapper(componentModel = "spring",  uses = {MappingUtil.class}, imports = {LocalDate.class})
 public interface SubscribeMapper {
+
+
 
   // 클라이언트 요청 -> 엔티티
   // 기본 상태 (서비스 로직에서 pending)
@@ -48,5 +55,6 @@ public interface SubscribeMapper {
 
  // 조회 리스트(요약)
   List<SubscribeSummaryDTO> toSummaryDTOList(List<Subscribe> entities);
+
 
 }

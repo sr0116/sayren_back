@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.domain.subscribe.service;
 
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -38,7 +39,7 @@ public interface SubscribeService {
   void cancelSubscribe(Long subscribeId);
 
 // 구독 취소 (관리자 승인 여부)
-  void processCancelRequest(Long subscribeId, boolean approved, ReasonCode reasonCode);
+  void processCancelRequest(Long subscribeId, RefundRequestStatus status, ReasonCode reasonCode);
 
   // (추가) 구독 상태 변경 이력 조회
   List<SubscribeHistoryResponseDTO> getHistories(Long subscribeId);

@@ -1,13 +1,9 @@
-package com.imchobo.sayren_back.domain.payment.controller;
+package com.imchobo.sayren_back.domain.payment.controller.user;
 
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentSummaryDTO;
-import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
-import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.payment.service.PaymentService;
-import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
-import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +16,7 @@ import java.util.List;
 @RequestMapping("/api/user/payments")
 @RequiredArgsConstructor
 @Log4j2
-public class PaymentController {
+public class UserPaymentController {
 
   private final PaymentService paymentService;
 
@@ -59,11 +55,5 @@ public class PaymentController {
   @GetMapping("/{paymentId}")
   public ResponseEntity<PaymentResponseDTO> getOne(@PathVariable Long paymentId) {
     return ResponseEntity.ok(paymentService.getOne(paymentId));
-  }
-
-  @GetMapping("/admin")
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<List<PaymentResponseDTO>> getAllPayments() {
-    return ResponseEntity.ok(paymentService.getAllForAdmin());
   }
 }
