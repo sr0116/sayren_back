@@ -32,10 +32,11 @@ public class SubscribeController {
 
   // 구독 취소 요청(사용자)
   @PostMapping("/{id}/cancel")
-  public ResponseEntity<Void> cancel(@PathVariable Long id) {
+  public ResponseEntity<String> cancel(@PathVariable Long id) {
     subscribeService.cancelSubscribe(id);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok("구독 취소 요청 완료");
   }
+
   // 구독 상태 변경 이력 조회
   @GetMapping("/{id}/histories")
   public ResponseEntity<List<SubscribeHistoryResponseDTO>> getHistories(@PathVariable Long id) {

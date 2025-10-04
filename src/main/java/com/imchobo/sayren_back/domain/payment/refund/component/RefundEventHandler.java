@@ -69,9 +69,13 @@ public class RefundEventHandler {
         return;
       }
       // 실제 환불 실행
-      refundService.executeRefundForSubscribe(subscribe, event.getTransition().getReason());
-
-      log.info("회수 완료 이벤트 → 환불 실행 완료: subscribeId={}", event.getSubscribeId());
+      try {
+        refundService.executeRefundForSubscribe(subscribe, event.getTransition().getReason());
+        log.info("회수 완료 이벤트 → PortOne 환불 실행 완료: subscribeId={}", subscribe.getId());
+      } catch (Exception e) {
+        log.error("PortOne 환불 실패: subscribeId={}, message={}", subscribe.getId(), e.getMessage(), e);
+        // 필요 시 재시도 로직 or 실패 상태 기록
+      }
     }
   }
 }

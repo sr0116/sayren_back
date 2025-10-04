@@ -163,9 +163,15 @@ public class SubscribeServiceImpl implements SubscribeService {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
     //   구독 준비중
+    if (subscribe.getStatus() == SubscribeStatus.PENDING_PAYMENT) {
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+      log.info("자동 결제 완료 처리 → 상태 전환: PENDING_PAYMENT → PREPARING");
+    }
+    //  준비 상태가 아니라면 예외
     if (subscribe.getStatus() != SubscribeStatus.PREPARING) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
+
     // 구독 개월 수 가져오기
     Integer months = subscribe.getOrderItem().getOrderPlan().getMonth();
     if (months == null || months <= 0) {

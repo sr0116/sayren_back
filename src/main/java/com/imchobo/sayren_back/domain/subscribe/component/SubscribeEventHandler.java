@@ -33,8 +33,7 @@ import java.util.List;
 @Component
 @Log4j2
 public class SubscribeEventHandler {
-  // 이후에 분리하는 방향이고 지금은 세가지 테이블 한 번에 핸들러 쪽에 모아둠
-  // 이벤트 리스너
+
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final PaymentRepository paymentRepository;
   private final SubscribeHistoryRepository subscribeHistoryRepository;
@@ -42,43 +41,78 @@ public class SubscribeEventHandler {
   private final SubscribeStatusChanger subscribeStatusChanger;
   private final DeliveryItemRepository deliveryItemRepository;
 
-  // 구독 이력 기록 및 상태(히스토리 테이블 첫 생성)
+  // 최초 구독 생성 시 기록
   public void recordInit(Subscribe subscribe) {
-    SubscribeHistory history = SubscribeHistory.builder().subscribe(subscribe).status(subscribe.getStatus())   // PENDING_PAYMENT
-            .reasonCode(ReasonCode.NONE).build();
+    SubscribeHistory history = SubscribeHistory.builder()
+            .subscribe(subscribe)
+            .status(subscribe.getStatus()) // PENDING_PAYMENT
+            .reasonCode(ReasonCode.NONE)
+            .build();
     subscribeHistoryRepository.save(history);
   }
 
-  // 구독 상태 변경 (히스토리)이벤트 핸들러
+  //  구독 상태 변경 (히스토리 이벤트 핸들러)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleSubscribeStatusChanged(SubscribeStatusChangedEvent event) {
-    // 1) 구독 엔티티 조회 (FK 저장용)
-    Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId()).orElseThrow(() -> new SubscribeNotFoundException(event.getSubscribeId()));
+    log.info("[EVENT] handleSubscribeStatusChanged triggered → subscribeId={}, transition={}, actor={}",
+            event.getSubscribeId(),
+            event.getTransition(),
+            event.getActor());
 
-    // 2) 이력 엔티티 생성
-    SubscribeHistory history = SubscribeHistory.builder().subscribe(subscribe).status(event.getTransition().getStatus())    // 상태
-            .reasonCode(event.getTransition().getReason())// 변경 이유
+    // transition null 방어 로그
+    if (event.getTransition() == null) {
+      log.error("[FATAL] SubscribeStatusChangedEvent.transition is NULL (subscribeId={})", event.getSubscribeId());
+      return;
+    }
+
+    if (event.getTransition().getStatus() == null || event.getTransition().getReason() == null) {
+      log.error("[FATAL] Transition 내부 필드 null → status={}, reason={}, subscribeId={}",
+              event.getTransition().getStatus(),
+              event.getTransition().getReason(),
+              event.getSubscribeId());
+    }
+
+    // 1) 구독 엔티티 조회
+    Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
+            .orElseThrow(() -> new SubscribeNotFoundException(event.getSubscribeId()));
+
+    // 2) 이력 생성
+    SubscribeHistory history = SubscribeHistory.builder()
+            .subscribe(subscribe)
+            .status(event.getTransition().getStatus())
+            .reasonCode(event.getTransition().getReason())
+            .changedBy(event.getActor())
             .build();
 
     // 3) 저장
     subscribeHistoryRepository.save(history);
+    log.info("[HISTORY] 구독 이력 저장 완료 → subscribeId={}, status={}, reason={}, actor={}",
+            subscribe.getId(),
+            history.getStatus(),
+            history.getReasonCode(),
+            history.getChangedBy());
   }
 
-  // 구독 회차 상태 변경 이벤트 헨들러
+  // 결제 상태 변경 → 구독 회차 연동
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
-    //
+    log.info("[EVENT] handlePaymentStatusChanged → paymentId={}, transition={}", event.getPaymentId(), event.getTransition());
+
     paymentRepository.findById(event.getPaymentId())
             .map(Payment::getSubscribeRound)
             .ifPresent(round -> {
-
-              // 일반 결제인 경우 구독 회차가 null일 수 있으므로 필터링
               SubscribeRoundTransition transition = mapToRoundTransition(event.getTransition());
               Subscribe subscribe = round.getSubscribe();
 
-              // 중복 이벤트 방지: 이미 같은 상태면 무시
+              if (transition == null) {
+                log.error("[FATAL] SubscribeRoundTransition mapping 실패: PaymentTransition={}, paymentId={}",
+                        event.getTransition(), event.getPaymentId());
+                return;
+              }
+
+              // 동일 상태 중복 방지
               if (round.getPayStatus() == transition.getStatus()) {
                 log.debug("중복 이벤트 무시 - roundId={}, status={}", round.getId(), round.getPayStatus());
                 return;
@@ -86,15 +120,12 @@ public class SubscribeEventHandler {
 
               switch (transition) {
                 case PAY_SUCCESS, RETRY_SUCCESS -> {
-                  // 회차 상태 갱신
                   round.setPayStatus(transition.getStatus());
                   round.setPaidDate(LocalDateTime.now());
-                  // 재결제 성공 시 유예기간 초기화
                   round.setFailedAt(null);
                   round.setGracePeriodEndAt(null);
                   subscribeRoundRepository.save(round);
 
-                  // 배송 상태 조회
                   boolean canPrepare = deliveryItemRepository
                           .findByOrderItem(subscribe.getOrderItem())
                           .stream()
@@ -105,7 +136,6 @@ public class SubscribeEventHandler {
                           .stream()
                           .anyMatch(di -> di.getDelivery().getStatus() == DeliveryStatus.DELIVERED);
 
-                  // 구독 첫 회차 결제시
                   if (round.getRoundNo() == 1) {
                     if (canPrepare) {
                       subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
@@ -120,48 +150,41 @@ public class SubscribeEventHandler {
                     log.info("구독 [{}] {}회차 결제 성공", subscribe.getId(), round.getRoundNo());
                   }
                 }
-                // 결제 실패  _ 재시도 실패
+
                 case PAY_FAIL, RETRY_FAIL -> {
                   round.setPayStatus(transition.getStatus());
-                  // 결제 실패 시 유예기간 설정
                   round.setFailedAt(LocalDateTime.now());
                   round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3));
                   subscribeRoundRepository.save(round);
-                  // 1회차 시에는 구독 전체 실패
+
                   if (round.getRoundNo() == 1) {
                     failAllRounds(subscribe, transition);
                     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
                     log.info("구독 [{}] 1회차 결제 실패 → 전체 FAILED", subscribe.getId());
                   } else {
-                    // 즉시 연체 전환 X → 유예기간 내 재시도 가능
-                    log.info("구독 [{}] {}회차 결제 실패 → 유예기간 시작 (3일 이내 재시도 가능)",
-                            subscribe.getId(), round.getRoundNo());
+                    log.info("구독 [{}] {}회차 결제 실패 → 유예기간 3일 시작", subscribe.getId(), round.getRoundNo());
                   }
                 }
 
-                // 결제 타임아웃 (유예기간 초과)
                 case PAY_TIMEOUT -> {
                   round.setPayStatus(transition.getStatus());
                   subscribeRoundRepository.save(round);
-
-                  // 상태명 통일: OVERDUE_FINAL
                   subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE_FINAL, ActorType.SYSTEM);
                   log.info("구독 [{}] 결제 타임아웃 → OVERDUE_FINAL", subscribe.getId());
                 }
-                // 초기 결제 실패
+
                 case INIT_FAIL -> {
                   failAllRounds(subscribe, transition);
                   subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
                   log.info("구독 [{}] INIT_FAIL → 전체 FAILED", subscribe.getId());
                 }
-                // 전체 취소(환불 또는 계약 해지)
+
                 case CANCEL_ALL -> {
                   cancelAllRounds(subscribe, transition);
                   subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
                   log.info("구독 [{}] 전체 CANCEL 처리", subscribe.getId());
                 }
-                // 강제 종료
-                // 강제 종료
+
                 case FORCED_END -> {
                   failAllRounds(subscribe, transition);
                   subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE_FINAL, ActorType.SYSTEM);
@@ -169,17 +192,14 @@ public class SubscribeEventHandler {
                 }
               }
             });
-
   }
 
-  // 전체 회차 실패 처리
   private void failAllRounds(Subscribe subscribe, SubscribeRoundTransition transition) {
     List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
     LocalDateTime now = LocalDateTime.now();
 
     rounds.forEach(r -> {
       r.setPayStatus(transition.getStatus());
-      // 전체 실패 시 유예기간도 설정
       r.setFailedAt(now);
       r.setGracePeriodEndAt(now.plusDays(3));
     });
@@ -187,21 +207,23 @@ public class SubscribeEventHandler {
     subscribeRoundRepository.saveAll(rounds);
   }
 
-  // 전체 회차 취소 처리
   private void cancelAllRounds(Subscribe subscribe, SubscribeRoundTransition transition) {
     List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
     rounds.forEach(r -> r.setPayStatus(transition.getStatus()));
     subscribeRoundRepository.saveAll(rounds);
   }
-  // PaymentTransition → SubscribeRoundTransition 매핑
 
   private SubscribeRoundTransition mapToRoundTransition(PaymentTransition transition) {
+    if (transition == null) {
+      log.error("[FATAL] PaymentTransition이 null → SubscribeRoundTransition 매핑 실패");
+      return null;
+    }
     return switch (transition) {
       case COMPLETE -> SubscribeRoundTransition.PAY_SUCCESS;
       case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM -> SubscribeRoundTransition.PAY_FAIL;
       case FAIL_TIMEOUT -> SubscribeRoundTransition.PAY_TIMEOUT;
       case REFUND, PARTIAL_REFUND -> SubscribeRoundTransition.CANCEL;
-      default -> SubscribeRoundTransition.PAY_FAIL; // 안전 fallback (누락 case 방지)
+      default -> SubscribeRoundTransition.PAY_FAIL;
     };
   }
 }
