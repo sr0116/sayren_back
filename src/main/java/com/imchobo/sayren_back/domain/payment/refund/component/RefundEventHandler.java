@@ -59,6 +59,15 @@ public class RefundEventHandler {
       Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
               .orElseThrow(() -> new RuntimeException("구독 없음: " + event.getSubscribeId()));
 
+      // 이미 환불 완료 상태인지 확인 (중복 방지)
+      boolean alreadyRefunded = refundRequestRepository
+              .findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
+              .map(req -> req.getStatus() == RefundRequestStatus.APPROVED || req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN)
+              .orElse(false);
+      if (alreadyRefunded) {
+        log.warn("이미 환불 처리된 구독입니다: subscribeId={}", subscribe.getId());
+        return;
+      }
       // 실제 환불 실행
       refundService.executeRefundForSubscribe(subscribe, event.getTransition().getReason());
 

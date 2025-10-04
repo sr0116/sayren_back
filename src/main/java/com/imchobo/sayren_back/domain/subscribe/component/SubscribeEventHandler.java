@@ -33,7 +33,7 @@ import java.util.List;
 @Component
 @Log4j2
 public class SubscribeEventHandler {
-
+  // 이후에 분리하는 방향이고 지금은 세가지 테이블 한 번에 핸들러 쪽에 모아둠
   // 이벤트 리스너
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final PaymentRepository paymentRepository;
@@ -69,78 +69,121 @@ public class SubscribeEventHandler {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
+    //
     paymentRepository.findById(event.getPaymentId())
             .map(Payment::getSubscribeRound)
             .ifPresent(round -> {
+
+              // 일반 결제인 경우 구독 회차가 null일 수 있으므로 필터링
               SubscribeRoundTransition transition = mapToRoundTransition(event.getTransition());
               Subscribe subscribe = round.getSubscribe();
+
+              // 중복 이벤트 방지: 이미 같은 상태면 무시
+              if (round.getPayStatus() == transition.getStatus()) {
+                log.debug("중복 이벤트 무시 - roundId={}, status={}", round.getId(), round.getPayStatus());
+                return;
+              }
 
               switch (transition) {
                 case PAY_SUCCESS, RETRY_SUCCESS -> {
                   // 회차 상태 갱신
                   round.setPayStatus(transition.getStatus());
                   round.setPaidDate(LocalDateTime.now());
+                  // 재결제 성공 시 유예기간 초기화
+                  round.setFailedAt(null);
+                  round.setGracePeriodEndAt(null);
                   subscribeRoundRepository.save(round);
 
-                  // 첫 회차 + 배송 READY → PREPARING
+                  // 배송 상태 조회
                   boolean canPrepare = deliveryItemRepository
-                          .findByOrderItem(round.getSubscribe().getOrderItem())
+                          .findByOrderItem(subscribe.getOrderItem())
                           .stream()
                           .anyMatch(di -> di.getDelivery().getStatus() == DeliveryStatus.READY);
 
-                  if (canPrepare && round.getRoundNo() == 1) {
-                    subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
-                    log.info("구독 [{}] 첫 회차 결제 성공 & 배송 READY → PREPARING", subscribe.getId());
+                  boolean canActivate = deliveryItemRepository
+                          .findByOrderItem(subscribe.getOrderItem())
+                          .stream()
+                          .anyMatch(di -> di.getDelivery().getStatus() == DeliveryStatus.DELIVERED);
+
+                  // 구독 첫 회차 결제시
+                  if (round.getRoundNo() == 1) {
+                    if (canPrepare) {
+                      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+                      log.info("구독 [{}] 첫 회차 결제 성공 → PREPARING 전환", subscribe.getId());
+                    } else if (canActivate) {
+                      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
+                      log.info("구독 [{}] 첫 회차 결제 + 배송 완료 → ACTIVE 전환", subscribe.getId());
+                    } else {
+                      log.info("구독 [{}] 첫 회차 결제 완료, 배송 상태 불충족 (roundNo=1)", subscribe.getId());
+                    }
                   } else {
-                    log.info("구독 [{}] 결제 성공했지만 PREPARING 조건 불충족 (roundNo={}, 배송READY={})",
-                            subscribe.getId(), round.getRoundNo(), canPrepare);
+                    log.info("구독 [{}] {}회차 결제 성공", subscribe.getId(), round.getRoundNo());
                   }
                 }
+                // 결제 실패  _ 재시도 실패
                 case PAY_FAIL, RETRY_FAIL -> {
                   round.setPayStatus(transition.getStatus());
+                  // 결제 실패 시 유예기간 설정
+                  round.setFailedAt(LocalDateTime.now());
+                  round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3));
                   subscribeRoundRepository.save(round);
-
+                  // 1회차 시에는 구독 전체 실패
                   if (round.getRoundNo() == 1) {
                     failAllRounds(subscribe, transition);
                     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
                     log.info("구독 [{}] 1회차 결제 실패 → 전체 FAILED", subscribe.getId());
                   } else {
-                    subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE, ActorType.SYSTEM);
-                    log.info("구독 [{}] 중도 결제 실패 → OVERDUE", subscribe.getId());
+                    // 즉시 연체 전환 X → 유예기간 내 재시도 가능
+                    log.info("구독 [{}] {}회차 결제 실패 → 유예기간 시작 (3일 이내 재시도 가능)",
+                            subscribe.getId(), round.getRoundNo());
                   }
                 }
+
+                // 결제 타임아웃 (유예기간 초과)
                 case PAY_TIMEOUT -> {
                   round.setPayStatus(transition.getStatus());
                   subscribeRoundRepository.save(round);
 
-                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE, ActorType.SYSTEM);
-                  log.info("구독 [{}] 결제 타임아웃 → OVERDUE", subscribe.getId());
+                  // 상태명 통일: OVERDUE_FINAL
+                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE_FINAL, ActorType.SYSTEM);
+                  log.info("구독 [{}] 결제 타임아웃 → OVERDUE_FINAL", subscribe.getId());
                 }
+                // 초기 결제 실패
                 case INIT_FAIL -> {
                   failAllRounds(subscribe, transition);
                   subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
                   log.info("구독 [{}] INIT_FAIL → 전체 FAILED", subscribe.getId());
                 }
+                // 전체 취소(환불 또는 계약 해지)
                 case CANCEL_ALL -> {
                   cancelAllRounds(subscribe, transition);
                   subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
                   log.info("구독 [{}] 전체 CANCEL 처리", subscribe.getId());
                 }
-                case OVERDUE_END -> {
+                // 강제 종료
+                // 강제 종료
+                case FORCED_END -> {
                   failAllRounds(subscribe, transition);
-                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE, ActorType.SYSTEM);
-                  log.info("구독 [{}] OVERDUE_END → 전체 FAILED", subscribe.getId());
+                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE_FINAL, ActorType.SYSTEM);
+                  log.info("구독 [{}] FORCED_END → 전체 FAILED", subscribe.getId());
                 }
               }
             });
 
   }
 
-
   // 전체 회차 실패 처리
   private void failAllRounds(Subscribe subscribe, SubscribeRoundTransition transition) {
     List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
-    rounds.forEach(r -> r.setPayStatus(transition.getStatus()));
+    LocalDateTime now = LocalDateTime.now();
+
+    rounds.forEach(r -> {
+      r.setPayStatus(transition.getStatus());
+      // 전체 실패 시 유예기간도 설정
+      r.setFailedAt(now);
+      r.setGracePeriodEndAt(now.plusDays(3));
+    });
+
     subscribeRoundRepository.saveAll(rounds);
   }
 
@@ -158,6 +201,7 @@ public class SubscribeEventHandler {
       case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM -> SubscribeRoundTransition.PAY_FAIL;
       case FAIL_TIMEOUT -> SubscribeRoundTransition.PAY_TIMEOUT;
       case REFUND, PARTIAL_REFUND -> SubscribeRoundTransition.CANCEL;
+      default -> SubscribeRoundTransition.PAY_FAIL; // 안전 fallback (누락 case 방지)
     };
   }
 }

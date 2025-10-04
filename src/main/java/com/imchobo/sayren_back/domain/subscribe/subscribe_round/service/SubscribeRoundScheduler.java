@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.subscribe.subscribe_round.service;
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentRequestDTO;
 import com.imchobo.sayren_back.domain.payment.dto.PaymentResponseDTO;
@@ -8,6 +9,8 @@ import com.imchobo.sayren_back.domain.payment.en.PaymentType;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.service.PaymentService;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
@@ -31,6 +34,7 @@ public class SubscribeRoundScheduler {
   private final PaymentService paymentService;
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final PaymentMapper paymentMapper;
+  private final SubscribeStatusChanger subscribeStatusChanger;
 
   // 매일 새벽 5시마다 실행
 //  @Scheduled(cron = "0 0 5 * * *")
@@ -38,6 +42,7 @@ public class SubscribeRoundScheduler {
   @Transactional
   public void processDueRounds() {
     LocalDate today = LocalDate.now();
+    LocalDateTime now = LocalDateTime.now();
 
     List<SubscribeRound> dueRounds =
             subscribeRoundRepository.findByDueDateAndPayStatus(today, PaymentStatus.PENDING);
@@ -56,7 +61,29 @@ public class SubscribeRoundScheduler {
 
       } catch (Exception e) {
         log.error("회차 결제 준비 실패: roundId={}, 이유={}", round.getId(), e.getMessage());
+        // 유예 기간 설정 (3일로 일단 고정)
         round.setPayStatus(PaymentStatus.FAILED);
+        round.setFailedAt(LocalDateTime.now()); // 실패 시각 기록
+        round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3)); // 3일 유예기간 계산
+        subscribeRoundRepository.save(round);
+      }
+    }
+    // 유예 기간 만료 검사 후 상태 변경
+    // 2) 유예기간 만료 검사 (FAILED + gracePeriodEndAt < now)
+    List<SubscribeRound> failedRounds =
+            subscribeRoundRepository.findByPayStatus(PaymentStatus.FAILED);
+
+    for (SubscribeRound round : failedRounds) {
+      if (round.getGracePeriodEndAt() != null && round.getGracePeriodEndAt().isBefore(now)) {
+        log.info("[유예기간 종료 감지] 구독={}, 회차={}, gracePeriodEndAt={}",
+                round.getSubscribe().getId(), round.getRoundNo(), round.getGracePeriodEndAt());
+
+        // (추가) 구독 전체 상태를 연체로 전환
+        subscribeStatusChanger.changeSubscribe(
+                round.getSubscribe(),
+                SubscribeTransition.OVERDUE_FINAL,
+                ActorType.SYSTEM
+        );
       }
     }
   }

@@ -31,8 +31,14 @@ public class PaymentStatusChanger {
   // 결제 상태 변경
   @Transactional
   public void changePayment(Payment payment, PaymentTransition transition,  Long orderItemId, ActorType actor){
+//    paymentRepository.save(payment);
+    if (payment.getPaymentStatus() == transition.getStatus()) {
+      // 같은 상태일 경우 중복 이벤트 방지
+      return;
+    }
     payment.setPaymentStatus(transition.getStatus());
-    paymentRepository.save(payment);
+    // 즉시 flush 처리로 최신 상태 보장
+    paymentRepository.saveAndFlush(payment);
 
     eventPublisher.publishEvent(
             new PaymentStatusChangedEvent(
