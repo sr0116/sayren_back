@@ -8,6 +8,7 @@ import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,9 +17,10 @@ import java.util.Optional;
 public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
   // 멤버 아이디 조회(마이페이지)
   List<Subscribe> findByMember_Id(Long memberId);
-  
+
 
   List<Subscribe> findByMember(Member member);
+
   // 특정 회원의 구독 상태별 조회
   List<Subscribe> findByMember_IdAndStatus(Long memberId, SubscribeStatus status);
 
@@ -29,6 +31,15 @@ public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
 
   Subscribe findByOrderItem(OrderItem orderItem);
 
+  // 관리자용 전체 조회
+  @Query("""
+            SELECT s FROM Subscribe s
+            JOIN FETCH s.member m
+            JOIN FETCH s.orderItem oi
+            JOIN FETCH oi.order o
+            ORDER BY s.id DESC
+          """)
+  List<Subscribe> findAllWithMemberAndOrder();
 
 
 }

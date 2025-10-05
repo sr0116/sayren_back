@@ -21,7 +21,7 @@ public interface SubscribeService {
   // 구독시 보증금 계산
 
   // 배송 완료시 상태 변경
-  void  activateAfterDelivery(Long subscribeId, OrderItem orderItem);
+  void activateAfterDelivery(Long subscribeId, OrderItem orderItem);
 
   // 구독 단건 조회
   SubscribeResponseDTO getSubscribe(Long subscribeId);
@@ -38,8 +38,11 @@ public interface SubscribeService {
   // (추가) 구독 취소 (사용자 요청)
   void cancelSubscribe(Long subscribeId);
 
-// 구독 취소 (관리자 승인 여부)
+  // 구독 취소 (관리자 승인 여부)
   void processCancelRequest(Long subscribeId, RefundRequestStatus status, ReasonCode reasonCode);
+
+  // 관리자 조회
+  List<SubscribeResponseDTO> getAllForAdmin();
 
   // (추가) 구독 상태 변경 이력 조회
   List<SubscribeHistoryResponseDTO> getHistories(Long subscribeId);

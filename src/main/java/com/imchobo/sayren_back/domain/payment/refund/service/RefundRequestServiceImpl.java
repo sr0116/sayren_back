@@ -190,7 +190,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   @Override
   @Transactional(readOnly = true)
   public List<RefundRequestResponseDTO> getAllRefundRequests() {
-    List<RefundRequest> requests = refundRequestRepository.findAllByOrderByRegDateDesc();
+    List<RefundRequest> requests = refundRequestRepository.findAllWithMemberAndOrder(); // 관리자 전용
     List<RefundRequestResponseDTO> dtos = refundRequestMapper.toResponseDTOs(requests);
 
     for (int i = 0; i < requests.size(); i++) {

@@ -19,19 +19,19 @@ public class AdminSubscribeController {
   private final SubscribeService subscribeService;
 
   // 모든 구독 전체 조회
+  // 모든 구독 전체 조회 (관리자)
   @GetMapping
   public ResponseEntity<List<SubscribeResponseDTO>> getAll() {
-    return ResponseEntity.ok(subscribeService.getAll());
+    return ResponseEntity.ok(subscribeService.getAllForAdmin());
   }
 
   //  취소 요청 승인/거절
   @PostMapping("/{id}/cancel")
-  public ResponseEntity<Void> processCancel(
-          @PathVariable Long id,
-          @RequestParam RefundRequestStatus status,
-          @RequestParam ReasonCode reasonCode
-  ) {
-    subscribeService.processCancelRequest(id, status, reasonCode);
-    return ResponseEntity.noContent().build();
+  public ResponseEntity<String> processCancel( @PathVariable Long id, @RequestParam String status, @RequestParam String reasonCode) {
+    RefundRequestStatus requestStatus = RefundRequestStatus.valueOf(status);
+    ReasonCode code = ReasonCode.valueOf(reasonCode);
+    subscribeService.processCancelRequest(id, requestStatus, code);
+    return ResponseEntity.ok("구독 취소 요청이 처리되었습니다.");
   }
+
 }

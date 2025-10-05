@@ -18,5 +18,6 @@ public interface SubscribeHistoryRepository  extends JpaRepository<SubscribeHist
 
   boolean existsBySubscribeAndReasonCode(Subscribe subscribe, ReasonCode reasonCode);
 
-  Optional<Object> findFirstBySubscribeOrderByRegDateDesc(Subscribe subscribe);
+  Optional<SubscribeHistory> findFirstBySubscribeOrderByRegDateDesc(Subscribe subscribe);
+
 }
