@@ -44,6 +44,7 @@ public class SubscribeRoundScheduler {
     LocalDate today = LocalDate.now();
     LocalDateTime now = LocalDateTime.now();
 
+    // 결제 예정 회차 조회(오늘 + 결제 대기중)
     List<SubscribeRound> dueRounds =
             subscribeRoundRepository.findByDueDateAndPayStatus(today, PaymentStatus.PENDING);
 
@@ -62,20 +63,23 @@ public class SubscribeRoundScheduler {
       } catch (Exception e) {
         log.error("회차 결제 준비 실패: roundId={}, 이유={}", round.getId(), e.getMessage());
         // 유예 기간 설정 (3일로 일단 고정)
-        round.setPayStatus(PaymentStatus.FAILED);
+        round.setPayStatus(PaymentStatus.PENDING); // 바로 결제 실패 하지 말고 유예기간 3일정도
         round.setFailedAt(LocalDateTime.now()); // 실패 시각 기록
         round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3)); // 3일 유예기간 계산
         subscribeRoundRepository.save(round);
+
+        log.warn("스케쥴러 결제 실패 유예 기간 3일 - roundId={}" , round.getId());
       }
     }
     // 유예 기간 만료 검사 후 상태 변경
     // 2) 유예기간 만료 검사 (FAILED + gracePeriodEndAt < now)
     List<SubscribeRound> failedRounds =
-            subscribeRoundRepository.findByPayStatus(PaymentStatus.FAILED);
+            subscribeRoundRepository.findByPayStatusIn(List.of(
+                    PaymentStatus.FAILED, PaymentStatus.PENDING));
 
     for (SubscribeRound round : failedRounds) {
       if (round.getGracePeriodEndAt() != null && round.getGracePeriodEndAt().isBefore(now)) {
-        log.info("[유예기간 종료 감지] 구독={}, 회차={}, gracePeriodEndAt={}",
+        log.info("[유예기간 종료] 구독={}, 회차={}, gracePeriodEndAt={}",
                 round.getSubscribe().getId(), round.getRoundNo(), round.getGracePeriodEndAt());
 
         // (추가) 구독 전체 상태를 연체로 전환
@@ -84,6 +88,13 @@ public class SubscribeRoundScheduler {
                 SubscribeTransition.OVERDUE_FINAL,
                 ActorType.SYSTEM
         );
+
+        // 해당 회차도 전체 failed 처리
+        round.setPayStatus(PaymentStatus.FAILED);
+        subscribeRoundRepository.save(round);
+
+        log.info("유예 기간 만료 처리 구독={}, 회차={}",
+                round.getSubscribe().getId(), round.getRoundNo());
       }
     }
   }

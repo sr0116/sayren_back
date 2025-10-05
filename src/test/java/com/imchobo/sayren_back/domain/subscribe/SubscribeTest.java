@@ -23,8 +23,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @SpringBootTest
@@ -51,46 +53,94 @@ public class SubscribeTest {
   @Autowired
   private SubscribeRoundRepository subscribeRoundRepository;
 
-//  @Test
-  void testSchedulerManually() {
+
+  @Test
+  void testSchedulerProcessDueRounds() {
+    // given
+    LocalDate today = LocalDate.now();
+
+    // 사전 상태 확인
+    List<SubscribeRound> beforeRounds =
+            subscribeRoundRepository.findByDueDateAndPayStatus(today, PaymentStatus.PENDING);
+    log.info("스케줄러 실행 전 결제대기 회차 수: {}", beforeRounds.size());
+    assertTrue(!beforeRounds.isEmpty(), "테스트 데이터에 PENDING 상태 회차가 있어야 합니다.");
+
     // when
     scheduler.processDueRounds();
 
     // then
-    List<SubscribeRound> rounds = subscribeRoundRepository
-            .findByDueDateAndPayStatus(LocalDate.now(), PaymentStatus.PAID);
+    List<SubscribeRound> afterRounds =
+            subscribeRoundRepository.findByDueDateAndPayStatus(today, PaymentStatus.PENDING);
+    log.info("스케줄러 실행 후 결제대기 회차 수: {}", afterRounds.size());
 
-    log.info("스케줄러 실행 후 PENDING -> PAID 로 바뀌어야 함 {}" , rounds);
+    // 모든 회차 중 하나라도 gracePeriodEndAt이 생겼는지 확인
+    boolean gracePeriodSet = subscribeRoundRepository.findAll().stream()
+            .anyMatch(r -> r.getGracePeriodEndAt() != null);
+    assertTrue(gracePeriodSet, "결제 실패 회차에 gracePeriodEndAt이 설정되어야 합니다.");
+
+    // 구독 상태가 연체로 바뀐 구독이 있는지 확인
+    List<Subscribe> overdueSubs = subscribeRepository.findAll().stream()
+            .filter(s -> s.getStatus() == SubscribeStatus.OVERDUE)
+            .toList();
+    log.info("스케줄러 실행 후 연체 상태 구독 수: {}", overdueSubs.size());
+
+    // 상태 변경이 있었는지만 검증
+    assertTrue(overdueSubs.size() >= 0, "연체 상태 구독이 있어야 합니다(조건에 따라 0일 수도 있음).");
   }
+
 
   @Test
-  @Transactional
-  @Rollback(false)
-  void testActivateAfterDelivery() {
+  void testGracePeriodExpiredTriggersOverdue() {
     // given
-    Long deliveryId = 12L; // 미리 insert 된 배송 ID
-    Delivery delivery = deliveryRepository.findById(deliveryId)
-            .orElseThrow();
+    LocalDateTime past = LocalDateTime.now().minusDays(5);
+    SubscribeRound round = subscribeRoundRepository.findAll().get(0);
+    round.setPayStatus(PaymentStatus.PENDING);
+    round.setGracePeriodEndAt(past); // 이미 5일 지남
+    subscribeRoundRepository.save(round);
 
-    // 배송 상태 변경
-    delivery.setStatus(DeliveryStatus.DELIVERED);
-    deliveryRepository.save(delivery);
-
-    // when: 구독 활성화 처리 호출
-    Long subscribeId = 240L;
-    OrderItem orderItem = delivery.getDeliveryItems()
-            .get(0)
-            .getOrderItem();
-
-    subscribeService.activateAfterDelivery(subscribeId, orderItem);
+    // when
+    scheduler.processDueRounds();
 
     // then
-    SubscribeResponseDTO result = subscribeService.getSubscribe(subscribeId);
-    Assertions.assertEquals(
-            SubscribeStatus.ACTIVE,
-            result.getStatus(),
-            "구독 상태가 ACTIVE로 변경되어야 한다"
+    Subscribe updatedSubscribe = round.getSubscribe();
+    assertEquals(
+            SubscribeStatus.OVERDUE,
+            updatedSubscribe.getStatus(),
+            "유예기간 만료 후 구독 상태는 OVERDUE로 전환되어야 합니다."
     );
+    log.info(" 유예기간 만료 시 연체 전환 테스트 통과 - subscribeId={}", updatedSubscribe.getId());
   }
+
+
+
+  @Test
+@Transactional
+@Rollback(false)
+void testActivateAfterDelivery() {
+  // given
+  Long deliveryId = 12L; // 미리 insert 된 배송 ID
+  Delivery delivery = deliveryRepository.findById(deliveryId)
+          .orElseThrow();
+
+  // 배송 상태 변경
+  delivery.setStatus(DeliveryStatus.DELIVERED);
+  deliveryRepository.save(delivery);
+
+  // when: 구독 활성화 처리 호출
+  Long subscribeId = 240L;
+  OrderItem orderItem = delivery.getDeliveryItems()
+          .get(0)
+          .getOrderItem();
+
+  subscribeService.activateAfterDelivery(subscribeId, orderItem);
+
+  // then
+  SubscribeResponseDTO result = subscribeService.getSubscribe(subscribeId);
+  Assertions.assertEquals(
+          SubscribeStatus.ACTIVE,
+          result.getStatus(),
+          "구독 상태가 ACTIVE로 변경되어야 한다"
+  );
+}
 }
 

@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.payment.refund.component;
 
 
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
@@ -9,12 +10,16 @@ import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusC
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -23,11 +28,10 @@ public class RefundEventHandler {
 
   private final RefundService refundService;
   private final SubscribeRepository subscribeRepository;
-  private final ApplicationEventPublisher eventPublisher;
+  private final SubscribeRoundRepository subscribeRoundRepository;
   private final RefundRequestRepository refundRequestRepository;
 
   // 관리자가 환불 승인 시에 호출됨
-
   @EventListener
   @Transactional
   public void onRefundApproved(RefundApprovedEvent event) {
@@ -61,6 +65,11 @@ public class RefundEventHandler {
                 if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
                   try {
                     refundService.executeRefundForSubscribe(subscribe, event.getTransition().getReason());
+
+                    // 구독 회차 상태 일관 변경
+                    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
+                    rounds.forEach(r -> r.setPayStatus(PaymentStatus.REFUNDED)); // 일단 환불 상태로 변경하고 이넘 추가 고려
+                    subscribeRoundRepository.saveAll(rounds);
 
                     // 환불 완료 상태 반영 (이전은 아직 회수전 상태)
                     req.setStatus(RefundRequestStatus.APPROVED);

@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,4 +45,5 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
           "ORDER BY sr.dueDate DESC")
   List<SubscribeRound> findAllByStatusWithMember(PaymentStatus status);
 
+  List<SubscribeRound> findByPayStatusIn(Collection<PaymentStatus> payStatuses);
 }
