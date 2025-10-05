@@ -1,9 +1,7 @@
-package com.imchobo.sayren_back.domain.payment.refund.controller;
+package com.imchobo.sayren_back.domain.payment.refund.controller.user;
 
-import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestDTO;
 import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestResponseDTO;
-import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/user/refunds/requests")
 @RequiredArgsConstructor
-public class RefundRequestController {
+public class UserRefundRequestController {
 
   private final RefundRequestService refundRequestService;
 

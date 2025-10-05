@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.payment.refund.controller;
+package com.imchobo.sayren_back.domain.payment.refund.controller.admin;
 
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestResponseDTO;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/user/admin/refunds/requests")
+@RequestMapping("/api/admin/refunds/requests")
 @RequiredArgsConstructor
 public class AdminRefundRequestController {
 

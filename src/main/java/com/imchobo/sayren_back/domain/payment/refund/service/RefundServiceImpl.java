@@ -11,6 +11,9 @@ import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
+import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
+import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelRequest;
+import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelResponse;
 import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
@@ -42,6 +45,7 @@ public class RefundServiceImpl implements RefundService {
   private final SubscribeStatusChanger subscribeStatusChanger;
   private final SubscribeRepository subscribeRepository;
   private final PaymentStatusChanger paymentStatusChanger;
+  private final PortOnePaymentClient portOnePaymentClient;
 
 
   //  환불 결제 처리
@@ -55,8 +59,20 @@ public class RefundServiceImpl implements RefundService {
     Payment payment = payments.get(payments.size() - 1); // 최근 결제
     // 결제 유형 (주문 플랜에 따른 환불 계산기)
     RefundCalculator calculator = getCalculator(payment);
-    // 환불 금액 계산
-    Long refundAmount = calculator.calculateRefundAmount(payment, request);
+    // 환불 금액 계산 (일단 전체 환불만)
+//    Long refundAmount = calculator.calculateRefundAmount(payment, request);
+    Long refundAmount = payment.getAmount();
+
+    // 실제 PortOne Api 호출
+    CancelRequest cancelRequest = new CancelRequest();
+    cancelRequest.setImpUid(payment.getImpUid());
+    cancelRequest.setMerchantUid(payment.getMerchantUid());
+    cancelRequest.setReason(reasonCode.name());
+    cancelRequest.setAmount(refundAmount);
+
+    CancelResponse cancelResponse = portOnePaymentClient.cancelPayment(cancelRequest);
+    log.info("PortOne 환불 완료: impUid={}, amount={}, reason={}",
+            cancelResponse.getImpUid(), cancelResponse.getAmount(), cancelResponse.getReason());
 
     // 나중에 매퍼로 대체 가능하면 수정
     Refund refund = Refund.builder()
@@ -79,6 +95,7 @@ public class RefundServiceImpl implements RefundService {
     OrderPlanType type = payment.getOrderItem().getOrderPlan().getType();
     return (type == OrderPlanType.RENTAL) ? rentalRefundCalculator : purchaseRefundCalculator;
   }
+
   // 구독 취소 승인 시에 환불
   @Transactional
   @Override
@@ -88,22 +105,40 @@ public class RefundServiceImpl implements RefundService {
     if (payments.isEmpty()) { // 결제 없으면 예외 처리
       throw new PaymentNotFoundException(subscribe.getOrderItem().getId());
     }
+    if (subscribe.getStatus() != SubscribeStatus.CANCELED) {
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
+    }
+
     Payment latest = payments.get(payments.size() - 1);
     // 분기 처리
     RefundRequest refundRequest = new RefundRequest();
     refundRequest.setReasonCode(reasonCode); // 환불 사유
-    Long refundAmount = rentalRefundCalculator.calculateRefundAmount(latest,refundRequest );
+    // 일단 환불 처리 전체로만
+//    Long refundAmount = rentalRefundCalculator.calculateRefundAmount(latest,refundRequest );
+    Long refundAmount = latest.getAmount(); // 전체
+
+    // 포트 원 환불 요청
+    CancelRequest cancelRequest = new CancelRequest();
+    cancelRequest.setImpUid(latest.getImpUid());
+    cancelRequest.setMerchantUid(latest.getMerchantUid());
+    cancelRequest.setReason(reasonCode.name());
+    cancelRequest.setAmount(refundAmount);
+
+    CancelResponse cancelResponse = portOnePaymentClient.cancelPayment(cancelRequest);
+    log.info("PortOne 구독(보증금) 환불 완료: impUid={}, amount={}, reason={}",
+            cancelResponse.getImpUid(), cancelResponse.getAmount(), cancelResponse.getReason());
+
     // 나중에 매퍼 이용하기
 //    Refund 레코드 생성 (RefundRequest 없이도 기록 가능)
     Refund refund = Refund.builder()
             .payment(latest)
-            .refundRequest(null) // 구독 취소 흐름은 RefundRequest 엔티티 없이 진행 (취소라서)
+            .refundRequest(null)
             .amount(refundAmount)
             .reasonCode(reasonCode)
             .build();
     refundRepository.save(refund);
 
-    // 4) 결제 상태 갱신(가장 최근 결제 표시). 필요 시 '관련 모든 회차 결제'에 표기하는 확장도 가능.
+    // 결제 상태 갱신(가장 최근 결제 표시)
     latest.setPaymentStatus(PaymentStatus.REFUNDED);
     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
 

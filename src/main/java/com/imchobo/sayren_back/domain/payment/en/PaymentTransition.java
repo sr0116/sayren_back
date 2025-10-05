@@ -23,7 +23,11 @@ public enum PaymentTransition {
   FAIL_PAYMENT(PaymentStatus.FAILED, ReasonCode.PAYMENT_FAILURE), // 잔액 부족, 한도 초과
   FAIL_TIMEOUT(PaymentStatus.FAILED, ReasonCode.PAYMENT_TIMEOUT), // 유예기간 초과 미납
   REFUND(PaymentStatus.REFUNDED, ReasonCode.AUTO_REFUND),    // 환불 확정
-  PARTIAL_REFUND(PaymentStatus.PARTIAL_REFUNDED, ReasonCode.USER_REQUEST); // 부분 환불
+  PARTIAL_REFUND(PaymentStatus.PARTIAL_REFUNDED, ReasonCode.USER_REQUEST), // 부분 환불
+
+  // PortOne 상태 확장 대응
+  READY(PaymentStatus.PENDING, ReasonCode.NONE),       // PortOne: 가상계좌 생성 등 결제 준비 상태
+  SCHEDULED(PaymentStatus.PENDING, ReasonCode.NONE);   // PortOne: 정기결제 예약 상태
 
   private final PaymentStatus status;
   private final ReasonCode reason;
@@ -47,6 +51,12 @@ public enum PaymentTransition {
       }
       return COMPLETE;
     }
+    // PortOne의 신규 상태 대응
+    if ("ready".equalsIgnoreCase(status))
+      return READY;         // 가상계좌, 예약 결제 대기
+    if ("scheduled".equalsIgnoreCase(status))
+      return SCHEDULED; // 예약 결제 상태
+    
     // 환불 처리
     if ("cancelled".equalsIgnoreCase(status)) {
       return REFUND;

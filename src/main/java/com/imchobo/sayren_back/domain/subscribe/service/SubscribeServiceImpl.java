@@ -13,10 +13,11 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeCancelHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
-import com.imchobo.sayren_back.domain.subscribe.component.recorder.SubscribeHistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -67,6 +68,7 @@ public class SubscribeServiceImpl implements SubscribeService {
   private final SubscribeRoundMapper subscribeRoundMapper;
   private final ApplicationEventPublisher eventPublisher;
   private final RefundService refundService;
+  private final SubscribeCancelHandler subscribeCancelHandler;
 
 
   // 구독 테이블 생성
@@ -163,9 +165,15 @@ public class SubscribeServiceImpl implements SubscribeService {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
     //   구독 준비중
+    if (subscribe.getStatus() == SubscribeStatus.PENDING_PAYMENT) {
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+      log.info("자동 결제 완료 처리 → 상태 전환: PENDING_PAYMENT → PREPARING");
+    }
+    //  준비 상태가 아니라면 예외
     if (subscribe.getStatus() != SubscribeStatus.PREPARING) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
+
     // 구독 개월 수 가져오기
     Integer months = subscribe.getOrderItem().getOrderPlan().getMonth();
     if (months == null || months <= 0) {
@@ -207,8 +215,15 @@ public class SubscribeServiceImpl implements SubscribeService {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
     // 이미 종료 되었거나 취소 상태시 예외 처리
-    if (subscribe.getStatus() == SubscribeStatus.ENDED ||
-            subscribe.getStatus() == SubscribeStatus.CANCELED) {
+    if (subscribe.getStatus() == SubscribeStatus.ACTIVE
+            && subscribeHistoryRepository.existsBySubscribeAndReasonCode(subscribe, ReasonCode.USER_REQUEST)) {
+      throw new SubscribeStatusInvalidException("이미 취소 요청 중인 구독입니다.");
+    }
+    if (subscribe.getStatus() == SubscribeStatus.CANCELED
+            || subscribe.getStatus() == SubscribeStatus.ENDED ){
+      throw new SubscribeStatusInvalidException("이미 취소 요청된 구독입니다.");
+    }
+    if (subscribe.getStatus() != SubscribeStatus.ACTIVE) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
     // 회원 취소 요청
@@ -220,28 +235,14 @@ public class SubscribeServiceImpl implements SubscribeService {
   //취소 승인/거절 (관리자)
   @Override
   @Transactional
-  public void processCancelRequest(Long subscribeId, boolean approved, ReasonCode reasonCode) {
+  public void processCancelRequest(Long subscribeId, RefundRequestStatus status, ReasonCode reasonCode) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
     // 일단 구독 상태가 구독 중이어야 함
     if (subscribe.getStatus() != SubscribeStatus.ACTIVE) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
-    if (approved) {
-      // 승인 처리시
-      // 구독 상태 변경 및 결제 환불
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
-//      refundService.executeRefundForSubscribe(subscribe, reasonCode); 이거 대신에
-      // 환불 이벤트 정의
-      eventPublisher.publishEvent(
-              new RefundApprovedEvent(subscribe.getId(), reasonCode, ActorType.ADMIN)
-      );
-
-      log.info("구독 취소 승인 완료 (환불은 회수 완료 이벤트 시점에 실행): subscribeId={}", subscribe.getId());
-    } else { // 거절
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_REJECT, ActorType.ADMIN);
-
-    }
+    subscribeCancelHandler.handle(subscribe, status, reasonCode);
   }
 
   // 구독 상태 변경 이력 조회
