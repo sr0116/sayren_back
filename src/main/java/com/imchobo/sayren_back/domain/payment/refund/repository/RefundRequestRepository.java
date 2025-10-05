@@ -6,6 +6,7 @@ import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
@@ -28,4 +29,13 @@ public interface RefundRequestRepository extends JpaRepository<RefundRequest, Lo
 
 
   Optional<Object> findByOrderItem(OrderItem orderItem);
+
+  // 관리자용 환불 요청 전체 조회(회원 정보까지)
+  @Query("SELECT r FROM RefundRequest r " +
+          "JOIN FETCH r.member m " +
+          "JOIN FETCH r.orderItem oi " +
+          "JOIN FETCH oi.order o " +
+          "ORDER BY r.regDate DESC")
+  List<RefundRequest> findAllWithMemberAndOrder();
+
 }

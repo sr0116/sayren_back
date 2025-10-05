@@ -284,8 +284,7 @@ public class PaymentServiceImpl implements PaymentService {
   @Transactional(readOnly = true)
   @Override
   public List<PaymentResponseDTO> getAllForAdmin() {
-    List<Payment> payments = paymentRepository.findAllByOrderByIdDesc();
-
+    List<Payment> payments = paymentRepository.findAllWithMemberAndOrder();
     return payments.stream()
             .map(paymentMapper::toResponseDTO)
             .toList();

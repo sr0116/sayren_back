@@ -77,7 +77,7 @@ public class SubscribeTest {
     deliveryRepository.save(delivery);
 
     // when: 구독 활성화 처리 호출
-    Long subscribeId = 236L;
+    Long subscribeId = 240L;
     OrderItem orderItem = delivery.getDeliveryItems()
             .get(0)
             .getOrderItem();

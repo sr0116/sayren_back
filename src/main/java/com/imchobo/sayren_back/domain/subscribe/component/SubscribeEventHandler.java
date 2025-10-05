@@ -20,6 +20,8 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.Subscribe
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,9 +53,10 @@ public class SubscribeEventHandler {
     subscribeHistoryRepository.save(history);
   }
 
-  //  구독 상태 변경 (히스토리 이벤트 핸들러)
+  //  구독 상태 변경 (히스토리 이벤트 핸들러) - 비동기 로그 기록
+  @Async //  REQUIRES_NEW 랑 같이
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  @EventListener
   public void handleSubscribeStatusChanged(SubscribeStatusChangedEvent event) {
     log.info("[EVENT] handleSubscribeStatusChanged triggered → subscribeId={}, transition={}, actor={}",
             event.getSubscribeId(),
@@ -96,7 +99,7 @@ public class SubscribeEventHandler {
 
   // 결제 상태 변경 → 구독 회차 연동
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  @EventListener
   public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
     log.info("[EVENT] handlePaymentStatusChanged → paymentId={}, transition={}", event.getPaymentId(), event.getTransition());
 
