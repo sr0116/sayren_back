@@ -23,6 +23,8 @@ public interface SubscribeService {
   // 배송 완료시 상태 변경
   void activateAfterDelivery(Long subscribeId, OrderItem orderItem);
 
+  void cancelAfterReturn(Long subscribeId, OrderItem orderItem);
+
   // 구독 단건 조회
   SubscribeResponseDTO getSubscribe(Long subscribeId);
 

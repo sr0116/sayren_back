@@ -66,22 +66,9 @@ public class RefundRequestServiceImpl implements RefundRequestService {
             payment.getOrderItem(),
             List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
     );
-//    if (exists) {
-//      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
-//    }
-    // 이미 환불 요청이 있는지 체크
-//    boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
-//            payment.getOrderItem(),
-//            List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
-//    );
-//
-// [테스트 전용 예외 처리] - exists 여도 무시하고 계속 진행
     if (exists) {
-      log.warn(" 테스트 모드: 이미 환불 요청이 있지만 새로 생성합니다. paymentId={}", dto.getPaymentId());
-      // 실제 운영에서는 여기서 예외 던짐
-       throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
+      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
     }
-
 
     // 엔티티 변환 저장
     RefundRequest entity = refundRequestMapper.toEntity(dto);
@@ -136,9 +123,9 @@ public class RefundRequestServiceImpl implements RefundRequestService {
 
     log.info("환불 요청 처리 시작: refundRequestId={}, status={}, reasonCode={}",
             refundRequestId, status, reasonCode);
-
+// 회수 대기 상태로 변경 후 이벤트 처리
     if (status == RefundRequestStatus.APPROVED) {
-      refundService.executeRefund(request, reasonCode);
+      request.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
     }
 
     log.info("환불 요청 처리 완료: refundRequestId={}, 최종상태={}",

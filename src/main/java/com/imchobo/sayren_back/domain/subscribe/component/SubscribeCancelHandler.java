@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 
     public void handle(Subscribe subscribe, RefundRequestStatus status, ReasonCode reasonCode) {
       switch (status) {
-        case APPROVED -> {
+        case APPROVED, APPROVED_WAITING_RETURN -> {
           statusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
           eventPublisher.publishEvent(new RefundApprovedEvent(subscribe.getId(), reasonCode, ActorType.ADMIN));
           log.info("구독 취소 승인 완료: subscribeId={}", subscribe.getId());
