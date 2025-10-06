@@ -11,7 +11,7 @@ public interface RefundService {
   void executeRefund(RefundRequest request, ReasonCode reasonCode);
 
   // 구독 취소 승인 시에 환불
-  void executeRefundForSubscribe(Subscribe subscribe, ReasonCode reasonCode);
+  void executeRefundForSubscribe(Subscribe subscribe, RefundRequest refundRequest);
   // 필요시 환불 취소/롤백도 여기서 관리
   void cancelRefund(Long refundId);
 }

@@ -28,6 +28,7 @@ import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -49,7 +50,7 @@ public class RefundServiceImpl implements RefundService {
 
 
   //  환불 결제 처리
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Override
   public void executeRefund(RefundRequest request, ReasonCode reasonCode) {
     List<Payment> payments = paymentRepository.findByOrderItem(request.getOrderItem());
@@ -82,7 +83,7 @@ public class RefundServiceImpl implements RefundService {
             .reasonCode(reasonCode)
             .build();
 
-    refundRepository.save(refund);
+    refundRepository.saveAndFlush(refund);
 
     // Payment 상태 변경 (이것도 나중에 옵션 트렌지션으로 만들기)
     paymentStatusChanger.changePayment(payment, PaymentTransition.REFUND, payment.getOrderItem().getId(), ActorType.SYSTEM);
@@ -97,9 +98,9 @@ public class RefundServiceImpl implements RefundService {
   }
 
   // 구독 취소 승인 시에 환불
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Override
-  public void executeRefundForSubscribe(Subscribe subscribe, ReasonCode reasonCode) {
+  public void executeRefundForSubscribe(Subscribe subscribe, RefundRequest refundRequest) {
     // 구독 orderitem 기준 가장 최근 결제 조회
     List<Payment> payments = paymentRepository.findByOrderItem(subscribe.getOrderItem());
     if (payments.isEmpty()) { // 결제 없으면 예외 처리
@@ -110,9 +111,7 @@ public class RefundServiceImpl implements RefundService {
     }
 
     Payment latest = payments.get(payments.size() - 1);
-    // 분기 처리
-    RefundRequest refundRequest = new RefundRequest();
-    refundRequest.setReasonCode(reasonCode); // 환불 사유
+
     // 일단 환불 처리 전체로만
 //    Long refundAmount = rentalRefundCalculator.calculateRefundAmount(latest,refundRequest );
     Long refundAmount = latest.getAmount(); // 전체
@@ -121,7 +120,7 @@ public class RefundServiceImpl implements RefundService {
     CancelRequest cancelRequest = new CancelRequest();
     cancelRequest.setImpUid(latest.getImpUid());
     cancelRequest.setMerchantUid(latest.getMerchantUid());
-    cancelRequest.setReason(reasonCode.name());
+    cancelRequest.setReason(refundRequest.getReasonCode().name());
     cancelRequest.setAmount(refundAmount);
 
     CancelResponse cancelResponse = portOnePaymentClient.cancelPayment(cancelRequest);
@@ -132,14 +131,16 @@ public class RefundServiceImpl implements RefundService {
 //    Refund 레코드 생성 (RefundRequest 없이도 기록 가능)
     Refund refund = Refund.builder()
             .payment(latest)
-            .refundRequest(null)
+            .refundRequest(refundRequest)
             .amount(refundAmount)
-            .reasonCode(reasonCode)
+            .reasonCode(refundRequest.getReasonCode())
             .build();
-    refundRepository.save(refund);
+    refundRepository.saveAndFlush(refund);
 
     // 결제 상태 갱신(가장 최근 결제 표시)
     latest.setPaymentStatus(PaymentStatus.REFUNDED);
+    paymentRepository.saveAndFlush(latest);
+
     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
 
     log.info("구독 환불 실행 완료: subscribeId={}, refundAmount={}", subscribe.getId(), refundAmount);

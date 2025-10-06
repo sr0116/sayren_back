@@ -309,8 +309,7 @@ public class SubscribeServiceImpl implements SubscribeService {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
     // 관리자가 승인시
-    if (status == RefundRequestStatus.APPROVED
-            || status == RefundRequestStatus.APPROVED_WAITING_RETURN) {
+    if (status == RefundRequestStatus.APPROVED) {
       //환불 요청 자동 생성
       RefundRequest autoRequest = RefundRequest.builder()
               .orderItem(subscribe.getOrderItem())
@@ -319,7 +318,7 @@ public class SubscribeServiceImpl implements SubscribeService {
               .reasonCode(reasonCode)
               .build();
 
-      refundRequestRepository.save(autoRequest);
+      refundRequestRepository.saveAndFlush(autoRequest);
 
       // 구독 상태 변경 (환불 승인)
       subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);

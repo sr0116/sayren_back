@@ -1,11 +1,26 @@
 package com.imchobo.sayren_back.domain.payment.refund.component;
 
 
+import com.imchobo.sayren_back.domain.common.en.ReasonCode;
+import com.imchobo.sayren_back.domain.delivery.component.event.DeliveryStatusChangedEvent;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
+import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
+import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
+import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
+import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
+import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
+import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
+import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
@@ -17,7 +32,10 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
 
@@ -30,6 +48,9 @@ public class RefundEventHandler {
   private final SubscribeRepository subscribeRepository;
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final RefundRequestRepository refundRequestRepository;
+  private final PaymentRepository paymentRepository;
+  private final OrderItemRepository orderItemRepository;
+  private final DeliveryRepository deliveryRepository;
 
   // 관리자가 환불 승인 시에 호출됨
   @EventListener
@@ -52,10 +73,57 @@ public class RefundEventHandler {
   }
 
 
+  // 배송 회수 완료 이벤트 → 자동 환불 처리
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handleDeliveryReturned(DeliveryStatusChangedEvent event) {
+    // 배송 상태가 RETURNED가 아닐 경우 종료
+    if (event.getStatus() != DeliveryStatus.RETURNED) return;
+
+    log.info("배송 회수 완료 이벤트 감지 → 환불 자동 처리 시작: deliveryId={}, orderItemId={}",
+            event.getDeliveryId(), event.getOrderItemId());
+
+    try {
+      // orderItemId로 RefundRequest 조회
+      refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(
+              orderItemRepository.findById(event.getOrderItemId())
+                      .orElseThrow(() -> new RuntimeException("OrderItem 없음: " + event.getOrderItemId()))
+      ).ifPresent(req -> {
+        if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
+          try {
+            // 환불 실행
+            refundService.executeRefund(
+                    req,
+                    req.getReasonCode() != null ? req.getReasonCode() : ReasonCode.AUTO_REFUND
+            );
+
+            // Detached 방지용 재조회 후 상태 확정
+            RefundRequest managed = refundRequestRepository.findById(req.getId())
+                    .orElseThrow(() -> new RuntimeException("RefundRequest 재조회 실패"));
+            managed.setStatus(RefundRequestStatus.APPROVED);
+            refundRequestRepository.saveAndFlush(managed);
+
+            log.info("환불 성공: refundRequestId={}, orderItemId={}", req.getId(), event.getOrderItemId());
+          } catch (Exception e) {
+            log.error("환불 처리 실패: refundRequestId={}, orderItemId={}, error={}",
+                    req.getId(), event.getOrderItemId(), e.getMessage(), e);
+          }
+        } else {
+          log.warn("환불 요청이 승인 대기 상태가 아님 → refundRequestId={}, status={}",
+                  req.getId(), req.getStatus());
+        }
+      });
+    } catch (Exception e) {
+      log.error("배송 회수 환불 처리 중 예외 발생: deliveryId={}, orderItemId={}, message={}",
+              event.getDeliveryId(), event.getOrderItemId(), e.getMessage(), e);
+    }
+  }
+
+
   // 회수 완료 되었을 때 환불 실행
-  @EventListener
-  @Transactional
-  public void onDeliveryReturned(SubscribeStatusChangedEvent event) {
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void onDeliveryReturnedSubscribe(SubscribeStatusChangedEvent event) {
     if (event.getTransition() == SubscribeTransition.RETURNED_AND_CANCELED) {
       Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
               .orElseThrow(() -> new RuntimeException("구독 없음: " + event.getSubscribeId()));
@@ -64,16 +132,18 @@ public class RefundEventHandler {
               .ifPresent(req -> {
                 if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
                   try {
-                    refundService.executeRefundForSubscribe(subscribe, event.getTransition().getReason());
+                    refundService.executeRefundForSubscribe(subscribe, req);
 
                     // 구독 회차 상태 일관 변경
                     List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
                     rounds.forEach(r -> r.setPayStatus(PaymentStatus.REFUNDED)); // 일단 환불 상태로 변경하고 이넘 추가 고려
                     subscribeRoundRepository.saveAll(rounds);
 
-                    // 환불 완료 상태 반영 (이전은 아직 회수전 상태)
-                    req.setStatus(RefundRequestStatus.APPROVED);
-                    refundRequestRepository.save(req);
+                    // Detached 방지용으로 재조회
+                    RefundRequest managed = refundRequestRepository.findById(req.getId())
+                            .orElseThrow(() -> new RuntimeException("RefundRequest 재조회 실패"));
+                    managed.setStatus(RefundRequestStatus.APPROVED);
+                    refundRequestRepository.saveAndFlush(managed);
 
                     log.info("회수 완료 → 환불 성공: refundRequestId={}, 상태=APPROVED_WAITING_RETURN→APPROVED",
                             req.getId());
@@ -84,8 +154,10 @@ public class RefundEventHandler {
                 } else {
                   log.warn("회수 완료 이벤트 무시: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
                 }
+
               });
     }
+
   }
 }
 
