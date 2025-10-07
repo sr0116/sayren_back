@@ -35,6 +35,10 @@ public class Notification extends BaseEntity {
   @Column(nullable = false)
   private String message;
 
+  // 추가  알림이 연결된 엔티티 ID (예: 구독ID, 회차ID 등)
+  @Column(name = "target_id")
+  private Long targetId;
+
 
   private String linkUrl;
 

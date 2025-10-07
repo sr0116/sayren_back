@@ -21,5 +21,17 @@ spring:
 
 logging:
   level:
+    # ✅ Security 내부 동작 (인증/인가)
     org.springframework.security: DEBUG
 
+    # ✅ DispatcherServlet 흐름 (컨트롤러 매핑, 에러 포워딩)
+    org.springframework.web: DEBUG
+
+    # ✅ Hibernate SQL 로그
+    org.hibernate.SQL: DEBUG
+
+    # ✅ /error 리다이렉트 추적용
+    org.springframework.boot.web.servlet.support.ErrorPageFilter: TRACE
+
+    # ✅ 우리 프로젝트 패키지 전체 (서비스, 컨트롤러 내부 예외 추적)
+    com.imchobo.sayren_back: DEBUG

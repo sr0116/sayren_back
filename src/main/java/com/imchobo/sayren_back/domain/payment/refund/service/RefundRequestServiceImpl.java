@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.payment.refund.service;
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
@@ -29,6 +30,7 @@ import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +52,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   private final RentalRefundCalculator rentalRefundCalculator;
   private final RefundService refundService;
   private final SubscribeRepository subscribeRepository;
+  private final ApplicationEventPublisher eventPublisher;
 
   // 환불 요청 생성(멤버 정보는 시큐리티 유틸에서 멤버 아이디 가져오기)
   @Transactional
@@ -66,22 +69,9 @@ public class RefundRequestServiceImpl implements RefundRequestService {
             payment.getOrderItem(),
             List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
     );
-//    if (exists) {
-//      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
-//    }
-    // 이미 환불 요청이 있는지 체크
-//    boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
-//            payment.getOrderItem(),
-//            List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
-//    );
-//
-// [테스트 전용 예외 처리] - exists 여도 무시하고 계속 진행
     if (exists) {
-      log.warn(" 테스트 모드: 이미 환불 요청이 있지만 새로 생성합니다. paymentId={}", dto.getPaymentId());
-      // 실제 운영에서는 여기서 예외 던짐
-       throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
+      throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
     }
-
 
     // 엔티티 변환 저장
     RefundRequest entity = refundRequestMapper.toEntity(dto);
@@ -136,14 +126,25 @@ public class RefundRequestServiceImpl implements RefundRequestService {
 
     log.info("환불 요청 처리 시작: refundRequestId={}, status={}, reasonCode={}",
             refundRequestId, status, reasonCode);
-
+// 회수 대기 상태로 변경 후 이벤트 처리
     if (status == RefundRequestStatus.APPROVED) {
-      refundService.executeRefund(request, reasonCode);
+      request.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
     }
+    // 구독 결제인지 확인 (OrderItem → Subscribe 존재 여부)
+    boolean isSubscribe = subscribeRepository.findByOrderItem(request.getOrderItem()).isPresent();
 
-    log.info("환불 요청 처리 완료: refundRequestId={}, 최종상태={}",
-            refundRequestId, request.getStatus());
+    // 구독 결제가 아닐 때만 이벤트 발행
+    if (!isSubscribe) {
+      eventPublisher.publishEvent(new RefundApprovedEvent(
+              request.getOrderItem().getId(),
+              null, // 일반 결제니까 subscribeId 없음
+              reasonCode,
+              ActorType.ADMIN
+      ));
 
+      log.info("환불 요청 처리 완료: refundRequestId={}, 최종상태={}",
+              refundRequestId, request.getStatus());
+    }
     return refundRequestMapper.toResponseDTO(request);
   }
 
