@@ -15,8 +15,8 @@ import java.util.List;
         private final ProductService productService;
 
         @GetMapping
-        public List<ProductListResponseDTO> list(@RequestParam(required = false) String type) {
-            return productService.getAllProducts(type);
+        public List<ProductListResponseDTO> list(@RequestParam(required = false) String type, String category) {
+            return productService.getAllProducts(type, category);
         }
 
         @GetMapping("/{id}")
