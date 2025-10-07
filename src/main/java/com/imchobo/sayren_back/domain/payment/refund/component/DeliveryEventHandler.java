@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.domain.payment.refund.component;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
@@ -62,17 +63,14 @@ public class DeliveryEventHandler {
   // 단일 회수 아이템에 대해 환불 처리 수행
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   protected void handleReturnedItem(DeliveryItem item) {
-    var orderItem = item.getOrderItem();
+    OrderItem orderItem = item.getOrderItem();
     if (orderItem == null) {
       log.warn("orderItem이 null → 처리 불가");
       return;
     }
 
-    Subscribe subscribe = subscribeRepository.findByOrderItem(orderItem);
-    if (subscribe == null) {
-      log.warn("구독 엔티티 없음: orderItemId={}", orderItem.getId());
-      return;
-    }
+    Subscribe subscribe = subscribeRepository.findByOrderItem(orderItem)
+            .orElseThrow(() -> new RuntimeException("구독 엔티티 없음: orderItemId=" + orderItem.getId()));
 
     refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(orderItem)
             .ifPresent(req -> {

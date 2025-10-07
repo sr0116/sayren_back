@@ -320,8 +320,15 @@ public class SubscribeServiceImpl implements SubscribeService {
 
       refundRequestRepository.saveAndFlush(autoRequest);
 
-      // 구독 상태 변경 (환불 승인)
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
+//      // 구독 상태 변경 (환불 승인) 중복인 것 같아서 임시 주석
+//      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
+
+      eventPublisher.publishEvent(new RefundApprovedEvent(
+              subscribe.getOrderItem().getId(),
+              subscribe.getId(),
+              reasonCode,
+              ActorType.ADMIN
+      ));
       return;
     }
     // 거절시 상태 복원 처리

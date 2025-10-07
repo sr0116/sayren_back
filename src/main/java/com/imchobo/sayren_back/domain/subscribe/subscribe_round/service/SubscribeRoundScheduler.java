@@ -48,29 +48,50 @@ public class SubscribeRoundScheduler {
     List<SubscribeRound> dueRounds =
             subscribeRoundRepository.findByDueDateAndPayStatus(today, PaymentStatus.PENDING);
 
+    if(dueRounds.isEmpty()) {
+      log.info("오늘 결제 예정 회차가 없습니다.");
+      return;
+    }
+
     for (SubscribeRound round : dueRounds) {
       try {
-        log.info("회차 결제 준비: subscribeId={}, roundNo={}, amount={}",
-                round.getSubscribe().getId(), round.getRoundNo(), round.getAmount());
+        //실제 결제 말고 알림만
+        log.info("결제 예정 회차 감지: subscribeRoundId={}, memberId={}, dueDate={}",
+                round.getId(),
+                round.getSubscribe().getMember().getId(),
+                round.getDueDate());
 
-        //  회차 기준 Payment 생성 (PENDING 상태)
-        PaymentResponseDTO paymentDto = paymentService.prepareForRound(round);
-
-        //  로그만 남기고, 결제 완료는 프론트에서 impUid 전달 후 처리
-        log.info("결제 준비 완료: paymentId={}, merchantUid={}, amount={}",
-                paymentDto.getPaymentId(), paymentDto.getMerchantUid(), paymentDto.getAmount());
-
+        // 나중에 알림 이벤트 붙이기
       } catch (Exception e) {
-        log.error("회차 결제 준비 실패: roundId={}, 이유={}", round.getId(), e.getMessage());
-        // 유예 기간 설정 (3일로 일단 고정)
-        round.setPayStatus(PaymentStatus.PENDING); // 바로 결제 실패 하지 말고 유예기간 3일정도
-        round.setFailedAt(LocalDateTime.now()); // 실패 시각 기록
-        round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3)); // 3일 유예기간 계산
-        subscribeRoundRepository.save(round);
-
-        log.warn("스케쥴러 결제 실패 유예 기간 3일 - roundId={}" , round.getId());
+        log.error("결제 예정 회차 처리 중 오류 발생: roundId={}, message={}", round.getId(), e.getMessage());
       }
     }
+
+      // 실제 빌링키 연결한다고 했을 때 기준 (지금은 사용 안함)
+//    for (SubscribeRound round : dueRounds) {
+//      try {
+//        log.info("회차 결제 준비: subscribeId={}, roundNo={}, amount={}",
+//                round.getSubscribe().getId(), round.getRoundNo(), round.getAmount());
+//
+//        //  회차 기준 Payment 생성 (PENDING 상태)
+//        PaymentResponseDTO paymentDto = paymentService.prepareForRound(round);
+//
+//        //  로그만 남기고, 결제 완료는 프론트에서 impUid 전달 후 처리
+//        log.info("결제 준비 완료: paymentId={}, merchantUid={}, amount={}",
+//                paymentDto.getPaymentId(), paymentDto.getMerchantUid(), paymentDto.getAmount());
+//
+//      } catch (Exception e) {
+//        log.error("회차 결제 준비 실패: roundId={}, 이유={}", round.getId(), e.getMessage());
+//        // 유예 기간 설정 (3일로 일단 고정)
+//        round.setPayStatus(PaymentStatus.PENDING); // 바로 결제 실패 하지 말고 유예기간 3일정도
+//        round.setFailedAt(LocalDateTime.now()); // 실패 시각 기록
+//        round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3)); // 3일 유예기간 계산
+//        subscribeRoundRepository.save(round);
+//
+//        log.warn("스케쥴러 결제 실패 유예 기간 3일 - roundId={}" , round.getId());
+//      }
+//    }
+
     // 유예 기간 만료 검사 후 상태 변경
     // 2) 유예기간 만료 검사 (FAILED + gracePeriodEndAt < now)
     List<SubscribeRound> failedRounds =

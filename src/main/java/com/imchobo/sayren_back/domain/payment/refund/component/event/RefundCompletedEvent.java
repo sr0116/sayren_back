@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class RefundCompletedEvent {
+  private final Long orderItemId;
   private final Long subscribeId;
   private final Long refundId;      // 생성된 Refund PK
   private final ReasonCode reason;    // ADMIN 등

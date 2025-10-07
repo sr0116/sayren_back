@@ -56,22 +56,28 @@ public class RefundEventHandler {
   @EventListener
   @Transactional
   public void onRefundApproved(RefundApprovedEvent event) {
-    Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
-            .orElseThrow(() -> new RuntimeException("구독 없음: " + event.getSubscribeId()));
 
-    refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
-            .ifPresentOrElse(req -> {
-              if (req.getStatus() == RefundRequestStatus.PENDING) {
-                req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
-                req.setReasonCode(event.getReason()); // 승인 사유 기록
-                refundRequestRepository.save(req); // 명시적 저장
-                log.info("환불 요청 상태 변경 완료: refundRequestId={}, 상태=PENDING→APPROVED_WAITING_RETURN", req.getId());
-              } else {
-                log.warn("환불 요청 상태 변경 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
-              }
-            }, () -> log.warn("해당 구독에 대한 환불 요청 없음: subscribeId={}", event.getSubscribeId()));
+    // 일반 결제 환불은 구독 ID가 없으므로 null 방어 필요
+    if (event.getSubscribeId() == null) {
+      log.info("일반 결제 환불 승인 이벤트 수신 → 구독 환불 처리 생략");
+      return;
+    }
+    // 구독 환불 승인 로직 (구독 ID 존재 시에만 실행)
+    subscribeRepository.findById(event.getSubscribeId())
+            .ifPresentOrElse(subscribe -> {
+              refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
+                      .ifPresentOrElse(req -> {
+                        if (req.getStatus() == RefundRequestStatus.PENDING) {
+                          req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
+                          req.setReasonCode(event.getReason());
+                          refundRequestRepository.save(req);
+                          log.info("환불 요청 상태 변경 완료: refundRequestId={}, 상태=PENDING→APPROVED_WAITING_RETURN", req.getId());
+                        } else {
+                          log.warn("환불 요청 상태 변경 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
+                        }
+                      }, () -> log.warn("해당 구독에 대한 환불 요청 없음: subscribeId={}", event.getSubscribeId()));
+            }, () -> log.warn("구독 엔티티 없음: subscribeId={}", event.getSubscribeId()));
   }
-
 
   // 배송 회수 완료 이벤트 → 자동 환불 처리
   @Transactional(propagation = Propagation.REQUIRES_NEW)

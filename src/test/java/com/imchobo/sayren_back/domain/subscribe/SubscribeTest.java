@@ -130,6 +130,8 @@ public class SubscribeTest {
     System.out.println("배송 회수 완료 처리 테스트 성공");
 
   }
+  @PersistenceContext
+  private EntityManager entityManager;
 
   @Test
   @Rollback(false)
@@ -144,7 +146,7 @@ public class SubscribeTest {
     delivery.setStatus(DeliveryStatus.RETURNED);
     deliveryRepository.saveAndFlush(delivery);
 
-    Long subscribeId = 251L;
+    Long subscribeId = 265L;
     Long orderItemId = 2L;
     OrderItem orderItem = orderItemRepository.findById(orderItemId).orElseThrow();
 
@@ -154,8 +156,6 @@ public class SubscribeTest {
 
   }
 
-  @PersistenceContext
-  private EntityManager entityManager;
   @Test
   @Rollback(false)
   void testReturnDelivery() throws InterruptedException {
@@ -166,7 +166,7 @@ public class SubscribeTest {
     delivery.setStatus(DeliveryStatus.RETURNED);
     deliveryRepository.saveAndFlush(delivery);
 
-    Long subscribeId = 256L;
+    Long subscribeId = 265L;
     Long orderItemId = 2L;
     OrderItem orderItem = orderItemRepository.findById(orderItemId).orElseThrow();
 
@@ -181,7 +181,6 @@ public class SubscribeTest {
 
 
   @Test
-  @Transactional
   @Rollback(false)
   void testActivateAfterDelivery() {
     // given
@@ -192,11 +191,11 @@ public class SubscribeTest {
     // 배송 상태 변경 (배송 완료)
     delivery.setType(DeliveryType.DELIVERY);
     delivery.setStatus(DeliveryStatus.DELIVERED);
-    deliveryRepository.save(delivery);
+    deliveryRepository.saveAndFlush(delivery);
 
 
     // when: 구독 활성화 처리 호출
-  Long subscribeId = 256L;
+  Long subscribeId = 265L;
   OrderItem orderItem = delivery.getDeliveryItems()
           .get(0)
           .getOrderItem();

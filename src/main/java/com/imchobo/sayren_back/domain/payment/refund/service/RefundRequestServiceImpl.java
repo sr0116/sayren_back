@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.payment.refund.service;
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
@@ -29,6 +30,7 @@ import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +52,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   private final RentalRefundCalculator rentalRefundCalculator;
   private final RefundService refundService;
   private final SubscribeRepository subscribeRepository;
+  private final ApplicationEventPublisher eventPublisher;
 
   // 환불 요청 생성(멤버 정보는 시큐리티 유틸에서 멤버 아이디 가져오기)
   @Transactional
@@ -127,10 +130,21 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     if (status == RefundRequestStatus.APPROVED) {
       request.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
     }
+    // 구독 결제인지 확인 (OrderItem → Subscribe 존재 여부)
+    boolean isSubscribe = subscribeRepository.findByOrderItem(request.getOrderItem()).isPresent();
 
-    log.info("환불 요청 처리 완료: refundRequestId={}, 최종상태={}",
-            refundRequestId, request.getStatus());
+    // 구독 결제가 아닐 때만 이벤트 발행
+    if (!isSubscribe) {
+      eventPublisher.publishEvent(new RefundApprovedEvent(
+              request.getOrderItem().getId(),
+              null, // 일반 결제니까 subscribeId 없음
+              reasonCode,
+              ActorType.ADMIN
+      ));
 
+      log.info("환불 요청 처리 완료: refundRequestId={}, 최종상태={}",
+              refundRequestId, request.getStatus());
+    }
     return refundRequestMapper.toResponseDTO(request);
   }
 

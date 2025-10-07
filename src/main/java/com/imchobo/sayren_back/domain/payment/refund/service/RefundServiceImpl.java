@@ -14,6 +14,7 @@ import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelRequest;
 import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelResponse;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundCompletedEvent;
 import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
@@ -27,6 +28,7 @@ import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +49,7 @@ public class RefundServiceImpl implements RefundService {
   private final SubscribeRepository subscribeRepository;
   private final PaymentStatusChanger paymentStatusChanger;
   private final PortOnePaymentClient portOnePaymentClient;
+  private final ApplicationEventPublisher eventPublisher;
 
 
   //  환불 결제 처리
@@ -87,6 +90,14 @@ public class RefundServiceImpl implements RefundService {
 
     // Payment 상태 변경 (이것도 나중에 옵션 트렌지션으로 만들기)
     paymentStatusChanger.changePayment(payment, PaymentTransition.REFUND, payment.getOrderItem().getId(), ActorType.SYSTEM);
+
+    // 일반 결제
+    eventPublisher.publishEvent(new RefundCompletedEvent(
+            payment.getOrderItem().getId(),
+            null,  // 일반 결제는 구독이 없으므로 null
+            refund.getId(),
+            reasonCode
+    ));
 
     log.info("환불 실행 완료: paymentId={}, refundAmount={}", payment.getId(), refundAmount);
   }
@@ -142,6 +153,14 @@ public class RefundServiceImpl implements RefundService {
     paymentRepository.saveAndFlush(latest);
 
     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
+
+    // 구독 결제
+    eventPublisher.publishEvent(new RefundCompletedEvent(
+            subscribe.getOrderItem().getId(),
+            subscribe.getId(),  // 구독 환불 시에만 존재
+            refund.getId(),
+            refundRequest.getReasonCode()
+    ));
 
     log.info("구독 환불 실행 완료: subscribeId={}, refundAmount={}", subscribe.getId(), refundAmount);
   }
