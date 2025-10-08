@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.member.service;
 
 import com.imchobo.sayren_back.domain.member.dto.SocialDisconnectDTO;
 import com.imchobo.sayren_back.domain.member.dto.SocialResponseDTO;
+import com.imchobo.sayren_back.domain.member.dto.admin.AdminDisconnectProviderDTO;
 import com.imchobo.sayren_back.domain.member.en.Provider;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.MemberProvider;
@@ -43,16 +44,27 @@ public class MemberProviderServiceImpl implements MemberProviderService {
     return new MemberSocialList(google, naver, kakao);
   }
 
-
+  // 유저용
   @Override
   public void disconnect(SocialDisconnectDTO  socialDisconnectDTO) {
-    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
+    disconnect(socialDisconnectDTO.getProvider(), SecurityUtil.getMemberAuthDTO().getId());
+  }
+
+  // 어드민용
+  @Override
+  public void disconnect(AdminDisconnectProviderDTO adminDisconnectProviderDTO) {
+    disconnect(adminDisconnectProviderDTO.getProvider(), adminDisconnectProviderDTO.getMemberId());
+  }
+
+  // 구현체
+  public void disconnect(Provider provider, Long memberId) {
+    Member member = memberRepository.findById(memberId).orElseThrow(IllegalArgumentException::new);
     List<MemberProvider> memberProviderList = memberProviderRepository.findByMember(member);
     if((member.getPassword() == null || member.getPassword().isEmpty()) && memberProviderList.size() == 1){
       throw new SocialDisconnectException();
     }
     memberProviderList.forEach((mp) -> {
-      if(mp.getProvider().equals(socialDisconnectDTO.getProvider())){
+      if(mp.getProvider().equals(provider)){
         memberProviderRepository.delete(mp);
       }
     });
