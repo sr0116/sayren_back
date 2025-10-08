@@ -22,6 +22,9 @@ public interface NotificationService {
   // 선택한 알림 읽음 처리
   void markSelectedAsRead(NotificationBatchRequestDTO dto);
 
+  // 단일 조회
+  NotificationResponseDTO getOne(Long notificationId);
+
   // 로그인 사용자의 전체 알림 읽음 처리
   void markAllAsRead();
 

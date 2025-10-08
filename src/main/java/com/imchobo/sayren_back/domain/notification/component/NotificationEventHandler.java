@@ -58,7 +58,8 @@ public class NotificationEventHandler {
           dto.setTitle("구독 결제 완료");
           dto.setMessage(round.getRoundNo() + "회차 결제가 완료되었습니다.");
           dto.setTargetId(round.getId());
-          dto.setLinkUrl("/mypage/subscribe/" + round.getSubscribe().getId());
+          dto.setLinkUrl(String.format("/mypage/subscribe/%d/rounds/%d",
+                  round.getSubscribe().getId(), round.getRoundNo()));
           notificationService.send(dto);
         });
       } else if (planType == OrderPlanType.PURCHASE) {
@@ -107,7 +108,7 @@ public class NotificationEventHandler {
           dto.setTitle("구독 환불 승인");
           dto.setMessage("구독 #" + subscribe.getId() + " 환불이 승인되었습니다.");
           dto.setTargetId(subscribe.getId());
-          dto.setLinkUrl("/mypage/subscribe/" + subscribe.getId());
+          dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
           notificationService.send(dto);
           log.info("구독 환불 승인 알림 전송 완료 → memberId={}, subscribeId={}", memberId, subscribe.getId());
         }
@@ -131,7 +132,7 @@ public class NotificationEventHandler {
         dto.setTitle("구독 환불 완료");
         dto.setMessage("구독 #" + event.getSubscribeId() + " 환불이 완료되었습니다. 영업일 기준 1~3일 내 입금됩니다.");
         dto.setTargetId(event.getSubscribeId());
-        dto.setLinkUrl("/mypage/subscribe/" + event.getSubscribeId());
+        dto.setLinkUrl(String.format("/mypage/subscribe/%d", event.getSubscribeId()));
       } else {
         // 일반 결제 환불
         dto.setTitle("결제 환불 완료");
@@ -147,7 +148,6 @@ public class NotificationEventHandler {
     });
   }
 
-
   // 구독 상태 변경 알림
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -161,7 +161,8 @@ public class NotificationEventHandler {
       dto.setTitle("구독 상태 변경");
       dto.setMessage("구독이 " + event.getTransition().getStatus().name() + " 상태로 변경되었습니다.");
       dto.setTargetId(subscribe.getId());
-      dto.setLinkUrl("/mypage/subscribe/" + subscribe.getId());
+      dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
+
 
       notificationService.send(dto);
 

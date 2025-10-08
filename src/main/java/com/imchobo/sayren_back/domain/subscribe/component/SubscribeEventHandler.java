@@ -4,10 +4,15 @@ import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
+import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.notification.dto.NotificationCreateDTO;
+import com.imchobo.sayren_back.domain.notification.en.NotificationType;
+import com.imchobo.sayren_back.domain.notification.service.NotificationService;
 import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
+import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeRoundDueEvent;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
@@ -42,6 +47,7 @@ public class SubscribeEventHandler {
   private final SubscribeRepository subscribeRepository;
   private final SubscribeStatusChanger subscribeStatusChanger;
   private final DeliveryItemRepository deliveryItemRepository;
+  private final NotificationService notificationService;
 
   // 최초 구독 생성 시 기록
   public void recordInit(Subscribe subscribe) {
@@ -257,4 +263,27 @@ public class SubscribeEventHandler {
       default -> SubscribeRoundTransition.PAY_FAIL;
     };
   }
+
+  // 회차 알림 이벤트 처리
+  @Async
+  @EventListener
+  public void onSubscribeRoundDue(SubscribeRoundDueEvent event) {
+    SubscribeRound round = event.getRound();
+    Subscribe subscribe = round.getSubscribe();
+    Member member = subscribe.getMember(); // 알림 쪽만 멤버 아이디 따로 받음
+
+    NotificationCreateDTO dto = new NotificationCreateDTO();
+    dto.setMemberId(member.getId());
+    dto.setType(NotificationType.SUBSCRIBE);
+    dto.setTitle("구독 결제일 안내");
+    dto.setMessage(String.format("[%s] %d회차 결제일이 도래했습니다. 결제를 진행해주세요.",
+            subscribe.getOrderItem().getProduct().getName(), round.getRoundNo()));
+    dto.setLinkUrl(String.format("/mypage/subscribe/round/%d?autoPay=true", round.getId()));
+
+    notificationService.send(dto);
+    log.info("[EVENT] 결제 예정 알림 생성 완료 → memberId={}, subscribeId={}, roundNo={}",
+            member.getId(), subscribe.getId(), round.getRoundNo());
+  }
+
+
 }
