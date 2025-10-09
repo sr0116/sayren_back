@@ -8,6 +8,9 @@ import com.imchobo.sayren_back.domain.product.repository.ProductTagRepository;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -98,159 +101,107 @@ public class CrawlingUtil {
     }
   }
 
-  public String getDescription(WebDriver driver) throws Exception {
-    WebElement firstBlock = driver.findElement(By.className("iw_placeholder"));
+    public String getDescription(WebDriver driver) throws Exception {
+        WebElement placeholder = driver.findElement(By.className("iw_placeholder"));
+        String html = placeholder.getDomProperty("outerHTML");
+        Document doc = Jsoup.parse(html);
 
-    List<WebElement> allElements = firstBlock.findElements(By.xpath(".//*"));
-    for (WebElement el : allElements) {
-      cleanDataAttributes(driver, el);
-    }
+        StringBuilder result = new StringBuilder();
 
-    String html = firstBlock.getDomProperty("outerHTML");
-    org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(html);
+        int textCount = 0;
+        int imgCount = 0;
 
-    // 불필요한 wrapper 요소 제거
-    doc.select(".banner-wrap, .img-wrap, .img-alt, .mo, .mo-only, button, .bullet-list, .animation-area").remove();
+        for (Element comp : doc.select(".iw_component")) {
 
-    // a 태그 제거 (안에 있는 텍스트나 이미지만 살려서 대체)
-    for (org.jsoup.nodes.Element a : doc.select("a")) {
-      a.unwrap(); // <a>만 제거, 내부 내용은 유지
-    }
+            // 텍스트 추출
+            for (Element t : comp.select(".txt, p, span, strong")) {
+                if (textCount >= 10) break;
+                String text = t.text().trim();
+                if (!text.isEmpty()) {
+                    result.append("<p>").append(text).append("</p>\n");
+                    textCount++;
+                }
+            }
+
+            // 이미지 추출
+            for (Element img : comp.select("img")) {
+                if (imgCount >= 5) break;
+
+                String src = img.hasAttr("data-pc-src") ? img.attr("data-pc-src") : img.attr("src");
+                if (src == null || src.isBlank()) continue;
+                if (!src.startsWith("http")) src = "https://www.lge.co.kr" + src;
+
+                // 추가: URL 인코딩(공백, 괄호, + 기호 등 처리)
+                src = src.replace(" ", "%20");
+                src = src.replaceAll("\\(", "%28").replaceAll("\\)", "%29");
+                src = src.replaceAll("\\+", "%2B");
 
 
-    // 1. <img src="..."> 처리 + alt 분리
-    for (org.jsoup.nodes.Element img : doc.select("img")) {
-      String src = img.attr("src");
+                String alt = img.attr("alt").toLowerCase();
+                if (alt.contains("손가락") || alt.contains("배경") || alt.contains("아이콘")
+                        || alt.contains("카드") || alt.contains("배너") || alt.contains("로고"))
+                    continue;
 
-      // src가 없으면 data-*에서 대체 (이미 data는 지웠을 가능성 있으니 보강용)
-      if (src == null || src.isBlank()) continue;
+                try {
+                    String s3Url = s3UploadUtil.getFullUrl(s3UploadUtil.upload(src));
+                    result.append("<img src=\"").append(s3Url)
+                            .append("\" style=\"width:100%;height:auto;display:block;\"/>\n");
+                    imgCount++;
+                } catch (Exception e) {
+                    System.err.println("이미지 업로드 실패: " + e.getMessage());
+                }
+            }
 
-      if (!src.startsWith("http")) {
-        src = "https://www.lge.co.kr" + src;
-      }
-      String newSrc = src.replace(" ", "%20");
-      System.out.println("img src: ==" + src + "==");
-      System.out.println("img newSrc: ==" + newSrc + "==");
-
-      String s3Url = s3UploadUtil.getFullUrl(s3UploadUtil.upload(newSrc));
-
-      // alt 텍스트 분리
-      String altText = img.hasAttr("alt") ? img.attr("alt") : null;
-
-      // 새로운 img 태그
-      org.jsoup.nodes.Element newImg = new org.jsoup.nodes.Element("img")
-              .attr("src", s3Url)
-              .attr("style", "width:100%; height:auto; display:block;");
-
-      // alt 텍스트는 <p>로 별도 생성
-      if (altText != null && !altText.isBlank()) {
-        org.jsoup.nodes.Element altPara = new org.jsoup.nodes.Element("p")
-                .attr("class", "img-alt")
-                .text(altText);
-
-        // img + alt를 감싸는 wrapper div
-        org.jsoup.nodes.Element wrapper = new org.jsoup.nodes.Element("div")
-                .appendChild(newImg)
-                .appendChild(altPara);
-
-        img.replaceWith(wrapper);
-      } else {
-        img.replaceWith(newImg);
-      }
-    }
-
-    // 2. style="background:url(...)" 처리 → img + alt 분리
-    for (org.jsoup.nodes.Element el : doc.select("[style]")) {
-      String style = el.attr("style");
-
-      // 모바일 전용 요소 제거
-      if (el.hasClass("mo") || el.hasClass("mo-only")) {
-        el.remove();
-        continue;
-      }
-
-      // 불필요한 클래스 제거
-      if (el.hasClass("banner-wrap") || el.hasClass("img-wrap") || el.hasClass("img-alt")) {
-        el.remove();
-        continue;
-      }
-
-      if (style != null && style.contains("url(")) {
-        java.util.regex.Matcher matcher = java.util.regex.Pattern
-                .compile("url\\(([^)]*)\\)")
-                .matcher(style);
-
-        if (matcher.find()) {
-          String url = matcher.group(1)
-                  .replace("\"", "")
-                  .replace("'", "")
-                  .trim();
-
-          if (!url.startsWith("http")) {
-            url = "https://www.lge.co.kr" + url;
-          }
-
-          String s3Url = s3UploadUtil.getFullUrl(s3UploadUtil.upload(url));
-
-          // 새 img 태그 생성
-          org.jsoup.nodes.Element newImg = new org.jsoup.nodes.Element("img")
-                  .attr("src", s3Url)
-                  .attr("style", "width:100%; height:auto; display:block;");
-
-          // alt 속성 있으면 분리
-          String altText = el.hasAttr("alt") ? el.attr("alt") : null;
-          if (altText != null && !altText.isBlank()) {
-            org.jsoup.nodes.Element altPara = new org.jsoup.nodes.Element("p")
-                    .attr("class", "img-alt")
-                    .text(altText);
-
-            org.jsoup.nodes.Element wrapper = new org.jsoup.nodes.Element("div")
-                    .appendChild(newImg)
-                    .appendChild(altPara);
-
-            el.replaceWith(wrapper);
-          } else {
-            el.replaceWith(newImg);
-          }
+            if (textCount >= 10 && imgCount >= 10) break;
         }
-      }
+
+        return replaceBrandName(result.toString());
     }
+    public List<String> getDescriptionImageUrls(WebDriver driver) throws Exception {
+        WebElement firstBlock = driver.findElement(By.className("iw_placeholder"));
+        String html = firstBlock.getDomProperty("outerHTML");
+        org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(html);
 
-// src 없는 <img> 제거
-    for (org.jsoup.nodes.Element img : doc.select("img")) {
-      String src = img.attr("src");
-      if (src == null || src.isBlank()) {
-        img.remove();
-      }
-    }
+        List<String> imageUrls = new ArrayList<>();
 
+        for (org.jsoup.nodes.Element img : doc.select("img")) {
+            String src = img.attr("src");
 
-    String resultHtml = doc.body().html();
-    return replaceBrandName(resultHtml); // 치환 적용
-  }
+            if (src == null || src.isBlank()) continue;
 
-  public List<String> getDescriptionImageUrls(WebDriver driver) throws Exception {
-    WebElement firstBlock = driver.findElement(By.className("iw_placeholder"));
-    String html = firstBlock.getDomProperty("outerHTML");
+            if (!src.startsWith("http")) {
+                src = "https://www.lge.co.kr" + src;
+            }
 
-    org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(html);
+            // URL 안전하게 인코딩
+            String newSrc = src.replace(" ", "%20")
+                    .replaceAll("\\(", "%28")
+                    .replaceAll("\\)", "%29")
+                    .replaceAll("\\+", "%2B");
 
-    List<String> imageUrls = new ArrayList<>();
+            try {
+                // S3 업로드 후 경로 반환
+                String fullUrl = s3UploadUtil.getFullUrl(s3UploadUtil.upload(newSrc));
 
-    for (org.jsoup.nodes.Element img : doc.select("img")) {
-      String src = img.attr("src");
-      if (src != null && !src.isBlank()) {
-        if (!src.startsWith("http")) {
-          src = "https://www.lge.co.kr" + src;
+                // .amazonaws.com/ 뒤 부분만 안전하게 추출
+                String[] parts = fullUrl.split("\\.amazonaws\\.com/");
+                String pathAndFile = parts.length > 1 ? parts[1] : "";
+
+                // path / uuid 분리
+                int lastSlash = pathAndFile.lastIndexOf("/");
+                String path = (lastSlash > 0) ? pathAndFile.substring(0, lastSlash) : "";
+                String uuid = (lastSlash > 0) ? pathAndFile.substring(lastSlash + 1) : pathAndFile;
+
+                // 최종적으로 attach에서 쓸 수 있도록 구성
+                imageUrls.add(path + "/" + uuid);
+
+            } catch (Exception e) {
+                System.err.println("이미지 업로드 실패: " + e.getMessage());
+            }
         }
-        String newSrc = src.replace(" ", "%20");
 
-        String s3Url = s3UploadUtil.getFullUrl(s3UploadUtil.upload(newSrc));
-        imageUrls.add(s3Url);
-      }
+        return imageUrls;
     }
-    return imageUrls;
-  }
 
   public int getPrice(WebDriver driver) {
     // 가격이 나올 수 있는 후보 셀렉터들

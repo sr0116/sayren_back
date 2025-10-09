@@ -16,9 +16,14 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.model.Tag;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import java.time.Duration;
 import java.util.List;
@@ -37,6 +42,8 @@ public class CrawlingService {
   private final ProductTagRepository productTagRepository;
   private final ProductStockRepository  productStockRepository;
 
+    @PersistenceContext
+    private EntityManager entityManager;
 
   /**
    * 카테고리 페이지 크롤링
@@ -101,7 +108,9 @@ public class CrawlingService {
    * - Tag 저장
    * - ProductOption(구매/구독) 저장
    */
-  private void crawlAndSaveWithTags(WebDriver driver, String url, Map<String, Map<String, String>> tagMap) throws Exception {
+  @Transactional
+  protected void crawlAndSaveWithTags(WebDriver driver, String url, Map<String, Map<String, String>> tagMap) throws Exception {
+
     try {
       System.out.println("crawlAndSaveWithTags: url: " + url);
       driver.get(url);
@@ -119,6 +128,11 @@ public class CrawlingService {
         lastHeight = newHeight;
       }
 
+        // 상세정보 로드 대기 (JS 렌더링 완료 대기)
+        Thread.sleep(3000); // 페이지 완전 로딩까지 4초 대기
+        new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".iw_placeholder, #feature .iw_placeholder, #product-info .iw_placeholder")));
+
       // 상품 기본 정보 수집
       String name = crawlingUtil.getName(driver);
       String description = crawlingUtil.getDescription(driver);
@@ -128,9 +142,16 @@ public class CrawlingService {
       String category = crawlingUtil.getCategory(driver);
       String modelName = crawlingUtil.getModelName(driver);
 
+        // 추가: 유효성 검증
+        if (modelName == null || modelName.isBlank() || name == null || name.isBlank()) {
+            System.err.println("유효하지 않은 상품 스킵: " + url);
+            return;
+        }
+
       // DB 중복 체크 (modelName 기준)
       Optional<Product> existing = productRepository.findByModelName(modelName);
-      Product product;
+      Product product = null;
+
 
       if (existing.isPresent()) {
         // 이미 DB에 존재 → 해당 ProductCrawl 재사용
@@ -138,6 +159,7 @@ public class CrawlingService {
         product = existing.get();
       } else {
         // 신규 상품 저장
+        try {
         product = productRepository.save(Product.builder()
                 .name(name)
                 .description(description)
@@ -146,6 +168,21 @@ public class CrawlingService {
                 .modelName(modelName)
                 .isUse(false)
                 .build());
+
+          productRepository.flush();
+          entityManager.clear();
+          Thread.sleep(200); // DB가 너무 빠르게 쿼리받으면 socket 에러 방지
+
+        } catch (Exception e) {
+            System.err.println("상품 저장 실패 (" + url + "): " + e.getMessage());
+            entityManager.clear(); // 세션 리셋 (꼬인 엔티티 제거)
+            return; // 해당 상품 스킵
+        }
+
+          if (product == null || product.getId() == null) {
+              System.err.println("Product 저장 실패 또는 null 식별자 감지, 이후 로직 스킵: " + url);
+              return;
+          }
 
         // 재고 랜덤값
         int addStock = (int)(Math.random() * 100);
@@ -183,7 +220,7 @@ public class CrawlingService {
             String fullUrl = fullPath.substring(0, fullPath.lastIndexOf("/"));
             String uuid = fullPath.substring(fullPath.lastIndexOf("/") + 1);
 
-            String[] parts = fullUrl.split(".amazonaws.com/");
+            String[] parts = fullUrl.split("\\.amazonaws\\.com/");
             String path = parts.length > 1 ? parts[1] : "";
 
             Attach descAttach = Attach.builder()
@@ -202,20 +239,23 @@ public class CrawlingService {
 
       // 태그 저장 (리스트 페이지에서 긁은 tagMap 기반)
       Map<String, String> currentSpecs = tagMap.get(modelName);
+
+        final Product productFinal = product;
+
       if (currentSpecs != null && !currentSpecs.isEmpty()) {
         currentSpecs.forEach((tagName, tagValue) -> {
           try {
             if (tagValue.contains(",")) {
               for (String v : tagValue.split(",")) {
                 productTagRepository.save(ProductTag.builder()
-                        .product(product)
+                        .product(productFinal)
                         .tagName(tagName)
                         .tagValue(v.trim())
                         .build());
               }
             } else {
               productTagRepository.save(ProductTag.builder()
-                      .product(product)
+                      .product(productFinal)
                       .tagName(tagName)
                       .tagValue(tagValue.trim())
                       .build());
@@ -227,6 +267,9 @@ public class CrawlingService {
       }
 
       System.out.println("DB 저장 완료: " + product.getName());
+
+    // 연결 안정화용 커밋 후 잠깐 대기 (DB가 너무 빠르게 쿼리받으면 socket 에러발생)
+    Thread.sleep(300);
 
     } catch (Exception e) {
       System.err.println("상세 크롤링 실패 (" + url + "): " + e.getMessage());
