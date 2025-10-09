@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.notification.dto;
 
 import com.imchobo.sayren_back.domain.notification.en.NotificationType;
+import lombok.Builder;
 import lombok.Data;
 
 @Data

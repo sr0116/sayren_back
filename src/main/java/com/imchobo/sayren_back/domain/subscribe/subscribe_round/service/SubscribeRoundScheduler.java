@@ -10,6 +10,7 @@ import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.service.PaymentService;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
+import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeRoundDueEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
@@ -18,6 +19,7 @@ import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -30,11 +32,9 @@ import java.util.List;
 @Log4j2
 public class SubscribeRoundScheduler {
 
-  private final SubscribeRepository subscribeRepository;
-  private final PaymentService paymentService;
   private final SubscribeRoundRepository subscribeRoundRepository;
-  private final PaymentMapper paymentMapper;
   private final SubscribeStatusChanger subscribeStatusChanger;
+  private final ApplicationEventPublisher eventPublisher;
 
   // 매일 새벽 5시마다 실행
 //  @Scheduled(cron = "0 0 5 * * *")
@@ -62,6 +62,8 @@ public class SubscribeRoundScheduler {
                 round.getDueDate());
 
         // 나중에 알림 이벤트 붙이기
+        // 회차 이벤트 발행
+        eventPublisher.publishEvent(new SubscribeRoundDueEvent(round));
       } catch (Exception e) {
         log.error("결제 예정 회차 처리 중 오류 발생: roundId={}, message={}", round.getId(), e.getMessage());
       }

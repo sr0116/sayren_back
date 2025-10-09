@@ -146,7 +146,7 @@ public class SubscribeTest {
     delivery.setStatus(DeliveryStatus.RETURNED);
     deliveryRepository.saveAndFlush(delivery);
 
-    Long subscribeId = 265L;
+    Long subscribeId = 266L;
     Long orderItemId = 2L;
     OrderItem orderItem = orderItemRepository.findById(orderItemId).orElseThrow();
 
@@ -166,7 +166,7 @@ public class SubscribeTest {
     delivery.setStatus(DeliveryStatus.RETURNED);
     deliveryRepository.saveAndFlush(delivery);
 
-    Long subscribeId = 265L;
+    Long subscribeId = 266L;
     Long orderItemId = 2L;
     OrderItem orderItem = orderItemRepository.findById(orderItemId).orElseThrow();
 
@@ -195,7 +195,7 @@ public class SubscribeTest {
 
 
     // when: 구독 활성화 처리 호출
-  Long subscribeId = 265L;
+  Long subscribeId = 266L;
   OrderItem orderItem = delivery.getDeliveryItems()
           .get(0)
           .getOrderItem();

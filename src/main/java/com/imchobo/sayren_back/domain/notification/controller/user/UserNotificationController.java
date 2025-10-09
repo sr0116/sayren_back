@@ -5,14 +5,16 @@ import com.imchobo.sayren_back.domain.notification.dto.NotificationCreateDTO;
 import com.imchobo.sayren_back.domain.notification.dto.NotificationResponseDTO;
 import com.imchobo.sayren_back.domain.notification.repository.NotificationRepository;
 import com.imchobo.sayren_back.domain.notification.service.NotificationService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/user/notification")
 public class UserNotificationController {
-  private NotificationService notificationService;
+  private final NotificationService notificationService;
 
   // 신규 알림 등록 (테스트용, 실제는 이벤트나 스케줄러에서 호출)
   @PostMapping("/send")
@@ -26,6 +28,14 @@ public class UserNotificationController {
   public List<NotificationResponseDTO> getMyNotifications() {
     return notificationService.getAllByCurrentMember();
   }
+
+
+  // 단일 조회
+  @GetMapping("/{notificationId}")
+  public NotificationResponseDTO getOne(@PathVariable Long notificationId) {
+    return notificationService.getOne(notificationId);
+  }
+
 
   // 단일 알림 읽음 처리
   @PatchMapping("/{notificationId}/read")

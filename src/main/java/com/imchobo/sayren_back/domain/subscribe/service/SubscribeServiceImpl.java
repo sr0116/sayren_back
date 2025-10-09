@@ -297,7 +297,6 @@ public class SubscribeServiceImpl implements SubscribeService {
 
   }
 
-
   //취소 승인/거절 (관리자)
   @Override
   @Transactional

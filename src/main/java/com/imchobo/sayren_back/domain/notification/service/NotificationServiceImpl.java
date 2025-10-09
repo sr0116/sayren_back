@@ -53,6 +53,24 @@ public class NotificationServiceImpl implements NotificationService {
     return notificationMapper.toDTOList(notifications);
   }
 
+  // 단일 알림 조회
+  @Override
+  @Transactional(readOnly = true)
+  public NotificationResponseDTO getOne(Long notificationId) {
+    Member currentMember = com.imchobo.sayren_back.security.util.SecurityUtil.getMemberEntity();
+
+    Notification notification = notificationRepository.findById(notificationId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 알림을 찾을 수 없습니다. id=" + notificationId));
+
+    // 본인 알림인지 검증
+    if (!notification.getMember().getId().equals(currentMember.getId())) {
+      throw new SecurityException("다른 사용자의 알림은 조회할 수 없습니다.");
+    }
+
+    return notificationMapper.toDTO(notification);
+  }
+
+
   // 단일 알림 읽음 처리
   @Override
   public void markAsRead(Long notificationId) {
