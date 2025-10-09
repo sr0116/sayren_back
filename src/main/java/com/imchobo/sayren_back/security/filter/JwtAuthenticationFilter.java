@@ -48,9 +48,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String memberId = jwtUtil.getClaims(accessToken).getSubject();
         setAuthentication(memberId, request);
         log.info("JWT 인증 성공 : {}", memberId);
-
       } catch (ExpiredJwtException ex) {
-        throw new AccessTokenExpiredException();
+        log.warn("Access Token 만료됨");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("""
+            {
+              "errorCode": "TOKEN_EXPIRED",
+              "message": "Access Token이 만료되었습니다."
+            }
+        """);
+        return;
       } catch (Exception e) {
         log.error("JWT 파싱/검증 실패", e);
         throw new UnauthorizedException("유효하지 않은 토큰입니다.");

@@ -30,7 +30,7 @@ public enum SubscribeTransition {
   RETURN_DELAY(SubscribeStatus.ACTIVE, ReasonCode.RETURN_DELAY),       // 회수 지연 (ACTIVE 유지)
   RETURN_FAILED(SubscribeStatus.ACTIVE, ReasonCode.RETURN_FAILED),     // 회수 실패 (ACTIVE 유지)
   RETURNED_ONLY(SubscribeStatus.ENDED, ReasonCode.RETURN_REQUEST), // 아직 회수만 완료 , 계약 종료 전
-  RETURNED_AND_CANCELED(SubscribeStatus.CANCELED, ReasonCode.CONTRACT_CANCEL),
+  RETURNED_AND_CANCELED(SubscribeStatus.CANCELED, ReasonCode.CONTRACT_CANCEL), // 회수 및 종료
 
   // 구독 종료
   END(SubscribeStatus.ENDED, ReasonCode.EXPIRED),

@@ -29,7 +29,7 @@ public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
 
   List<Subscribe> findByMemberId(Long memberId);
 
-  Subscribe findByOrderItem(OrderItem orderItem);
+  Optional<Subscribe> findByOrderItem(OrderItem orderItem);
 
   // 관리자용 전체 조회
   @Query("""

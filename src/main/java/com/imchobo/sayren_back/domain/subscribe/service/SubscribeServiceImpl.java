@@ -4,6 +4,7 @@ package com.imchobo.sayren_back.domain.subscribe.service;
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
 import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundException;
@@ -240,6 +241,42 @@ public class SubscribeServiceImpl implements SubscribeService {
               subscribeId, startDate, subscribe.getEndDate(), rounds.size());
     }
   }
+
+  // 배송 회수 완료 후 상태 변경
+  @Transactional
+  @Override
+  public void cancelAfterReturn(Long subscribeId, OrderItem orderItem) {
+    // 구독 엔티티 조회
+    Subscribe subscribe = subscribeRepository.findById(subscribeId)
+            .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
+
+    // 배송 조회
+    List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
+    Delivery delivery = deliveryItems.stream()
+            .map(DeliveryItem::getDelivery)
+            .findFirst()
+            .orElseThrow(() -> new DeliveryNotFoundException(orderItem.getId()));
+
+    // 회수 조건
+    if(delivery.getStatus() != DeliveryStatus.RETURNED && delivery.getType() != DeliveryType.RETURN) {
+      throw new IllegalStateException("배송 상태가 RETURNED가 아닙니다.현재 상태=" + delivery.getStatus());
+    }
+
+    // 구독 상태 검증
+    if (subscribe.getStatus() == SubscribeStatus.CANCELED ||
+            subscribe.getStatus() == SubscribeStatus.ENDED) {
+      log.warn("이미 종료된 구독입니다. 상태={}", subscribe.getStatus());
+      return;
+    }
+    // 상태 변경
+    subscribeStatusChanger.changeSubscribe(
+            subscribe,
+            SubscribeTransition.RETURNED_AND_CANCELED,
+            ActorType.SYSTEM);
+    log.info("배송 회수 완료 처리 → 구독 [{}] 상태 전환: {} → RETURNED_AND_CANCELED",
+            subscribeId, subscribe.getStatus());
+  }
+
   // 사용자 구독 취소 요청
   @Override
   @Transactional
@@ -260,7 +297,6 @@ public class SubscribeServiceImpl implements SubscribeService {
 
   }
 
-
   //취소 승인/거절 (관리자)
   @Override
   @Transactional
@@ -277,22 +313,21 @@ public class SubscribeServiceImpl implements SubscribeService {
       RefundRequest autoRequest = RefundRequest.builder()
               .orderItem(subscribe.getOrderItem())
               .member(subscribe.getMember())
-              .status(RefundRequestStatus.PENDING)
+              .status(RefundRequestStatus.APPROVED_WAITING_RETURN) // 환불 승인 및 회수 중
               .reasonCode(reasonCode)
               .build();
 
-      refundRequestRepository.save(autoRequest);
+      refundRequestRepository.saveAndFlush(autoRequest);
 
-      // RefundRequest 승인 처리 (RefundService 내부에서 PortOne 환불 호출)
-      refundRequestService.processRefundRequest(
-              autoRequest.getId(),
-              RefundRequestStatus.APPROVED,
-              reasonCode
-      );
+//      // 구독 상태 변경 (환불 승인) 중복인 것 같아서 임시 주석
+//      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
 
-      // 구독 상태 변경
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.ADMIN);
-
+      eventPublisher.publishEvent(new RefundApprovedEvent(
+              subscribe.getOrderItem().getId(),
+              subscribe.getId(),
+              reasonCode,
+              ActorType.ADMIN
+      ));
       return;
     }
     // 거절시 상태 복원 처리

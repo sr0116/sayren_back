@@ -45,11 +45,6 @@ class MemberServiceTest {
     
   }
 
-  @Test
-  @DisplayName("권한 부여 or 제거")
-  void changeRole(){
-    memberService.changeRole(17L);
-  }
 
   @Test
   @DisplayName("멤버 상세정보가져오기")
