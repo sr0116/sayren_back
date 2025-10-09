@@ -30,4 +30,5 @@ import java.util.List;
             productService.useProduct(id);
             return ResponseEntity.ok("상품 승인 완료");
         }
+
 }
