@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.payment.refund.component;
 
 
+import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.delivery.component.event.DeliveryStatusChangedEvent;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
@@ -19,6 +20,7 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.Subscribe
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,10 +39,11 @@ public class RefundEventHandler {
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final RefundRequestRepository refundRequestRepository;
   private final OrderItemRepository orderItemRepository;
+  private final ApplicationEventPublisher eventPublisher;
 
   // 관리자가 환불 승인/ 거절/ 취소 등 시에 호출됨
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void onRefundRequestChanged(RefundRequestEvent event) {
     Long subscribeId = event.getSubscribeId();
     Long orderItemId = event.getOrderItemId();
@@ -48,52 +51,80 @@ public class RefundEventHandler {
 
     log.info("[EVENT] RefundRequestEvent 수신 → orderItemId={}, subscribeId={}, status={}",
             orderItemId, subscribeId, status);
-    // 거절 취소는 추가 처리 없음
+
+    // 거절 또는 취소 처리
     if (status == RefundRequestStatus.REJECTED || status == RefundRequestStatus.CANCELED) {
       refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(
               orderItemRepository.findById(orderItemId)
                       .orElseThrow(() -> new RuntimeException("OrderItem 없음: " + orderItemId))
       ).ifPresent(req -> {
         req.setStatus(status);
-        refundRequestRepository.save(req);
-        log.info("환불 요청 상태 변경 완료 → refundRequestId={}, status={}", req.getId(), status);
+        refundRequestRepository.saveAndFlush(req);
+        log.info("환불 요청 거절/취소 반영 완료 → refundRequestId={}, status={}", req.getId(), status);
+
+        // 이벤트 재발행 (NotificationEventHandler가 AFTER_COMMIT에서 감지)
+        eventPublisher.publishEvent(
+                new RefundRequestEvent(orderItemId, subscribeId, status, req.getReasonCode(), ActorType.ADMIN)
+        );
+        log.debug("[RE-PUBLISH] 환불 요청 이벤트 재전파 완료 → status={}", status);
       });
       return;
     }
-    // 일반 결제 환불은 구독 ID가 없으므로 null 방어 필요
+
+    // 일반 결제 환불 승인
     if (subscribeId == null) {
       refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(
               orderItemRepository.findById(orderItemId)
                       .orElseThrow(() -> new RuntimeException("OrderItem 없음: " + orderItemId))
       ).ifPresent(req -> {
+        if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
+          log.debug("[SKIP] 이미 APPROVED_WAITING_RETURN 상태 → 중복 재발행 생략");
+          return;
+        }
+
         if (req.getStatus() == RefundRequestStatus.PENDING) {
           req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
           req.setReasonCode(event.getReason());
-          refundRequestRepository.save(req);
-          log.info("일반 결제 환불 승인 → 상태=PENDING→APPROVED_WAITING_RETURN (회수 대기)");
+          refundRequestRepository.saveAndFlush(req);
+          log.info("일반 결제 환불 승인 → PENDING → APPROVED_WAITING_RETURN");
+
+          eventPublisher.publishEvent(
+                  new RefundRequestEvent(orderItemId, null, RefundRequestStatus.APPROVED_WAITING_RETURN, req.getReasonCode(), ActorType.ADMIN)
+          );
+          log.debug("[RE-PUBLISH] 일반 결제 환불 승인 이벤트 재전파 완료");
         } else {
           log.warn("일반 결제 환불 승인 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
         }
       });
       return;
     }
+    // 구독 환불 승인
+    subscribeRepository.findById(subscribeId).ifPresent(subscribe -> {
+      refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
+              .ifPresentOrElse(req -> {
+                if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
+                  log.debug("[SKIP] 이미 APPROVED_WAITING_RETURN 상태 → 중복 재발행 생략");
+                  return;
+                }
 
-    // 구독 환불 승인 로직 (구독 ID 존재 시에만 실행)
-    subscribeRepository.findById(subscribeId)
-            .ifPresentOrElse(subscribe -> {
-              refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
-                      .ifPresentOrElse(req -> {
-                        if (req.getStatus() == RefundRequestStatus.PENDING) {
-                          req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
-                          req.setReasonCode(event.getReason());
-                          refundRequestRepository.save(req);
-                          log.info("구독 환불 승인 처리 완료: refundRequestId={}, 상태=PENDING→APPROVED_WAITING_RETURN", req.getId());
-                        } else {
-                          log.warn("구독 환불 승인 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
-                        }
-                      }, () -> log.warn("해당 구독에 대한 환불 요청 없음: subscribeId={}", subscribeId));
-            }, () -> log.warn("구독 엔티티 없음: subscribeId={}", subscribeId));
+                if (req.getStatus() == RefundRequestStatus.PENDING) {
+                  req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
+                  req.setReasonCode(event.getReason());
+                  refundRequestRepository.saveAndFlush(req);
+                  log.info("구독 환불 승인 → PENDING → APPROVED_WAITING_RETURN (회수 대기)");
+
+                  eventPublisher.publishEvent(
+                          new RefundRequestEvent(orderItemId, subscribeId, RefundRequestStatus.APPROVED_WAITING_RETURN, req.getReasonCode(), ActorType.ADMIN)
+                  );
+                  log.debug("[RE-PUBLISH] 구독 환불 승인 이벤트 재전파 완료");
+                } else {
+                  log.warn("구독 환불 승인 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
+                }
+              }, () -> log.warn("해당 구독의 환불 요청 없음: subscribeId={}", subscribeId));
+    });
   }
+  
+
 
   // 배송 회수 완료 이벤트 → 자동 환불 처리
   @Transactional(propagation = Propagation.REQUIRES_NEW)

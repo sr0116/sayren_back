@@ -84,8 +84,7 @@ public class NotificationEventHandler {
     NotificationCreateDTO dto = new NotificationCreateDTO();
     dto.setType(NotificationType.PAYMENT);
 
-    // 일반 결제 환불 승인 (구독 ID가 없는 경우)
-    if (subscribeId == null) {
+    if (subscribeId == null) { // 일반 결제
       orderItemRepository.findById(orderItemId).ifPresent(orderItem -> {
         Long memberId = orderItem.getOrder().getMember().getId();
         String productName = orderItem.getProduct().getName();
@@ -94,7 +93,6 @@ public class NotificationEventHandler {
         dto.setTargetId(orderItem.getId());
         dto.setLinkUrl("/mypage/order/" + orderItem.getId());
 
-        // 상태별 메시지 통합 처리
         switch (status) {
           case PENDING -> {
             dto.setTitle("환불 요청 접수");
@@ -102,6 +100,7 @@ public class NotificationEventHandler {
           }
           case APPROVED, APPROVED_WAITING_RETURN -> {
             dto.setTitle("결제 환불 승인");
+            dto.setMessage("환불이 승인되었습니다. 회수 완료 후 환불이 진행됩니다.");
           }
           case REJECTED -> {
             dto.setTitle("환불 요청 거절");
@@ -116,16 +115,12 @@ public class NotificationEventHandler {
             return;
           }
         }
-
         notificationService.send(dto);
         log.info("일반 결제 환불 관련 알림 전송 완료 → memberId={}, orderItemId={}, status={}", memberId, orderItemId, status);
       });
-    }
-    // 구독 환불 승인 (구독 ID가 있는 경우)
-    else {
+    } else { // 구독 환불
       subscribeRepository.findById(subscribeId).ifPresent(subscribe -> {
         Long memberId = subscribe.getMember().getId();
-
         dto.setMemberId(memberId);
         dto.setTargetId(subscribe.getId());
         dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
@@ -133,9 +128,8 @@ public class NotificationEventHandler {
         switch (status) {
           case PENDING -> {
             dto.setTitle("구독 환불 요청");
-            dto.setMessage("구독 #" + subscribe.getId() + "의 환불이 요청되었습니다. 회수 완료 후 환불이 진행됩니다.");
-          } 
-            
+            dto.setMessage("구독 #" + subscribe.getId() + "의 환불이 요청되었습니다.");
+          }
           case APPROVED, APPROVED_WAITING_RETURN -> {
             dto.setTitle("구독 환불 승인");
             dto.setMessage("구독 #" + subscribe.getId() + "의 환불이 승인되었습니다. 회수 완료 후 환불이 진행됩니다.");
@@ -159,8 +153,7 @@ public class NotificationEventHandler {
       });
     }
   }
-
-
+  // 승인 후 회수 까지 완료시
   @EventListener
   public void onRefundCompleted(RefundCompletedEvent event) {
     orderItemRepository.findById(event.getOrderItemId()).ifPresent(orderItem -> {
