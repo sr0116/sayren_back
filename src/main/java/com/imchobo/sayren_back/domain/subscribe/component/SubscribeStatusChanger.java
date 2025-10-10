@@ -36,12 +36,10 @@ public class SubscribeStatusChanger {
     subscribe.setStatus(transition.getStatus());
     subscribeRepository.saveAndFlush(subscribe);
 
-    // 트랜잭션 경계 밖에서 비동기 발행
-    CompletableFuture.runAsync(() -> {
-      eventPublisher.publishEvent(new SubscribeStatusChangedEvent(subscribe.getId(), transition, actor));
-      log.debug("[ASYNC PUBLISH] 구독 상태 이벤트 발행 완료 → subscribeId={}, transition={}",
-              subscribe.getId(), transition);
-    });
+    // 커밋 후 리스너들이 감지할 수 있도록 동기 발행
+    eventPublisher.publishEvent(new SubscribeStatusChangedEvent(subscribe.getId(), transition, actor));
+    log.debug("[PUBLISH] 구독 상태 이벤트 발행 → subscribeId={}, transition={}", subscribe.getId(), transition);
+
   }
 
   // 구독 회차 상태 변경 (결제 상태)

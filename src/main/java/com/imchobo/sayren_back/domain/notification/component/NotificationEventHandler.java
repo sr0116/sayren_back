@@ -38,8 +38,7 @@ public class NotificationEventHandler {
   private final OrderItemRepository orderItemRepository;
 
   // 결제 완료 알림
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  @EventListener
   public void onPaymentStatusChanged(PaymentStatusChangedEvent event) {
 
     if (event.getTransition().getStatus() != PaymentStatus.PAID) {
@@ -75,7 +74,9 @@ public class NotificationEventHandler {
     });
   }
 
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+
+
+  @EventListener
   public void onRefundApproved(RefundRequestEvent event) {
     Long orderItemId = event.getOrderItemId();
     Long subscribeId = event.getSubscribeId();
@@ -187,7 +188,7 @@ public class NotificationEventHandler {
 
   // 구독 상태 변경 알림
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  @EventListener
   public void onSubscribeStatusChanged(SubscribeStatusChangedEvent event) {
     subscribeRepository.findById(event.getSubscribeId()).ifPresent(subscribe -> {
       SubscribeStatus newStatus = event.getTransition().getStatus();

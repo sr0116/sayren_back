@@ -78,6 +78,37 @@ public class PaymentTest {
     Thread.sleep(2000);
   }
 
+  @Test
+  @Rollback(false)
+  void testDelivery() throws InterruptedException {
+    // 테스트할 배송 ID
+    Long deliveryId = 11L;
+
+    // 배송 조회
+    Delivery delivery = deliveryRepository.findById(deliveryId)
+            .orElseThrow(() -> new RuntimeException("배송 정보 없음: " + deliveryId));
+
+    // 관련된 첫 번째 주문 아이템 가져오기
+    if (delivery.getDeliveryItems().isEmpty()) {
+      throw new RuntimeException("배송에 연결된 주문 아이템이 없습니다.");
+    }
+
+    OrderItem orderItem = delivery.getDeliveryItems().get(0).getOrderItem();
+
+    // 배송 상태 변경 (회수 완료)
+    deliveryStatusChanger.changeDeliveryStatus(
+            delivery,
+            DeliveryType.DELIVERY,
+            DeliveryStatus.DELIVERED,
+            orderItem
+    );
+
+    System.out.println("배송 회수 완료 처리 테스트 성공");
+
+    // 이벤트 비동기 처리 대기 (2초 정도)
+    Thread.sleep(2000);
+  }
+
 
 }
 

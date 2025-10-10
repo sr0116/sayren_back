@@ -47,9 +47,9 @@ public class SubscribeEventHandler {
   private final PaymentRepository paymentRepository;
   private final SubscribeHistoryRepository subscribeHistoryRepository;
   private final SubscribeRepository subscribeRepository;
-  private final SubscribeStatusChanger subscribeStatusChanger;
   private final DeliveryItemRepository deliveryItemRepository;
   private final NotificationService notificationService;
+  private final SubscribeStatusChanger subscribeStatusChanger;
 
   // 최초 구독 생성 시 기록
   public void recordInit(Subscribe subscribe) {
@@ -62,9 +62,8 @@ public class SubscribeEventHandler {
   }
 
   //  구독 상태 변경 (히스토리 이벤트 핸들러) - 비동기 로그 기록
-  @Async //  REQUIRES_NEW 랑 같이
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  @EventListener
   public void handleSubscribeStatusChanged(SubscribeStatusChangedEvent event) {
     log.info("[EVENT] handleSubscribeStatusChanged triggered → subscribeId={}, transition={}, actor={}",
             event.getSubscribeId(),
@@ -128,7 +127,7 @@ public class SubscribeEventHandler {
   }
 
   // 결제 상태 변경 → 구독 회차 연동
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional
   @EventListener
   public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
     log.info("[EVENT] handlePaymentStatusChanged → paymentId={}, transition={}", event.getPaymentId(), event.getTransition());
