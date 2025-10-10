@@ -22,6 +22,7 @@ public enum SubscribeRoundTransition {
   // 전체 단위 (구독 영향 포함 - 전체 회차)
   INIT_FAIL(PaymentStatus.FAILED, ReasonCode.PAYMENT_FAILURE),   // 1회차 실패 → 구독 자체 실패
   CANCEL_ALL(PaymentStatus.REFUNDED, ReasonCode.CONTRACT_CANCEL), // 전체 환불/취소
+  CANCEL_FUTURE_ONLY(PaymentStatus.CANCELED, ReasonCode.CONTRACT_CANCEL), // 보증금 환불
   FORCED_END(PaymentStatus.FAILED, ReasonCode.PAYMENT_TIMEOUT);   // 미납으로 전체 강제 종료
 
   private final PaymentStatus status;

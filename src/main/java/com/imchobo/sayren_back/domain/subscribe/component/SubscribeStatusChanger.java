@@ -17,6 +17,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.concurrent.CompletableFuture;
+
 @Component
 @RequiredArgsConstructor
 @Log4j2
@@ -34,8 +36,12 @@ public class SubscribeStatusChanger {
     subscribe.setStatus(transition.getStatus());
     subscribeRepository.saveAndFlush(subscribe);
 
-    eventPublisher.publishEvent(new SubscribeStatusChangedEvent( subscribe.getId(), transition, actor));
-    log.debug("구독 상태 이벤트 발행 완료: subscribeId={}, transition={}", subscribe.getId(), transition); // 이후에 주석
+    // 트랜잭션 경계 밖에서 비동기 발행
+    CompletableFuture.runAsync(() -> {
+      eventPublisher.publishEvent(new SubscribeStatusChangedEvent(subscribe.getId(), transition, actor));
+      log.debug("[ASYNC PUBLISH] 구독 상태 이벤트 발행 완료 → subscribeId={}, transition={}",
+              subscribe.getId(), transition);
+    });
   }
 
   // 구독 회차 상태 변경 (결제 상태)
@@ -45,9 +51,10 @@ public class SubscribeStatusChanger {
     subscribeRound.setPayStatus(transition.getStatus());
     subscribeRoundRepository.saveAndFlush(subscribeRound);
 
-    //  이벤트 발행
     eventPublisher.publishEvent(
             new SubscribeRoundStatusChangedEvent(subscribeRound.getId(), transition));
+    log.debug("[EVENT] 구독 회차 상태 이벤트 발행 완료 → roundId={}, transition={}",
+            subscribeRound.getId(), transition);
   }
 }
 

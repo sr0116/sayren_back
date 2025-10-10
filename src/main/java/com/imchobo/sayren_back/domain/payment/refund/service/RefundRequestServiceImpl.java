@@ -8,14 +8,12 @@ import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.calculator.PurchaseRefundCalculator;
 import com.imchobo.sayren_back.domain.payment.calculator.RefundCalculator;
 import com.imchobo.sayren_back.domain.payment.calculator.RentalRefundCalculator;
-import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
-import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestDTO;
 import com.imchobo.sayren_back.domain.payment.refund.dto.RefundRequestResponseDTO;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
-import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestAlreadyExistsException;
 import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestNotFoundException;
@@ -31,7 +29,6 @@ import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,34 +114,48 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   public RefundRequestResponseDTO processRefundRequest(Long refundRequestId, RefundRequestStatus status, ReasonCode reasonCode) {
     RefundRequest request = refundRequestRepository.findById(refundRequestId)
             .orElseThrow(() -> new RefundRequestNotFoundException(refundRequestId));
+
     if (request.getStatus() != RefundRequestStatus.PENDING) {
       throw new RefundRequestStatusInvalidException("이미 처리된 환불 요청");
     }
 
+    // 상태 사유 코드 변경 저장
     request.setStatus(status);
     request.setReasonCode(reasonCode);
 
     log.info("환불 요청 처리 시작: refundRequestId={}, status={}, reasonCode={}",
             refundRequestId, status, reasonCode);
+
 // 회수 대기 상태로 변경 후 이벤트 처리
     if (status == RefundRequestStatus.APPROVED) {
       request.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
+      refundRequestRepository.save(request);
+      log.info("[REFUND] 환불 승인 처리 완료 (회수 대기 상태로 변경) → refundRequestId={}", refundRequestId);
     }
     // 구독 결제인지 확인 (OrderItem → Subscribe 존재 여부)
     boolean isSubscribe = subscribeRepository.findByOrderItem(request.getOrderItem()).isPresent();
+    Long subscribeId = null;
 
-    // 구독 결제가 아닐 때만 이벤트 발행
-    if (!isSubscribe) {
-      eventPublisher.publishEvent(new RefundApprovedEvent(
-              request.getOrderItem().getId(),
-              null, // 일반 결제니까 subscribeId 없음
-              reasonCode,
-              ActorType.ADMIN
-      ));
-
-      log.info("환불 요청 처리 완료: refundRequestId={}, 최종상태={}",
-              refundRequestId, request.getStatus());
+    if (isSubscribe) {
+      Subscribe subscribe = subscribeRepository.findByOrderItem(request.getOrderItem()).orElse(null);
+      if (subscribe != null) {
+        subscribeId = subscribe.getId();
+      }
     }
+
+    // 분기 처리로 환불 요청 이벤트 발행
+    RefundRequestEvent event = new RefundRequestEvent(
+            request.getOrderItem().getId(),
+            subscribeId,       // 구독 결제면 실제 ID, 일반 결제면 null
+            request.getStatus(),
+            reasonCode,
+            ActorType.ADMIN
+    );
+    eventPublisher.publishEvent(event);
+
+    log.info("[EVENT] RefundApprovedEvent 발행 완료 → orderItemId={}, subscribeId={}, reason={}",
+            request.getOrderItem().getId(), subscribeId, reasonCode);
+
     return refundRequestMapper.toResponseDTO(request);
   }
 
@@ -156,7 +167,6 @@ public class RefundRequestServiceImpl implements RefundRequestService {
       return purchaseRefundCalculator;
     }
   }
-
 
   /// // 밑에 3개 조회 /// 나중에 처리
 // 단건 조회 (본인 것만)

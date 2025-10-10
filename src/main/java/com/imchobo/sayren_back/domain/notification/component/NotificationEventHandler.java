@@ -9,10 +9,12 @@ import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
 import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundCompletedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
@@ -73,50 +75,85 @@ public class NotificationEventHandler {
     });
   }
 
-  @EventListener
-  public void onRefundApproved(RefundApprovedEvent event) {
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void onRefundApproved(RefundRequestEvent event) {
+    Long orderItemId = event.getOrderItemId();
     Long subscribeId = event.getSubscribeId();
+    RefundRequestStatus status = event.getStatus();
 
     NotificationCreateDTO dto = new NotificationCreateDTO();
     dto.setType(NotificationType.PAYMENT);
 
-    // 일반 결제 환불 승인 (구독 ID가 없는 경우)
-    if (subscribeId == null) {
-      log.warn("구독 ID가 null → 일반 결제 환불 승인 알림으로 처리");
-
-      orderItemRepository.findById(event.getOrderItemId()).ifPresent(orderItem -> {
+    if (subscribeId == null) { // 일반 결제
+      orderItemRepository.findById(orderItemId).ifPresent(orderItem -> {
         Long memberId = orderItem.getOrder().getMember().getId();
+        String productName = orderItem.getProduct().getName();
+
         dto.setMemberId(memberId);
-        dto.setTitle("결제 환불 승인");
-        dto.setMessage("상품 [" + orderItem.getProduct().getName() + "] 결제 환불이 승인되었습니다.");
         dto.setTargetId(orderItem.getId());
         dto.setLinkUrl("/mypage/order/" + orderItem.getId());
 
+        switch (status) {
+          case PENDING -> {
+            dto.setTitle("환불 요청 접수");
+            dto.setMessage("상품 [" + productName + "]의 환불이 요청되었습니다. 회수 완료 후 환불이 진행됩니다.");
+          }
+          case APPROVED, APPROVED_WAITING_RETURN -> {
+            dto.setTitle("결제 환불 승인");
+            dto.setMessage("환불이 승인되었습니다. 회수 완료 후 환불이 진행됩니다.");
+          }
+          case REJECTED -> {
+            dto.setTitle("환불 요청 거절");
+            dto.setMessage("상품 [" + productName + "]의 환불 요청이 거절되었습니다.");
+          }
+          case CANCELED -> {
+            dto.setTitle("환불 요청 취소");
+            dto.setMessage("상품 [" + productName + "]의 환불 요청이 취소되었습니다.");
+          }
+          default -> {
+            log.debug("[SKIP] 처리 대상 아님 → status={}", status);
+            return;
+          }
+        }
         notificationService.send(dto);
-        log.info("일반 결제 환불 승인 알림 전송 완료 → memberId={}, orderItemId={}", memberId, orderItem.getId());
+        log.info("일반 결제 환불 관련 알림 전송 완료 → memberId={}, orderItemId={}, status={}", memberId, orderItemId, status);
       });
-    }
-    // 구독 환불 승인 (구독 ID가 있는 경우)
-    else {
+    } else { // 구독 환불
       subscribeRepository.findById(subscribeId).ifPresent(subscribe -> {
         Long memberId = subscribe.getMember().getId();
-        OrderPlanType planType = subscribe.getOrderItem().getOrderPlan().getType();
-
         dto.setMemberId(memberId);
+        dto.setTargetId(subscribe.getId());
+        dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
 
-        if (planType == OrderPlanType.RENTAL) {
-          dto.setTitle("구독 환불 승인");
-          dto.setMessage("구독 #" + subscribe.getId() + " 환불이 승인되었습니다.");
-          dto.setTargetId(subscribe.getId());
-          dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
-          notificationService.send(dto);
-          log.info("구독 환불 승인 알림 전송 완료 → memberId={}, subscribeId={}", memberId, subscribe.getId());
+        switch (status) {
+          case PENDING -> {
+            dto.setTitle("구독 환불 요청");
+            dto.setMessage("구독 #" + subscribe.getId() + "의 환불이 요청되었습니다.");
+          }
+          case APPROVED, APPROVED_WAITING_RETURN -> {
+            dto.setTitle("구독 환불 승인");
+            dto.setMessage("구독 #" + subscribe.getId() + "의 환불이 승인되었습니다. 회수 완료 후 환불이 진행됩니다.");
+          }
+          case REJECTED -> {
+            dto.setTitle("구독 환불 요청 거절");
+            dto.setMessage("구독 #" + subscribe.getId() + "의 환불 요청이 거절되었습니다.");
+          }
+          case CANCELED -> {
+            dto.setTitle("구독 환불 요청 취소");
+            dto.setMessage("구독 #" + subscribe.getId() + "의 환불 요청이 취소되었습니다.");
+          }
+          default -> {
+            log.debug("[SKIP] 처리 대상 아님 → status={}", status);
+            return;
+          }
         }
+
+        notificationService.send(dto);
+        log.info("구독 환불 관련 알림 전송 완료 → memberId={}, subscribeId={}, status={}", memberId, subscribeId, status);
       });
     }
   }
-
-
+  // 승인 후 회수 까지 완료시
   @EventListener
   public void onRefundCompleted(RefundCompletedEvent event) {
     orderItemRepository.findById(event.getOrderItemId()).ifPresent(orderItem -> {
@@ -153,6 +190,14 @@ public class NotificationEventHandler {
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void onSubscribeStatusChanged(SubscribeStatusChangedEvent event) {
     subscribeRepository.findById(event.getSubscribeId()).ifPresent(subscribe -> {
+      SubscribeStatus newStatus = event.getTransition().getStatus();
+      SubscribeStatus currentStatus = subscribe.getStatus();
+      // 동일한 구독 상태일 경우 알림 생성 생략
+      if (newStatus == currentStatus) {
+        log.debug("[SKIP] 동일 구독 상태 변경 → 알림 생략 (subscribeId={}, status={})",
+                subscribe.getId(), newStatus);
+        return;
+      }
       Long memberId = subscribe.getMember().getId();
 
       NotificationCreateDTO dto = new NotificationCreateDTO();

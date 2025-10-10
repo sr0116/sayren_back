@@ -4,6 +4,7 @@ public enum PaymentStatus {
   PENDING,
   PAID,
   FAILED,
+  CANCELED, // 구독 회차 종료 처리
   REFUNDED,
   PARTIAL_REFUNDED; // 부분 환불;
 
