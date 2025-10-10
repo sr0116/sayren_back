@@ -217,7 +217,7 @@ public class NotificationEventHandler {
     });
   }
 
-  // 배송 상태 변경 → 도착 및 회수 완료 알림
+  // 배송 상태 변경 → 도착 및 회수 완료 알림 (현재 연동 안되는중)
   @EventListener
   public void onDeliveryStatusChanged(DeliveryStatusChangedEvent event) {
     log.info(" [Listener Triggered] DeliveryStatusChangedEvent 수신됨 → {}", event.getStatus());
