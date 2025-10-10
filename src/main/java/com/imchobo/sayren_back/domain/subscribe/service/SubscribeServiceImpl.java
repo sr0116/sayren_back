@@ -358,4 +358,33 @@ public class SubscribeServiceImpl implements SubscribeService {
     entity.setStatus(status);
     subscribeRepository.save(entity);
   }
+
+  // 구독 중인 상품 존재 여부 확인 (관리자 같은 경우에는 멤버 아이디로)
+  @Transactional(readOnly = true)
+  @Override
+  public boolean hasActiveSubscription(Long memberId) {
+    // ACTIVE, PREPARING, PENDING_PAYMENT 상태면 구독 관련 결제 대기, 구독 준비중, 구독중 상태 -> 탈퇴 X
+    return subscribeRepository.existsByMember_IdAndStatusIn(
+            memberId,
+            List.of(
+                    SubscribeStatus.ACTIVE,
+                    SubscribeStatus.PREPARING,
+                    SubscribeStatus.PENDING_PAYMENT
+            )
+    );
+  }
+
+  // 사용자 같은 경우 시큐리티 쪽에서 멤버 가져오기
+  @Transactional(readOnly = true)
+  public boolean hasActiveSubscriptionForCurrentUser() {
+    Member currentMember = SecurityUtil.getMemberEntity();
+    return subscribeRepository.existsByMember_IdAndStatusIn(
+            currentMember.getId(),
+            List.of(
+                    SubscribeStatus.ACTIVE,
+                    SubscribeStatus.PREPARING,
+                    SubscribeStatus.PENDING_PAYMENT
+            )
+    );
+  }
 }

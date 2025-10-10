@@ -41,5 +41,8 @@ public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
           """)
   List<Subscribe> findAllWithMemberAndOrder();
 
+  // 구독 상태 여부
+  boolean existsByMember_IdAndStatusIn(Long memberId, List<SubscribeStatus> statuses);
+
 
 }
