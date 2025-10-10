@@ -7,7 +7,9 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.Subscribe
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -46,4 +48,9 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   List<SubscribeRound> findAllByStatusWithMember(PaymentStatus status);
 
   List<SubscribeRound> findByPayStatusIn(Collection<PaymentStatus> payStatuses);
+
+  // 취고 승인 시, 해당 회차 이후만 canceled 처리
+  @Modifying
+  @Query("update SubscribeRound  r set r.payStatus = :status where r.subscribe = :subscribe and r.dueDate > :today")
+  void cancelFutureRounds(@Param("subscribe") Subscribe subscribe, PaymentStatus status, @Param("today") LocalDate today);
 }

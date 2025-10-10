@@ -21,6 +21,7 @@ public enum SubscribeTransition {
 
   // 회원 취소 요청 및 관리자 승인 여부
   REQUEST_CANCEL(SubscribeStatus.ACTIVE, ReasonCode.USER_REQUEST),     // 회원 취소 요청 (ACTIVE 유지)
+  CANCEL_APPROVE_PENDING(SubscribeStatus.ACTIVE, ReasonCode.RETURN_REQUEST), //  관리자 승인 후 회수 대기
   CANCEL_APPROVE(SubscribeStatus.ACTIVE, ReasonCode.USER_REQUEST),     // 관리자 승인 (ACTIVE 유지)
   CANCEL_REJECT(SubscribeStatus.ACTIVE, ReasonCode.CANCEL_REJECTED),          // 관리자 거절 (ACTIVE 유지) // 관리자 거절
 

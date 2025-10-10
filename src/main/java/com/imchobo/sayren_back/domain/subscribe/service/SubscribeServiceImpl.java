@@ -9,11 +9,9 @@ import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
 import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundException;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
-import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
-import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
@@ -310,21 +308,22 @@ public class SubscribeServiceImpl implements SubscribeService {
     // 관리자가 승인시
     if (status == RefundRequestStatus.APPROVED) {
       //환불 요청 자동 생성
-      RefundRequest autoRequest = RefundRequest.builder()
+      RefundRequest request = RefundRequest.builder()
               .orderItem(subscribe.getOrderItem())
               .member(subscribe.getMember())
               .status(RefundRequestStatus.APPROVED_WAITING_RETURN) // 환불 승인 및 회수 중
               .reasonCode(reasonCode)
               .build();
 
-      refundRequestRepository.saveAndFlush(autoRequest);
+      refundRequestRepository.saveAndFlush(request);
 
 //      // 구독 상태 변경 (환불 승인) 중복인 것 같아서 임시 주석
 //      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
 
-      eventPublisher.publishEvent(new RefundApprovedEvent(
+      eventPublisher.publishEvent(new RefundRequestEvent(
               subscribe.getOrderItem().getId(),
               subscribe.getId(),
+              request.getStatus(),
               reasonCode,
               ActorType.ADMIN
       ));
@@ -358,5 +357,34 @@ public class SubscribeServiceImpl implements SubscribeService {
             .orElseThrow(() -> new RuntimeException("구독을 찾을 수 없습니다."));
     entity.setStatus(status);
     subscribeRepository.save(entity);
+  }
+
+  // 구독 중인 상품 존재 여부 확인 (관리자 같은 경우에는 멤버 아이디로)
+  @Transactional(readOnly = true)
+  @Override
+  public boolean hasActiveSubscription(Long memberId) {
+    // ACTIVE, PREPARING, PENDING_PAYMENT 상태면 구독 관련 결제 대기, 구독 준비중, 구독중 상태 -> 탈퇴 X
+    return subscribeRepository.existsByMember_IdAndStatusIn(
+            memberId,
+            List.of(
+                    SubscribeStatus.ACTIVE,
+                    SubscribeStatus.PREPARING,
+                    SubscribeStatus.PENDING_PAYMENT
+            )
+    );
+  }
+
+  // 사용자 같은 경우 시큐리티 쪽에서 멤버 가져오기
+  @Transactional(readOnly = true)
+  public boolean hasActiveSubscriptionForCurrentUser() {
+    Member currentMember = SecurityUtil.getMemberEntity();
+    return subscribeRepository.existsByMember_IdAndStatusIn(
+            currentMember.getId(),
+            List.of(
+                    SubscribeStatus.ACTIVE,
+                    SubscribeStatus.PREPARING,
+                    SubscribeStatus.PENDING_PAYMENT
+            )
+    );
   }
 }

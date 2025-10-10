@@ -8,6 +8,7 @@ import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +35,16 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
  // 일단 환불에서 사용중
  List<Payment> findByOrderItem(OrderItem orderItem);
 
+// 1회차 결제(보증금) 조회
+  @Query("""
+         SELECT p FROM Payment p
+         WHERE p.orderItem = :orderItem
+           AND p.subscribeRound IS NOT NULL
+           AND p.subscribeRound.roundNo = 1
+         """)
+  Optional<Payment> findDepositPayment(@Param("orderItem") OrderItem orderItem);
+
+
  // 관리자용 멤버 전체 조회
   @Query("SELECT p FROM Payment p " +
           "JOIN FETCH p.member m " +
@@ -44,8 +55,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
           "ORDER BY p.regDate DESC")
   List<Payment> findAllWithMemberAndOrder();
 
-
-
+// 최신 결제
+  @Query("SELECT p FROM Payment p WHERE p.orderItem = :orderItem ORDER BY p.regDate DESC")
+  List<Payment> findAllByOrderItemOrderByRegDateDesc(@Param("orderItem") OrderItem orderItem);
 
   // 기본 CRUD, 결제 상태로 조회
   List<Payment> findByPaymentStatus(PaymentStatus status);
