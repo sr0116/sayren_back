@@ -4,6 +4,7 @@ package com.imchobo.sayren_back.domain.subscribe.service;
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
 import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundException;
@@ -11,9 +12,16 @@ import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
+import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
+import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
+import com.imchobo.sayren_back.domain.payment.refund.service.RefundRequestService;
+import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
+import com.imchobo.sayren_back.domain.subscribe.component.SubscribeCancelHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
-import com.imchobo.sayren_back.domain.subscribe.component.recorder.SubscribeHistoryRecorder;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
@@ -38,6 +46,7 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.service.Subscrib
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +70,11 @@ public class SubscribeServiceImpl implements SubscribeService {
   private final DeliveryItemRepository deliveryItemRepository;
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final SubscribeRoundMapper subscribeRoundMapper;
+  private final ApplicationEventPublisher eventPublisher;
+  private final RefundService refundService;
+  private final SubscribeCancelHandler subscribeCancelHandler;
+  private final RefundRequestRepository refundRequestRepository;
+  private final RefundRequestService refundRequestService;
 
 
   // 구독 테이블 생성
@@ -109,7 +123,14 @@ public class SubscribeServiceImpl implements SubscribeService {
   public SubscribeResponseDTO getSubscribe(Long subscribeId) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(SubscribeNotFoundException::new);
-    return subscribeMapper.toResponseDTO(subscribe);
+
+    SubscribeResponseDTO dto = subscribeMapper.toResponseDTO(subscribe);
+
+    subscribeHistoryRepository.findFirstBySubscribeOrderByRegDateDesc(subscribe)
+            .ifPresent(history -> dto.setReasonCode(history.getReasonCode()));
+
+
+    return dto;
   }
 
   // 구독 전체 조회(관리자용)
@@ -150,6 +171,26 @@ public class SubscribeServiceImpl implements SubscribeService {
     return subscribeRoundMapper.toDto(round);
   }
 
+  // 관리자: 전체 구독 조회
+  @Override
+  @Transactional(readOnly = true)
+  public List<SubscribeResponseDTO> getAllForAdmin() {
+    List<Subscribe> subscribes = subscribeRepository.findAllWithMemberAndOrder();
+    List<SubscribeResponseDTO> dtos = subscribeMapper.toResponseDTOList(subscribes);
+
+    for (int i = 0; i < subscribes.size(); i++) {
+      Subscribe s = subscribes.get(i);
+      SubscribeResponseDTO dto = dtos.get(i);
+
+      subscribeHistoryRepository.findFirstBySubscribeOrderByRegDateDesc(s)
+              .ifPresent(history -> dto.setReasonCode(history.getReasonCode()));
+      refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(s.getOrderItem())
+              .ifPresent(req -> dto.setRefundRequestStatus(req.getStatus()));
+    }
+    return dtos;
+  }
+
+
   // 배송 완료 후 상태 변경 (ACTIVE)
   @Transactional
   @Override
@@ -157,9 +198,15 @@ public class SubscribeServiceImpl implements SubscribeService {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
     //   구독 준비중
+    if (subscribe.getStatus() == SubscribeStatus.PENDING_PAYMENT) {
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
+      log.info("자동 결제 완료 처리 → 상태 전환: PENDING_PAYMENT → PREPARING");
+    }
+    //  준비 상태가 아니라면 예외
     if (subscribe.getStatus() != SubscribeStatus.PREPARING) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
+
     // 구독 개월 수 가져오기
     Integer months = subscribe.getOrderItem().getOrderPlan().getMonth();
     if (months == null || months <= 0) {
@@ -194,6 +241,42 @@ public class SubscribeServiceImpl implements SubscribeService {
               subscribeId, startDate, subscribe.getEndDate(), rounds.size());
     }
   }
+
+  // 배송 회수 완료 후 상태 변경
+  @Transactional
+  @Override
+  public void cancelAfterReturn(Long subscribeId, OrderItem orderItem) {
+    // 구독 엔티티 조회
+    Subscribe subscribe = subscribeRepository.findById(subscribeId)
+            .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
+
+    // 배송 조회
+    List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
+    Delivery delivery = deliveryItems.stream()
+            .map(DeliveryItem::getDelivery)
+            .findFirst()
+            .orElseThrow(() -> new DeliveryNotFoundException(orderItem.getId()));
+
+    // 회수 조건
+    if(delivery.getStatus() != DeliveryStatus.RETURNED && delivery.getType() != DeliveryType.RETURN) {
+      throw new IllegalStateException("배송 상태가 RETURNED가 아닙니다.현재 상태=" + delivery.getStatus());
+    }
+
+    // 구독 상태 검증
+    if (subscribe.getStatus() == SubscribeStatus.CANCELED ||
+            subscribe.getStatus() == SubscribeStatus.ENDED) {
+      log.warn("이미 종료된 구독입니다. 상태={}", subscribe.getStatus());
+      return;
+    }
+    // 상태 변경
+    subscribeStatusChanger.changeSubscribe(
+            subscribe,
+            SubscribeTransition.RETURNED_AND_CANCELED,
+            ActorType.SYSTEM);
+    log.info("배송 회수 완료 처리 → 구독 [{}] 상태 전환: {} → RETURNED_AND_CANCELED",
+            subscribeId, subscribe.getStatus());
+  }
+
   // 사용자 구독 취소 요청
   @Override
   @Transactional
@@ -201,29 +284,59 @@ public class SubscribeServiceImpl implements SubscribeService {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
     // 이미 종료 되었거나 취소 상태시 예외 처리
-    if (subscribe.getStatus() == SubscribeStatus.ENDED ||
-            subscribe.getStatus() == SubscribeStatus.CANCELED) {
-      throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
+    if (subscribe.getStatus() == SubscribeStatus.ACTIVE
+            && subscribeHistoryRepository.existsBySubscribeAndReasonCode(subscribe, ReasonCode.USER_REQUEST)) {
+      throw new SubscribeStatusInvalidException("이미 취소 요청 중인 구독입니다.");
+    }
+    if (subscribe.getStatus() == SubscribeStatus.CANCELED
+            || subscribe.getStatus() == SubscribeStatus.ENDED ){
+      throw new SubscribeStatusInvalidException("이미 취소 요청된 구독입니다.");
     }
     // 회원 취소 요청
     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.REQUEST_CANCEL, ActorType.USER);
+
   }
 
   //취소 승인/거절 (관리자)
   @Override
   @Transactional
-  public void processCancelRequest(Long subscribeId, boolean approved, ReasonCode reasonCode) {
+  public void processCancelRequest(Long subscribeId, RefundRequestStatus status, ReasonCode reasonCode) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
+    // 일단 구독 상태가 구독 중이어야 함
     if (subscribe.getStatus() != SubscribeStatus.ACTIVE) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
-    if (approved) {
-      // 승인 처리시
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
-    } else {
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_REJECT, ActorType.ADMIN);
+    // 관리자가 승인시
+    if (status == RefundRequestStatus.APPROVED) {
+      //환불 요청 자동 생성
+      RefundRequest autoRequest = RefundRequest.builder()
+              .orderItem(subscribe.getOrderItem())
+              .member(subscribe.getMember())
+              .status(RefundRequestStatus.APPROVED_WAITING_RETURN) // 환불 승인 및 회수 중
+              .reasonCode(reasonCode)
+              .build();
+
+      refundRequestRepository.saveAndFlush(autoRequest);
+
+//      // 구독 상태 변경 (환불 승인) 중복인 것 같아서 임시 주석
+//      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
+
+      eventPublisher.publishEvent(new RefundApprovedEvent(
+              subscribe.getOrderItem().getId(),
+              subscribe.getId(),
+              reasonCode,
+              ActorType.ADMIN
+      ));
+      return;
     }
+    // 거절시 상태 복원 처리
+    if (status == RefundRequestStatus.REJECTED) {
+      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_REJECT, ActorType.ADMIN);
+      return;
+    }
+    //  기타 상태 처리 (보류,취소 등)
+    subscribeCancelHandler.handle(subscribe, status, reasonCode);
   }
 
   // 구독 상태 변경 이력 조회

@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.delivery.repository;
 
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
   List<Delivery> findByDeliveryItems_OrderItem_Order_Id(Long orderId);
 
   boolean existsByDeliveryItems_OrderItem(OrderItem deliveryItemsOrderItem);
+
+  List<Delivery> findByStatus(DeliveryStatus status);
 }

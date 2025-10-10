@@ -1,5 +1,5 @@
 package com.imchobo.sayren_back.domain.notification.en;
 
 public enum NotificationType {
-  ORDER, PAYMENT, DELIVERY
+  ORDER, PAYMENT,  SUBSCRIBE , DELIVERY
 }

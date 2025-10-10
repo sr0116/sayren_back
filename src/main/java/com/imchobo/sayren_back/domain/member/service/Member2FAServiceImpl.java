@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.domain.member.service;
 import com.imchobo.sayren_back.domain.common.exception.RedisKeyNotFoundException;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.dto.Member2FARequestDTO;
+import com.imchobo.sayren_back.domain.member.dto.admin.AdminSelectMemberIdDTO;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.entity.Member2FA;
 import com.imchobo.sayren_back.domain.member.exception.Not2FAUserException;
@@ -68,17 +69,28 @@ public class Member2FAServiceImpl implements Member2FAService {
     redisUtil.deleteMember2fa(member.getId());
   }
 
+  // 유저용
+  @Override
+  @Transactional
+  public void delete() {
+    delete(SecurityUtil.getMemberEntity().getId());
+  }
+
+  // 어드민용
+  @Override
+  @Transactional
+  public void delete(AdminSelectMemberIdDTO adminSelectMemberIdDTO) {
+    delete(adminSelectMemberIdDTO.getMemberId());
+  }
+
+  // 구현체
   @Override
   @Transactional
   public void delete(Long memberId) {
     member2faRepository.deleteByMember_Id(memberId);
   }
 
-  @Override
-  @Transactional
-  public void delete() {
-    delete(SecurityUtil.getMemberEntity().getId());
-  }
+
 
   @Override
   public void checkOtp(Member2FARequestDTO member2FARequestDTO) {

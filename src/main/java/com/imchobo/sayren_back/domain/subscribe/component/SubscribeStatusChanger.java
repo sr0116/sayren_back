@@ -12,12 +12,14 @@ import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
+@Log4j2
 public class SubscribeStatusChanger {
 
   private final SubscribeRepository subscribeRepository;
@@ -30,19 +32,18 @@ public class SubscribeStatusChanger {
   @Transactional
   public void changeSubscribe(Subscribe subscribe, SubscribeTransition transition, ActorType actor) {
     subscribe.setStatus(transition.getStatus());
-    subscribeRepository.save(subscribe);
+    subscribeRepository.saveAndFlush(subscribe);
 
     eventPublisher.publishEvent(new SubscribeStatusChangedEvent( subscribe.getId(), transition, actor));
+    log.debug("구독 상태 이벤트 발행 완료: subscribeId={}, transition={}", subscribe.getId(), transition); // 이후에 주석
   }
-
-
 
   // 구독 회차 상태 변경 (결제 상태)
   @Transactional
   public void changeSubscribeRound(SubscribeRound subscribeRound, SubscribeRoundTransition transition) {
     // 1) 회차 상태 변경
     subscribeRound.setPayStatus(transition.getStatus());
-    subscribeRoundRepository.save(subscribeRound);
+    subscribeRoundRepository.saveAndFlush(subscribeRound);
 
     //  이벤트 발행
     eventPublisher.publishEvent(

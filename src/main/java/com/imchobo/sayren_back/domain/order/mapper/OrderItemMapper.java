@@ -8,11 +8,11 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface OrderItemMapper {
 
-  @Mapping(source = "id", target = "orderItemId")
-  @Mapping(source = "product.id", target = "productId")
-  @Mapping(source = "product.name", target = "productName")
-  @Mapping(source = "productPriceSnapshot", target = "priceSnapshot")
-  @Mapping(source = "orderPlan.id", target = "planId")
-  @Mapping(source = "orderPlan.type", target = "planType") // 요금제 타입 추가
+  @Mapping(source = "id", target = "orderItemId")              // 주문아이템 PK
+  @Mapping(source = "product.id", target = "productId")        // 상품 ID
+  @Mapping(source = "product.name", target = "productName")    // 상품 이름
+  @Mapping(source = "productPriceSnapshot", target = "priceSnapshot") // 가격 스냅샷
+  @Mapping(source = "orderPlan.id", target = "planId")         // 요금제 ID
+  @Mapping(source = "orderPlan.type", target = "planType")     // 요금제 타입
   OrderItemResponseDTO toResponseDTO(OrderItem entity);
 }

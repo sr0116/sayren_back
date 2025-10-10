@@ -7,9 +7,11 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.Subscribe
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,4 +36,14 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   List<SubscribeRound> findBySubscribeId(Long subscribeId);
   // 스케줄 처리
   List<SubscribeRound> findByDueDateAndPayStatus(LocalDate dueDate, PaymentStatus payStatus);
+
+  // 관리자용 전체 조회
+  @Query("SELECT sr FROM SubscribeRound sr " +
+          "JOIN FETCH sr.subscribe s " +
+          "JOIN FETCH s.member m " +
+          "WHERE sr.payStatus = :status " +
+          "ORDER BY sr.dueDate DESC")
+  List<SubscribeRound> findAllByStatusWithMember(PaymentStatus status);
+
+  List<SubscribeRound> findByPayStatusIn(Collection<PaymentStatus> payStatuses);
 }

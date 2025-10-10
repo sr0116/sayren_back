@@ -55,6 +55,15 @@ public class SubscribeRound extends CreatedEntity {
   // 실제 결제 완료일 (NULL 허용)
   @Column(name = "paid_date")
   private LocalDateTime paidDate;
+///  스케줄링에 필요한 컬컴 추가
+  // 결제 실패 시각
+  @Column(name = "failed_at")
+  private LocalDateTime failedAt;
+
+  // 유예기간 종료일 (예: failedAt + 3일)
+  @Column(name = "grace_period_end_at")
+  private LocalDateTime gracePeriodEndAt;
+
 
   // 생성일(regDate)은 CreatedEntity에서 자동 관리
 }

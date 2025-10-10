@@ -193,6 +193,8 @@ public class PaymentServiceImpl implements PaymentService {
 //    refundService.requestRefund(paymentId, amount, reason);
 
   }
+
+  // 회차 결제 준비용
   @Override
   @Transactional
   public PaymentResponseDTO prepareForRound(Long subscribeRoundId) {
@@ -201,6 +203,7 @@ public class PaymentServiceImpl implements PaymentService {
     return prepareForRound(round);
   }
 
+  // 회차 결제 준비용
   @Override
   @Transactional
   public PaymentResponseDTO prepareForRound(SubscribeRound round) {
@@ -221,6 +224,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     Payment savedPayment = paymentRepository.saveAndFlush(payment);
     paymentHistoryRecorder.recordInitPayment(savedPayment);
+
     return paymentMapper.toResponseDTO(savedPayment);
   }
 
@@ -284,8 +288,7 @@ public class PaymentServiceImpl implements PaymentService {
   @Transactional(readOnly = true)
   @Override
   public List<PaymentResponseDTO> getAllForAdmin() {
-    List<Payment> payments = paymentRepository.findAllByOrderByIdDesc();
-
+    List<Payment> payments = paymentRepository.findAllWithMemberAndOrder();
     return payments.stream()
             .map(paymentMapper::toResponseDTO)
             .toList();

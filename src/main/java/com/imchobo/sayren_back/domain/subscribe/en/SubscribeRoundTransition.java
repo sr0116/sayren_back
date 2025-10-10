@@ -16,10 +16,13 @@ public enum SubscribeRoundTransition {
   RETRY_SUCCESS(PaymentStatus.PAID, ReasonCode.NONE),            // 실패 후 재시도 성공
   RETRY_FAIL(PaymentStatus.FAILED, ReasonCode.PAYMENT_FAILURE),  // 실패 후 재시도 실패
 
+  // 결제 실패 후 재시도 대기 상태 (3일간 유예)
+  RETRY_PENDING(PaymentStatus.PENDING, ReasonCode.PAYMENT_FAILURE), // 유예기간 중, 재시도 가능
+
   // 전체 단위 (구독 영향 포함 - 전체 회차)
   INIT_FAIL(PaymentStatus.FAILED, ReasonCode.PAYMENT_FAILURE),   // 1회차 실패 → 구독 자체 실패
   CANCEL_ALL(PaymentStatus.REFUNDED, ReasonCode.CONTRACT_CANCEL), // 전체 환불/취소
-  OVERDUE_END(PaymentStatus.FAILED, ReasonCode.PAYMENT_TIMEOUT);  // 연체로 전체 종료
+  FORCED_END(PaymentStatus.FAILED, ReasonCode.PAYMENT_TIMEOUT);   // 미납으로 전체 강제 종료
 
   private final PaymentStatus status;
   private final ReasonCode reason;

@@ -34,6 +34,17 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
  // 일단 환불에서 사용중
  List<Payment> findByOrderItem(OrderItem orderItem);
 
+ // 관리자용 멤버 전체 조회
+  @Query("SELECT p FROM Payment p " +
+          "JOIN FETCH p.member m " +
+          "JOIN FETCH p.orderItem oi " +
+          "JOIN FETCH oi.order o " +
+          "JOIN FETCH oi.orderPlan op " +
+          "JOIN FETCH oi.product pr " +
+          "ORDER BY p.regDate DESC")
+  List<Payment> findAllWithMemberAndOrder();
+
+
 
 
   // 기본 CRUD, 결제 상태로 조회

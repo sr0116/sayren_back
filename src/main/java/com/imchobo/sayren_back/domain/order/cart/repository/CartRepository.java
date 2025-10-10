@@ -14,6 +14,7 @@ public interface CartRepository extends JpaRepository<CartItem, Long> {
   //  상품만 체크하면 안 됨. 같은 상품이라도 요금제(구매/렌탈) 종류가 다르면 별개 아이템으로 취급해야 하니까.
   CartItem findByMemberIdAndProductIdAndOrderPlanId(Long memberId, Long productId, Long orderPlanId);
 
+  
   // 회원 장바구니 전체 비우기 (주문 완료 후 카트 비움)
   void deleteByMemberId(Long memberId);
 }

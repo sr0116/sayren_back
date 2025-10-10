@@ -33,7 +33,7 @@ public class PaymentHistoryRecorder {
             .status(payment.getPaymentStatus())
             .reasonCode(ReasonCode.NONE)// 처음 상태 기본값
             .build();
-    paymentHistoryRepository.save(history);
+    paymentHistoryRepository.saveAndFlush(history);
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -45,9 +45,13 @@ public class PaymentHistoryRecorder {
 
       // 최근 히스토리 상태 확인 (중복 방지)
       PaymentHistory lastHistory = paymentHistoryRepository.findTopByPaymentOrderByRegDateDesc(payment);
-
-      if (lastHistory != null && lastHistory.getStatus() == payment.getPaymentStatus()) {
-        log.warn("중복 이벤트 무시 - paymentId={}, status={}", payment.getId(), payment.getPaymentStatus());
+      if (lastHistory != null
+              && lastHistory.getStatus() == event.getTransition().getStatus()
+              && lastHistory.getReasonCode() == event.getTransition().getReason()) {
+        log.warn("중복 이벤트 무시 - paymentId={}, status={}, reason={}",
+                payment.getId(),
+                event.getTransition().getStatus(),
+                event.getTransition().getReason());
         return;
       }
 
@@ -58,7 +62,7 @@ public class PaymentHistoryRecorder {
               .reasonCode(event.getTransition().getReason()) // 전환 사유 코드 기록
               .build();
 
-      paymentHistoryRepository.save(history);
+      paymentHistoryRepository.saveAndFlush(history);
       log.info("결제 이력 저장 완료 - paymentId={}, status={}", payment.getId(), payment.getPaymentStatus());
 
     } catch (Exception e) {

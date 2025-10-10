@@ -9,10 +9,7 @@ import com.imchobo.sayren_back.domain.common.service.MailService;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.common.util.SolapiUtil;
 import com.imchobo.sayren_back.domain.member.dto.*;
-import com.imchobo.sayren_back.domain.member.dto.admin.MemberDetailProviderResponseDTO;
-import com.imchobo.sayren_back.domain.member.dto.admin.MemberDetailResponseDTO;
-import com.imchobo.sayren_back.domain.member.dto.admin.MemberDetailTermResponseDTO;
-import com.imchobo.sayren_back.domain.member.dto.admin.MemberListResponseDTO;
+import com.imchobo.sayren_back.domain.member.dto.admin.*;
 import com.imchobo.sayren_back.domain.member.en.MemberStatus;
 import com.imchobo.sayren_back.domain.member.en.Role;
 import com.imchobo.sayren_back.domain.member.entity.Member;
@@ -125,15 +122,30 @@ public class MemberServiceImpl implements MemberService {
     }
   }
 
-
+  // 유저용
   @Override
   @Transactional
   public void modifyTel(MemberTelDTO memberTelDTO) {
     telVerify(memberTelDTO);
-    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
-    member.setTel(memberTelDTO.getTel());
+    modifyTel(memberTelDTO.getTel(), SecurityUtil.getMemberAuthDTO().getId());
+  }
+
+  // 어드민용
+  @Override
+  @Transactional
+  public void modifyTel(AdminChangeTelDTO adminChangeTelDTO) {
+    modifyTel(adminChangeTelDTO.getTel(), adminChangeTelDTO.getMemberId());
+  }
+
+  // 휴대폰 변경 구현체
+  @Transactional
+  public void modifyTel(String tel, Long memberId){
+    Member member = memberRepository.findById(memberId).orElseThrow(IllegalArgumentException::new);
+    member.setTel(tel);
     member.setStatus(MemberStatus.ACTIVE);
   }
+
+
 
   @Override
   public FindEmailResponseDTO findEmail(MemberTelDTO memberTelDTO) {
@@ -196,15 +208,29 @@ public class MemberServiceImpl implements MemberService {
     return email;
   }
 
-
+  // 유저가 변경
   @Override
   @Transactional
   public MemberLoginResponseDTO changeName(ChangeNameDTO changeNameDTO) {
-    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
-    if(member.getName().equals(changeNameDTO.getName())) {
+    return changeName(changeNameDTO.getName(), SecurityUtil.getMemberAuthDTO().getId());
+  }
+
+  // 어드민이 변경
+  @Override
+  @Transactional
+  public void changeName(AdminChangeNameDTO adminChangeNameDTO) {
+    changeName(adminChangeNameDTO.getName(), adminChangeNameDTO.getMemberId());
+  }
+
+  // changeName 구현
+  @Transactional
+  public MemberLoginResponseDTO changeName(String name, Long memberId) {
+    Member member = memberRepository.findById(memberId).orElseThrow(IllegalArgumentException::new);
+
+    if(member.getName().equals(name)) {
       throw new RuntimeException();
     }
-    member.setName(changeNameDTO.getName());
+    member.setName(name);
     return memberMapper.toLoginResponseDTO(memberMapper.toAuthDTO(member));
   }
 
@@ -218,14 +244,21 @@ public class MemberServiceImpl implements MemberService {
   }
 
 
-  // 멤버 탈퇴
+  // 유저용
   @Override
   @Transactional
   public void deleteMember() {
-    Member member = memberRepository.findById(SecurityUtil.getMemberAuthDTO().getId()).orElseThrow(IllegalArgumentException::new);
-    memberTokenService.deleteMemberToken(member.getId());
-    memberProviderService.deleteMemberProvider(member.getId());
-    member2FAService.delete(member.getId());
+    deletedMember(SecurityUtil.getMemberAuthDTO().getId());
+  }
+
+
+  // 구현
+  @Transactional
+  public void deletedMember(Long memberId) {
+    Member member = memberRepository.findById(memberId).orElseThrow(IllegalArgumentException::new);
+    memberTokenService.deleteMemberToken(memberId);
+    memberProviderService.deleteMemberProvider(memberId);
+    member2FAService.delete(memberId);
     deletedMemberService.deleteMember(member);
 
     member.setEmail("deleted_" + member.getId());
@@ -242,10 +275,12 @@ public class MemberServiceImpl implements MemberService {
     return member.getPassword() != null;
   }
 
+
+  // 권한 변경
   @Override
   @Transactional
-  public void changeRole(Long memberId) {
-    Member member = findById(memberId);
+  public void changeRole(AdminSelectMemberIdDTO adminSelectMemberIdDTO) {
+    Member member = findById(adminSelectMemberIdDTO.getMemberId());
     if(member.getRoles().contains(Role.ADMIN)) {
       member.getRoles().remove(Role.ADMIN);
     }
@@ -258,6 +293,12 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public PageResponseDTO<MemberListResponseDTO, Member> getMemberList(PageRequestDTO pageRequestDTO) {
     Page<Member> result = memberRepository.findAllByStatusNot(MemberStatus.DELETED, pageRequestDTO.getPageable());
+    return PageResponseDTO.of(result, memberMapper::toMemberListResponseDTO);
+  }
+
+  @Override
+  public PageResponseDTO<MemberListResponseDTO, Member> getDeleteMemberList(PageRequestDTO pageRequestDTO) {
+    Page<Member> result = memberRepository.findAllByStatus(MemberStatus.DELETED, pageRequestDTO.getPageable());
     return PageResponseDTO.of(result, memberMapper::toMemberListResponseDTO);
   }
 
@@ -290,5 +331,20 @@ public class MemberServiceImpl implements MemberService {
     }
 
     return new MemberInfo(member, terms.stream().toList(), providers.stream().toList(), tfa);
+  }
+
+  // 어드민이 회원 상태 변경(탈퇴 처리포함)
+  @Override
+  @Transactional
+  public void changeStatus(AdminChangeMemberStatusDTO adminChangeMemberStatusDTO) {
+    Member member = memberRepository.findById(adminChangeMemberStatusDTO.getMemberId()).orElseThrow(IllegalArgumentException::new);
+    if(MemberStatus.READY.equals(adminChangeMemberStatusDTO.getStatus())) {
+      member.setStatus(adminChangeMemberStatusDTO.getStatus());
+      member.setTel(null);
+    } else if(MemberStatus.DELETED.equals(adminChangeMemberStatusDTO.getStatus())) {
+      deletedMember(adminChangeMemberStatusDTO.getMemberId());
+    } else {
+      member.setStatus(adminChangeMemberStatusDTO.getStatus());
+    }
   }
 }
