@@ -32,10 +32,14 @@ public class OrderHistory extends CreatedEntity {
   @Column(nullable = false)
   private OrderStatus status; // 변경시점 상태
 
-  @Column(nullable = false)
-  private String address; // 변경시점 배송지
+//  @Column(nullable = false)
+//  private String address; // 변경시점 배송지
 
-  @Column(nullable = false)
+    @Column(name = "address", nullable = false)
+    private String address; // 변경시점 배송지
+
+
+    @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   private ActorType changedBy; // 변경 주체
 }
