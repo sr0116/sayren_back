@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.product.controller;
 
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductPendingDTO;
 import com.imchobo.sayren_back.domain.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,4 +32,9 @@ import java.util.List;
             return ResponseEntity.ok("상품 승인 완료");
         }
 
+        @GetMapping("/pending")
+        public ResponseEntity<List<ProductPendingDTO>> getPendingProducts() {
+            List<ProductPendingDTO> list = productService.getPendingProducts();
+            return ResponseEntity.ok(list);
+        }
 }
