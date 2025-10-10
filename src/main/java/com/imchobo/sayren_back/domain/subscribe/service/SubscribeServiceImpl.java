@@ -9,11 +9,9 @@ import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
 import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundException;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
-import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
-import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
@@ -310,21 +308,22 @@ public class SubscribeServiceImpl implements SubscribeService {
     // 관리자가 승인시
     if (status == RefundRequestStatus.APPROVED) {
       //환불 요청 자동 생성
-      RefundRequest autoRequest = RefundRequest.builder()
+      RefundRequest request = RefundRequest.builder()
               .orderItem(subscribe.getOrderItem())
               .member(subscribe.getMember())
               .status(RefundRequestStatus.APPROVED_WAITING_RETURN) // 환불 승인 및 회수 중
               .reasonCode(reasonCode)
               .build();
 
-      refundRequestRepository.saveAndFlush(autoRequest);
+      refundRequestRepository.saveAndFlush(request);
 
 //      // 구독 상태 변경 (환불 승인) 중복인 것 같아서 임시 주석
 //      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
 
-      eventPublisher.publishEvent(new RefundApprovedEvent(
+      eventPublisher.publishEvent(new RefundRequestEvent(
               subscribe.getOrderItem().getId(),
               subscribe.getId(),
+              request.getStatus(),
               reasonCode,
               ActorType.ADMIN
       ));

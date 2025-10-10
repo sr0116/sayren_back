@@ -4,23 +4,13 @@ package com.imchobo.sayren_back.domain.payment.refund.component;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.delivery.component.event.DeliveryStatusChangedEvent;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
-import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
-import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
-import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
-import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
-import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
-import com.imchobo.sayren_back.domain.payment.entity.Payment;
-import com.imchobo.sayren_back.domain.payment.exception.PaymentNotFoundException;
-import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundApprovedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
-import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
-import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
@@ -29,8 +19,6 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.Subscribe
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,22 +36,50 @@ public class RefundEventHandler {
   private final SubscribeRepository subscribeRepository;
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final RefundRequestRepository refundRequestRepository;
-  private final PaymentRepository paymentRepository;
   private final OrderItemRepository orderItemRepository;
-  private final DeliveryRepository deliveryRepository;
 
-  // 관리자가 환불 승인 시에 호출됨
-  @EventListener
-  @Transactional
-  public void onRefundApproved(RefundApprovedEvent event) {
+  // 관리자가 환불 승인/ 거절/ 취소 등 시에 호출됨
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void onRefundRequestChanged(RefundRequestEvent event) {
+    Long subscribeId = event.getSubscribeId();
+    Long orderItemId = event.getOrderItemId();
+    RefundRequestStatus status = event.getStatus();
 
-    // 일반 결제 환불은 구독 ID가 없으므로 null 방어 필요
-    if (event.getSubscribeId() == null) {
-      log.info("일반 결제 환불 승인 이벤트 수신 → 구독 환불 처리 생략");
+    log.info("[EVENT] RefundRequestEvent 수신 → orderItemId={}, subscribeId={}, status={}",
+            orderItemId, subscribeId, status);
+    // 거절 취소는 추가 처리 없음
+    if (status == RefundRequestStatus.REJECTED || status == RefundRequestStatus.CANCELED) {
+      refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(
+              orderItemRepository.findById(orderItemId)
+                      .orElseThrow(() -> new RuntimeException("OrderItem 없음: " + orderItemId))
+      ).ifPresent(req -> {
+        req.setStatus(status);
+        refundRequestRepository.save(req);
+        log.info("환불 요청 상태 변경 완료 → refundRequestId={}, status={}", req.getId(), status);
+      });
       return;
     }
+    // 일반 결제 환불은 구독 ID가 없으므로 null 방어 필요
+    if (subscribeId == null) {
+      refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(
+              orderItemRepository.findById(orderItemId)
+                      .orElseThrow(() -> new RuntimeException("OrderItem 없음: " + orderItemId))
+      ).ifPresent(req -> {
+        if (req.getStatus() == RefundRequestStatus.PENDING) {
+          req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
+          req.setReasonCode(event.getReason());
+          refundRequestRepository.save(req);
+          log.info("일반 결제 환불 승인 → 상태=PENDING→APPROVED_WAITING_RETURN (회수 대기)");
+        } else {
+          log.warn("일반 결제 환불 승인 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
+        }
+      });
+      return;
+    }
+
     // 구독 환불 승인 로직 (구독 ID 존재 시에만 실행)
-    subscribeRepository.findById(event.getSubscribeId())
+    subscribeRepository.findById(subscribeId)
             .ifPresentOrElse(subscribe -> {
               refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
                       .ifPresentOrElse(req -> {
@@ -71,12 +87,12 @@ public class RefundEventHandler {
                           req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
                           req.setReasonCode(event.getReason());
                           refundRequestRepository.save(req);
-                          log.info("환불 요청 상태 변경 완료: refundRequestId={}, 상태=PENDING→APPROVED_WAITING_RETURN", req.getId());
+                          log.info("구독 환불 승인 처리 완료: refundRequestId={}, 상태=PENDING→APPROVED_WAITING_RETURN", req.getId());
                         } else {
-                          log.warn("환불 요청 상태 변경 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
+                          log.warn("구독 환불 승인 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
                         }
-                      }, () -> log.warn("해당 구독에 대한 환불 요청 없음: subscribeId={}", event.getSubscribeId()));
-            }, () -> log.warn("구독 엔티티 없음: subscribeId={}", event.getSubscribeId()));
+                      }, () -> log.warn("해당 구독에 대한 환불 요청 없음: subscribeId={}", subscribeId));
+            }, () -> log.warn("구독 엔티티 없음: subscribeId={}", subscribeId));
   }
 
   // 배송 회수 완료 이벤트 → 자동 환불 처리

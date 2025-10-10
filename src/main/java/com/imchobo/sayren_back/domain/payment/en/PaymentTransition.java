@@ -25,6 +25,10 @@ public enum PaymentTransition {
   REFUND(PaymentStatus.REFUNDED, ReasonCode.AUTO_REFUND),    // 환불 확정
   PARTIAL_REFUND(PaymentStatus.PARTIAL_REFUNDED, ReasonCode.USER_REQUEST), // 부분 환불
 
+  // 구독 보증금 환불 관련 추가
+  CANCEL_DEPOSIT_ONLY(PaymentStatus.PARTIAL_REFUNDED, ReasonCode.CONTRACT_CANCEL), // 보증금만 환불
+  CANCEL_FUTURE_ONLY(PaymentStatus.CANCELED, ReasonCode.CONTRACT_CANCEL), // 남은 회차 취소
+
   // PortOne 상태 확장 대응
   READY(PaymentStatus.PENDING, ReasonCode.NONE),       // PortOne: 가상계좌 생성 등 결제 준비 상태
   SCHEDULED(PaymentStatus.PENDING, ReasonCode.NONE);   // PortOne: 정기결제 예약 상태
