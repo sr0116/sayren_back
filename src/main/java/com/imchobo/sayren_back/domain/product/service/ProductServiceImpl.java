@@ -12,6 +12,7 @@ import com.imchobo.sayren_back.domain.product.entity.ProductTag;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductStockRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductTagRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -143,5 +144,13 @@ public class ProductServiceImpl implements ProductService {
                     calcRentalPrice(p.getPrice(), 24)
             ))
             .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + id));
+  }
+
+  @Override
+  public void useProduct(Long id) {
+    Product product = productRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+    product.setIsUse(true); // 승인 처리 (isUse 재활용)
+    productRepository.save(product);
   }
 }

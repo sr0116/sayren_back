@@ -11,6 +11,8 @@ public interface ProductService {
   List<ProductListResponseDTO> getAllProducts(String type, String category);
   ProductDetailsResponseDTO getProductById(Long id);
 
+  void useProduct(Long id);
+
 
 }
 
