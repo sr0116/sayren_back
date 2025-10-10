@@ -8,8 +8,10 @@ import java.util.List;
 
 public interface ProductService {
   void preloadProducts();
-  List<ProductListResponseDTO> getAllProducts(String type);
+  List<ProductListResponseDTO> getAllProducts(String type, String category);
   ProductDetailsResponseDTO getProductById(Long id);
+
+  void useProduct(Long id);
 
 
 }

@@ -3,13 +3,16 @@ package com.imchobo.sayren_back.domain.product.service;
 import com.imchobo.sayren_back.domain.attach.dto.ProductAttachResponseDTO;
 import com.imchobo.sayren_back.domain.attach.repository.ProductAttachRepository;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
+import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.product.entity.ProductStock;
 import com.imchobo.sayren_back.domain.product.entity.ProductTag;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductStockRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductTagRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -52,45 +55,57 @@ public class ProductServiceImpl implements ProductService {
   @Override
   @EventListener(ApplicationReadyEvent.class)
   public void preloadProducts() {
-    List<ProductListResponseDTO> list = getAllProducts(null);
+    List<ProductListResponseDTO> list = getAllProducts(null, null);
     redisUtil.setObject("PRODUCTS", list);
   }
 
 
   @Override
-  public List<ProductListResponseDTO> getAllProducts(String type) {
-    return productRepository.findAll().stream()
-            .filter(p -> {
-              if (type == null) return true; // 전체 상품
-              return p.getOrderItems().stream()
-                      .anyMatch(item -> item.getOrderPlan().getType().name()
-                              .equalsIgnoreCase(type));
-            })
+  public List<ProductListResponseDTO> getAllProducts(String type, String category) {
+    List<Product> products;
+
+    if (category != null && !category.isEmpty()) {
+      if (type != null && !type.isEmpty()) {
+        products = productRepository.findByCategoryAndType(
+                category,
+                OrderPlanType.valueOf(type.toUpperCase())
+        );
+      } else {
+        products = productRepository.findByProductCategory(category);
+      }
+    } else {
+      if (type != null && !type.isEmpty()) {
+        products = productRepository.findByOrderPlanType(
+                OrderPlanType.valueOf(type.toUpperCase())
+        );
+      } else {
+        products = productRepository.findAll();
+      }
+    }
+
+    return products.stream()
             .map(p -> ProductListResponseDTO.builder()
                     .productId(p.getId())
                     .thumbnailUrl(
                             productAttachRepository.findByProductIdAndIsThumbnailTrue(p.getId())
-                            .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
-                                    + a.getPath() + "/" + a.getUuid())
-                            .orElse(null)) // attach 연결
+                                    .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                                            + a.getPath() + "/" + a.getUuid())
+                                    .orElse(null))
                     .productName(p.getName())
-                    .description(
-                            p.getDescription() != null ? p.getDescription() : "" )
+                    .description(p.getDescription() != null ? p.getDescription() : "")
                     .price(p.getPrice())
                     .isUse(p.getIsUse())
                     .productCategory(p.getProductCategory())
                     .modelName(p.getModelName())
-                    // 태그
-                    .tags(
-                    productTagRepository.findByProductId(p.getId()).stream()
+                    .tags(productTagRepository.findByProductId(p.getId()).stream()
                             .map(ProductTag::getTagValue)
                             .toList())
                     .deposit(calcDeposit(p.getPrice()))
                     .rentalPrice(calcRentalPrice(p.getPrice(), 24))
-                    .build()
-            )
+                    .build())
             .toList();
   }
+
 
   @Override
   public ProductDetailsResponseDTO getProductById(Long id) {
@@ -129,5 +144,13 @@ public class ProductServiceImpl implements ProductService {
                     calcRentalPrice(p.getPrice(), 24)
             ))
             .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + id));
+  }
+
+  @Override
+  public void useProduct(Long id) {
+    Product product = productRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+    product.setIsUse(true); // 승인 처리 (isUse 재활용)
+    productRepository.save(product);
   }
 }

@@ -1,4 +1,4 @@
-package com.imchobo.sayren_back.domain.board.controller;
+package com.imchobo.sayren_back.domain.board.controller.user;
 
 import com.imchobo.sayren_back.domain.board.entity.Board;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/user/reviews")
 @RequiredArgsConstructor
-public class ReviewController {
+public class UserReviewController {
 
   private final ReviewService reviewService;
 
