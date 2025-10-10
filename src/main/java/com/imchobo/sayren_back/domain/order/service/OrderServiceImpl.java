@@ -98,21 +98,23 @@ public class OrderServiceImpl implements OrderService {
         .build()
       ).collect(Collectors.toList());
 
-    // 엔티티 저장
-    Order savedOrder = orderRepository.save(order);
+      // (연관관계 세팅)
+      order.setOrderItems(orderItems);
 
-    // 장바구니 비우기
-    cartRepository.deleteAll(cartItems);
+      // 엔티티 저장
+      Order savedOrder = orderRepository.save(order);
 
-    // 이벤트 발행 (배송 자동 생성)
-    eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
+      // 장바구니 비우기
+      cartRepository.deleteAll(cartItems);
 
-    // 상태 기록
-    statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
+      // 이벤트 발행 (배송 자동 생성)
+      eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
 
-    return orderMapper.toResponseDTO(savedOrder);
+      // 상태 기록
+      statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
+
+      return orderMapper.toResponseDTO(savedOrder);
   }
-
   @Override
   public OrderResponseDTO markAsPaid(Long orderId) {
     Order order = orderRepository.findById(orderId)
