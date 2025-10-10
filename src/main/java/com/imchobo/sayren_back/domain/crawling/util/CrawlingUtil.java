@@ -11,15 +11,22 @@ import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
@@ -101,63 +108,64 @@ public class CrawlingUtil {
     }
   }
 
-    public String getDescription(WebDriver driver) throws Exception {
-        WebElement placeholder = driver.findElement(By.className("iw_placeholder"));
-        String html = placeholder.getDomProperty("outerHTML");
-        Document doc = Jsoup.parse(html);
+  public String getDescription(WebDriver driver) throws Exception {
+    WebElement placeholder = driver.findElement(By.className("iw_placeholder"));
+    String html = placeholder.getDomProperty("outerHTML");
+    Document doc = Jsoup.parse(html);
 
-        StringBuilder result = new StringBuilder();
+    StringBuilder result = new StringBuilder();
 
-        int textCount = 0;
-        int imgCount = 0;
+    int textCount = 0;
+    int imgCount = 0;
 
-        for (Element comp : doc.select(".iw_component")) {
+    for (Element comp : doc.select(".iw_component")) {
 
-            // 텍스트 추출
-            for (Element t : comp.select(".txt, p, span, strong")) {
-                if (textCount >= 10) break;
-                String text = t.text().trim();
-                if (!text.isEmpty()) {
-                    result.append("<p>").append(text).append("</p>\n");
-                    textCount++;
-                }
-            }
-
-            // 이미지 추출
-            for (Element img : comp.select("img")) {
-                if (imgCount >= 5) break;
-
-                String src = img.hasAttr("data-pc-src") ? img.attr("data-pc-src") : img.attr("src");
-                if (src == null || src.isBlank()) continue;
-                if (!src.startsWith("http")) src = "https://www.lge.co.kr" + src;
-
-                // 추가: URL 인코딩(공백, 괄호, + 기호 등 처리)
-                src = src.replace(" ", "%20");
-                src = src.replaceAll("\\(", "%28").replaceAll("\\)", "%29");
-                src = src.replaceAll("\\+", "%2B");
-
-
-                String alt = img.attr("alt").toLowerCase();
-                if (alt.contains("손가락") || alt.contains("배경") || alt.contains("아이콘")
-                        || alt.contains("카드") || alt.contains("배너") || alt.contains("로고"))
-                    continue;
-
-                try {
-                    String s3Url = s3UploadUtil.getFullUrl(s3UploadUtil.upload(src));
-                    result.append("<img src=\"").append(s3Url)
-                            .append("\" style=\"width:100%;height:auto;display:block;\"/>\n");
-                    imgCount++;
-                } catch (Exception e) {
-                    System.err.println("이미지 업로드 실패: " + e.getMessage());
-                }
-            }
-
-            if (textCount >= 10 && imgCount >= 10) break;
+      // 텍스트 추출
+      for (Element t : comp.select(".txt, p, span, strong")) {
+        if (textCount >= 10) break;
+        String text = t.text().trim();
+        if (!text.isEmpty()) {
+          result.append("<p>").append(text).append("</p>\n");
+          textCount++;
         }
+      }
 
-        return replaceBrandName(result.toString());
+      // 이미지 추출
+      for (Element img : comp.select("img")) {
+        if (imgCount >= 5) break;
+
+        String src = img.hasAttr("data-pc-src") ? img.attr("data-pc-src") : img.attr("src");
+        if (src == null || src.isBlank()) continue;
+        if (!src.startsWith("http")) src = "https://www.lge.co.kr" + src;
+
+        // 추가: URL 인코딩(공백, 괄호, + 기호 등 처리)
+        src = src.replace(" ", "%20");
+        src = src.replaceAll("\\(", "%28").replaceAll("\\)", "%29");
+        src = src.replaceAll("\\+", "%2B");
+
+
+        String alt = img.attr("alt").toLowerCase();
+        if (alt.contains("손가락") || alt.contains("배경") || alt.contains("아이콘")
+                || alt.contains("카드") || alt.contains("배너") || alt.contains("로고"))
+          continue;
+
+        try {
+          String s3Url = s3UploadUtil.getFullUrl(s3UploadUtil.upload(src));
+          result.append("<img src=\"").append(s3Url)
+                  .append("\" style=\"width:100%;height:auto;display:block;\"/>\n");
+          imgCount++;
+        } catch (Exception e) {
+          System.err.println("이미지 업로드 실패: " + e.getMessage());
+        }
+      }
+
+      if (textCount >= 12 && imgCount >= 10) break;
     }
-    public List<String> getDescriptionImageUrls(WebDriver driver) throws Exception {
+
+    return replaceBrandName(result.toString());
+  }
+
+  public List<String> getDescriptionImageUrls(WebDriver driver) throws Exception {
         WebElement firstBlock = driver.findElement(By.className("iw_placeholder"));
         String html = firstBlock.getDomProperty("outerHTML");
         org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(html);
@@ -179,25 +187,17 @@ public class CrawlingUtil {
                     .replaceAll("\\)", "%29")
                     .replaceAll("\\+", "%2B");
 
-            try {
-                // S3 업로드 후 경로 반환
-                String fullUrl = s3UploadUtil.getFullUrl(s3UploadUtil.upload(newSrc));
+          try {
+            // S3 업로드 후 전체 URL 반환
+            String fullUrl = s3UploadUtil.getFullUrl(s3UploadUtil.upload(newSrc));
 
-                // .amazonaws.com/ 뒤 부분만 안전하게 추출
-                String[] parts = fullUrl.split("\\.amazonaws\\.com/");
-                String pathAndFile = parts.length > 1 ? parts[1] : "";
+            // 이미 완성된 전체 S3 URL을 바로 사용 (split 불필요)
+            imageUrls.add(fullUrl);
+            System.out.println("S3 업로드 결과 fullUrl = " + fullUrl);
 
-                // path / uuid 분리
-                int lastSlash = pathAndFile.lastIndexOf("/");
-                String path = (lastSlash > 0) ? pathAndFile.substring(0, lastSlash) : "";
-                String uuid = (lastSlash > 0) ? pathAndFile.substring(lastSlash + 1) : pathAndFile;
-
-                // 최종적으로 attach에서 쓸 수 있도록 구성
-                imageUrls.add(path + "/" + uuid);
-
-            } catch (Exception e) {
-                System.err.println("이미지 업로드 실패: " + e.getMessage());
-            }
+          } catch (Exception e) {
+            System.err.println("이미지 업로드 실패: " + e.getMessage());
+          }
         }
 
         return imageUrls;

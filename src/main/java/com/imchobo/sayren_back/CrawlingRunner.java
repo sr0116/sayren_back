@@ -23,19 +23,13 @@ public class CrawlingRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        File flagFile = new File("crawling_done.flag"); // 플래그 파일
-
-        // 이미 실행된 적 있다면 스킵
-        if (flagFile.exists()) {
-            System.out.println("이미 크롤링이 완료되어 있습니다. 건너뜁니다.");
-            return;
+        try {
+            System.out.println("크롤링 시작!");
+            crawlingService.crawlCategory("https://www.lge.co.kr/category/massage-chairs");
+            System.out.println("크롤링 완료!");
+        } catch (Exception e) {
+            System.err.println("크롤링 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        System.out.println("크롤링 시작!");
-        crawlingService.crawlCategory("https://www.lge.co.kr/category/stan-by-me");
-        System.out.println("크롤링 완료!");
-
-        // 플래그 파일 생성 (한 번만 실행되도록)
-        flagFile.createNewFile();
     }
 }

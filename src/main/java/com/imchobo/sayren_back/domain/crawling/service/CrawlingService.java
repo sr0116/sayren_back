@@ -108,8 +108,9 @@ public class CrawlingService {
    * - Tag 저장
    * - ProductOption(구매/구독) 저장
    */
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   protected void crawlAndSaveWithTags(WebDriver driver, String url, Map<String, Map<String, String>> tagMap) throws Exception {
+
 
     try {
       System.out.println("crawlAndSaveWithTags: url: " + url);
@@ -170,7 +171,8 @@ public class CrawlingService {
                 .build());
 
           productRepository.flush();
-          entityManager.clear();
+          entityManager.flush();
+          entityManager.clear();  // 메모리 누수 방지
           Thread.sleep(200); // DB가 너무 빠르게 쿼리받으면 socket 에러 방지
 
         } catch (Exception e) {
