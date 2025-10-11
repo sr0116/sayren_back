@@ -6,6 +6,7 @@ import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductPendingDTO;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.product.entity.ProductStock;
 import com.imchobo.sayren_back.domain.product.entity.ProductTag;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -28,6 +30,7 @@ public class ProductServiceImpl implements ProductService {
   private final ProductStockRepository productStockRepository;
   private final ProductTagRepository productTagRepository;
   private final ProductAttachRepository productAttachRepository;
+
 
   private Long calcDeposit(Long price) {
     // 보증금: 원가의 20%
@@ -151,6 +154,47 @@ public class ProductServiceImpl implements ProductService {
     Product product = productRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
     product.setIsUse(true); // 승인 처리 (isUse 재활용)
+    productRepository.save(product);
+  }
+
+  @Override
+  public List<ProductPendingDTO> getPendingProducts() {
+    return productRepository.findByIsUseFalse()
+            .stream()
+
+            .map(p -> ProductPendingDTO.builder()
+                    .productId(p.getId())
+                    .productName(p.getName())
+                    .modelName(p.getModelName())
+                    .productCategory(p.getProductCategory())
+                    .isUse(p.getIsUse())
+                    .build())
+            .toList();
+  }
+
+  // 등록 승인 대기 상품
+  @Override
+  public List<ProductPendingDTO> getApprovedProducts() {
+    return productRepository.findByIsUseTrue()
+            .stream()
+            .map(p -> ProductPendingDTO.builder()
+                    .productId(p.getId())
+                    .productName(p.getName())
+                    .modelName(p.getModelName())
+                    .productCategory(p.getProductCategory())
+                    .isUse(p.getIsUse())
+                    .build())
+            .toList();
+  }
+
+  // 등록 승인 완료 상품 삭제(비활성)
+  @Override
+  @Transactional
+  public void cancelUseProduct(Long id) {
+    Product product = productRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+    product.setIsUse(false); // 승인 취소 → 대기 상태로 복귀
     productRepository.save(product);
   }
 }
