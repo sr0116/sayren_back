@@ -3,6 +3,8 @@ package com.imchobo.sayren_back.domain.delivery.address.controller;
 import com.imchobo.sayren_back.domain.delivery.address.dto.AddressRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.address.dto.AddressResponseDTO;
 import com.imchobo.sayren_back.domain.delivery.address.service.AddressService;
+import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,35 +12,48 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/addresses")
+@RequestMapping("/api/user/addresses")
 @RequiredArgsConstructor
 public class AddressController {
 
-  private final AddressService addressService;
+    private final AddressService addressService;
 
-  @PostMapping
-  public ResponseEntity<AddressResponseDTO> create(@RequestBody AddressRequestDTO dto) {
-    return ResponseEntity.ok(addressService.createAddress(dto));
-  }
+    //  배송지 등록
+    @PostMapping
+    public ResponseEntity<AddressResponseDTO> createAddress(@RequestBody AddressRequestDTO dto) {
+        Member member = SecurityUtil.getMemberEntity();
+        return ResponseEntity.ok(addressService.createAddress(member, dto));
+    }
 
-  @PutMapping("/{id}")
-  public ResponseEntity<AddressResponseDTO> update(@PathVariable Long id, @RequestBody AddressRequestDTO dto) {
-    return ResponseEntity.ok(addressService.updateAddress(id, dto));
-  }
+    // 배송지 수정
+    @PutMapping("/{addressId}")
+    public ResponseEntity<AddressResponseDTO> updateAddress(
+            @PathVariable Long addressId,
+            @RequestBody AddressRequestDTO dto
+    ) {
+        Member member = SecurityUtil.getMemberEntity();
+        return ResponseEntity.ok(addressService.updateAddress(member, addressId, dto));
+    }
 
-  @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable Long id) {
-    addressService.deleteAddress(id);
-    return ResponseEntity.noContent(). build();
-  }
+    //  배송지 삭제
+    @DeleteMapping("/{addressId}")
+    public ResponseEntity<Void> deleteAddress(@PathVariable Long addressId) {
+        Member member = SecurityUtil.getMemberEntity();
+        addressService.deleteAddress(member, addressId);
+        return ResponseEntity.noContent().build();
+    }
 
-  @GetMapping("/member/{memberId}")
-  public ResponseEntity<List<AddressResponseDTO>> getByMember(@PathVariable Long memberId) {
-    return ResponseEntity.ok(addressService.getAddressesByMember(memberId));
-  }
+    // 로그인 회원 배송지 목록 조회
+    @GetMapping
+    public ResponseEntity<List<AddressResponseDTO>> getAddressesByMember() {
+        Member member = SecurityUtil.getMemberEntity();
+        return ResponseEntity.ok(addressService.getAddressesByMember(member.getId()));
+    }
 
-  @GetMapping("/member/{memberId}/default")
-  public ResponseEntity<AddressResponseDTO> getDefault(@PathVariable Long memberId) {
-    return ResponseEntity.ok(addressService.getDefaultAddress(memberId));
-  }
+    //  기본 배송지 조회
+    @GetMapping("/default")
+    public ResponseEntity<AddressResponseDTO> getDefaultAddress() {
+        Member member = SecurityUtil.getMemberEntity();
+        return ResponseEntity.ok(addressService.getDefaultAddress(member.getId()));
+    }
 }

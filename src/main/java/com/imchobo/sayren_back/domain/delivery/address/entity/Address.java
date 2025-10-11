@@ -12,40 +12,33 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
 public class Address extends CreatedEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "address_id")
-  private Long id;// PK (NOT NULL, AUTO_INCREMENT(DB에서 자동증가))
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "address_id")
+    private Long id; // PK
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "member_id", nullable = false)
-  private Member member;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member; // FK (회원)
 
-  // 수령인 이름 (NOT NULL, 최대 100자)
-  @Column(nullable = false, length = 100)
-  private String name;
+    @Column(nullable = false, length = 100)
+    private String name; // 수령인 이름
 
-  // 연락처 (NOT NULL, 최대 20자)
-  @Column(nullable = false, length = 20)
-  private String tel;
+    @Column(nullable = false, length = 20)
+    private String tel; // 연락처
 
-  // 우편번호 (NOT NULL, 최대 20자)
-  @Column(nullable = false, length = 20)
-  private String zipcode;
+    @Column(nullable = false, length = 20)
+    private String zipcode; // 우편번호
 
-  // 주소
-  @Column(name = "addr", nullable = false)
-  private String address;
+    @Column(name = "addr", nullable = false, length = 255)
+    private String address; // 주소 (도로명 + 상세)
 
-  // 기본 배송지 여부 (NOT NULL, 기본값 FALSE)
-  @Column(nullable = false)
-  @Builder.Default
-  private Boolean isDefault = false;
+    @Column(name = "is_default", nullable = false)
+    @Builder.Default
+    private Boolean isDefault = false; // 기본 배송지 여부
 
-  // 배송 메모 (NULL 허용, 최대 255자)
-  @Column(length = 255)
-  private String memo;
+    @Column(length = 255)
+    private String memo; // 배송 메모
 }
