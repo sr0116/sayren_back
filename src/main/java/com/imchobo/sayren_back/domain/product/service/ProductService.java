@@ -16,5 +16,8 @@ public interface ProductService {
 
   List<ProductPendingDTO> getPendingProducts();
 
+  List<ProductPendingDTO> getApprovedProducts();
+
+  void cancelUseProduct(Long id);
 }
 

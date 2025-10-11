@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -169,5 +170,31 @@ public class ProductServiceImpl implements ProductService {
                     .isUse(p.getIsUse())
                     .build())
             .toList();
+  }
+
+  @Override
+  public List<ProductPendingDTO> getApprovedProducts() {
+    return productRepository.findByIsUseTrue()
+            .stream()
+            .map(p -> ProductPendingDTO.builder()
+                    .productId(p.getId())
+                    .productName(p.getName())
+                    .modelName(p.getModelName())
+                    .productCategory(p.getProductCategory())
+                    .isUse(p.getIsUse())
+                    .build())
+            .toList();
+  }
+
+
+
+  @Override
+  @Transactional
+  public void cancelUseProduct(Long id) {
+    Product product = productRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+    product.setIsUse(false); // 승인 취소 → 대기 상태로 복귀
+    productRepository.save(product);
   }
 }
