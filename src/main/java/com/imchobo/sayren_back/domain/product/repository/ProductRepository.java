@@ -30,4 +30,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
           "AND op.type = :type")
   List<Product> findByCategoryAndType(@Param("category") String category,
                                       @Param("type") OrderPlanType type);
+
+  // 등록 승인 목록
+  List<Product> findByIsUseFalse();
 }

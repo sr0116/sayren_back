@@ -20,15 +20,17 @@ import java.util.List;
             return productService.getAllProducts(type, category);
         }
 
-        @GetMapping("/{id}")
-        public ProductDetailsResponseDTO getOne(@PathVariable Long id) {
-            return productService.getProductById(id);
-        }
-
-        @PostMapping("/admin/products/use/{id}")
+        // 승인처리
+        @PostMapping("/use/{id}")
         public ResponseEntity<?> useProduct(@PathVariable Long id) {
             productService.useProduct(id);
             return ResponseEntity.ok("상품 승인 완료");
+        }
+
+        // 승인 대기목록
+        @GetMapping("/pending")
+        public ResponseEntity<?> getPendingProducts() {
+            return ResponseEntity.ok(productService.getPendingProducts());
         }
 
 }

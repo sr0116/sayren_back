@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.product.service;
 
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.entity.Product;
 import org.springframework.boot.context.metrics.buffering.StartupTimeline;
 
 import java.util.List;
@@ -13,6 +14,6 @@ public interface ProductService {
 
   void useProduct(Long id);
 
-
+  List<ProductListResponseDTO> getPendingProducts();
 }
 
