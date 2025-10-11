@@ -74,10 +74,23 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     RefundRequest entity = refundRequestMapper.toEntity(dto);
     entity.setMember(member);
     entity.setOrderItem(payment.getOrderItem());
-    entity.setStatus(RefundRequestStatus.PENDING); // r기본값
+    entity.setStatus(RefundRequestStatus.PENDING); // 기본값
     entity.setReasonCode(dto.getReasonCode()); // 기본값 세팅해둠
 
     RefundRequest saved = refundRequestRepository.save(entity);
+    // 사용자 요청 이벤트 발행 (actor=USER)
+    Long subscribeId = subscribeRepository.findByOrderItem(payment.getOrderItem())
+            .map(Subscribe::getId)
+            .orElse(null);
+
+    eventPublisher.publishEvent(new RefundRequestEvent(
+            payment.getOrderItem().getId(),
+            subscribeId,
+            RefundRequestStatus.PENDING,
+            dto.getReasonCode(),
+            ActorType.USER
+    ));
+
     return refundRequestMapper.toResponseDTO(saved);
   }
 
@@ -96,6 +109,16 @@ public class RefundRequestServiceImpl implements RefundRequestService {
       throw new RefundRequestStatusInvalidException("이미 처리된 환불 요청");
     }
     request.setStatus(RefundRequestStatus.CANCELED);
+    refundRequestRepository.save(request);
+
+    // 취소 이벤트 발행 (actor=USER)
+    eventPublisher.publishEvent(new RefundRequestEvent(
+            request.getOrderItem().getId(),
+            null,
+            RefundRequestStatus.CANCELED,
+            request.getReasonCode(),
+            ActorType.USER
+    ));
   }
 
   // 결제 취소 여부
@@ -118,54 +141,36 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     if (request.getStatus() != RefundRequestStatus.PENDING) {
       throw new RefundRequestStatusInvalidException("이미 처리된 환불 요청");
     }
-
-    // 상태 사유 코드 변경 저장
-    request.setStatus(status);
-    request.setReasonCode(reasonCode);
-
-    log.info("환불 요청 처리 시작: refundRequestId={}, status={}, reasonCode={}",
-            refundRequestId, status, reasonCode);
-
-// 회수 대기 상태로 변경 후 이벤트 처리
+    // 관리자 승인일때만 상태 전환
     if (status == RefundRequestStatus.APPROVED) {
       request.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
-      refundRequestRepository.save(request);
-      log.info("[REFUND] 환불 승인 처리 완료 (회수 대기 상태로 변경) → refundRequestId={}", refundRequestId);
-    }
-    // 구독 결제인지 확인 (OrderItem → Subscribe 존재 여부)
-    boolean isSubscribe = subscribeRepository.findByOrderItem(request.getOrderItem()).isPresent();
-    Long subscribeId = null;
-
-    if (isSubscribe) {
-      Subscribe subscribe = subscribeRepository.findByOrderItem(request.getOrderItem()).orElse(null);
-      if (subscribe != null) {
-        subscribeId = subscribe.getId();
-      }
+      log.info("[ADMIN ACTION] 환불 승인 처리 완료 (회수 대기 상태로 변경) → refundRequestId={}", refundRequestId);
+    } else {
+      request.setStatus(status);
     }
 
-    // 분기 처리로 환불 요청 이벤트 발행
-    RefundRequestEvent event = new RefundRequestEvent(
+    // 상태 사유 코드 변경 저장
+    request.setReasonCode(reasonCode);
+    refundRequestRepository.saveAndFlush(request);
+
+
+    // 구독 결제 여부 확인
+    Long subscribeId = subscribeRepository.findByOrderItem(request.getOrderItem())
+            .map(Subscribe::getId)
+            .orElse(null);
+
+    // 관리자 승인/거절 이벤트 발행
+    eventPublisher.publishEvent(new RefundRequestEvent(
             request.getOrderItem().getId(),
-            subscribeId,       // 구독 결제면 실제 ID, 일반 결제면 null
+            subscribeId,
             request.getStatus(),
             reasonCode,
             ActorType.ADMIN
-    );
-    eventPublisher.publishEvent(event);
+    ));
 
-    log.info("[EVENT] RefundApprovedEvent 발행 완료 → orderItemId={}, subscribeId={}, reason={}",
-            request.getOrderItem().getId(), subscribeId, reasonCode);
-
+    log.info("[EVENT] 관리자 환불 처리 이벤트 발행 → orderItemId={}, subscribeId={}, status={}, actor=ADMIN",
+            request.getOrderItem().getId(), subscribeId, request.getStatus());
     return refundRequestMapper.toResponseDTO(request);
-  }
-
-  // 계산 분기 처리
-  private RefundCalculator getCalculator(Payment payment) {
-    if (payment.getOrderItem().getOrderPlan().getType() == OrderPlanType.RENTAL) {
-      return rentalRefundCalculator;
-    } else { // 일반 계산
-      return purchaseRefundCalculator;
-    }
   }
 
   /// // 밑에 3개 조회 /// 나중에 처리

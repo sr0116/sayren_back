@@ -11,4 +11,6 @@ import java.util.Optional;
 public interface RefundRepository extends JpaRepository<Refund, Long> {
 
   Optional<Refund> findFirstByPaymentOrderByRegDateDesc(Payment payment);
+
+  boolean existsByPayment(Payment payment);
 }

@@ -14,4 +14,6 @@ public interface RefundService {
   void executeRefundForSubscribe(Subscribe subscribe, RefundRequest refundRequest);
   // 필요시 환불 취소/롤백도 여기서 관리
   void cancelRefund(Long refundId);
+
+  void processAutoRefundBatch();
 }

@@ -103,7 +103,7 @@ public class PaymentTest {
             orderItem
     );
 
-    System.out.println("배송 회수 완료 처리 테스트 성공");
+    System.out.println("배송 완료 처리 테스트 성공");
 
     // 이벤트 비동기 처리 대기 (2초 정도)
     Thread.sleep(2000);

@@ -17,9 +17,11 @@ import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClien
 import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelRequest;
 import com.imchobo.sayren_back.domain.payment.portone.dto.cancel.CancelResponse;
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundCompletedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
+import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
@@ -59,6 +61,7 @@ public class RefundServiceImpl implements RefundService {
   private final ApplicationEventPublisher eventPublisher;
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final DeliveryItemRepository deliveryItemRepository;
+  private final RefundRequestRepository refundRequestRepository;
 
 
   //  환불 결제 처리
@@ -71,12 +74,11 @@ public class RefundServiceImpl implements RefundService {
     }
     Payment payment = payments.get(0); // 최신 결제
 
-    // 자동 환불 조건 검사
-    if (isAutoRefund(payment)) {
-      processAutoRefund(payment, request);
+    // 중복 환불 방지
+    if (refundRepository.existsByPayment(payment)) {
+      log.warn("[SKIP] 이미 환불된 결제 → paymentId={}", payment.getId());
       return;
     }
-
     // 환불 금액 계산
     RefundCalculator calculator = getCalculator(payment);
     Long refundAmount = calculator.calculateRefundAmount(payment, request);
@@ -125,18 +127,12 @@ public class RefundServiceImpl implements RefundService {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @Override
   public void executeRefundForSubscribe(Subscribe subscribe, RefundRequest refundRequest) {
-    // 구독 orderitem 기준 가장 최근 결제 조회
 
     Payment depositPayment = paymentRepository.findDepositPayment(subscribe.getOrderItem())
             .orElseThrow(() -> new PaymentNotFoundException(subscribe.getOrderItem().getId()));
 
-    log.info("[REFUND] 구독 결제 식별 → paymentId={}, roundNo={}",
-            depositPayment.getId(),
-            depositPayment.getSubscribeRound() != null ? depositPayment.getSubscribeRound().getRoundNo() : -1);
-
-    // 자동 환불 조건 검사
-    if (isAutoRefund(depositPayment)) {
-      processAutoRefund(depositPayment, refundRequest);
+    if (refundRepository.existsByPayment(depositPayment)) {
+      log.debug("[SKIP] 이미 환불 완료된 구독 결제 → subscribeId={}", subscribe.getId());
       return;
     }
 
@@ -171,10 +167,6 @@ public class RefundServiceImpl implements RefundService {
     PaymentTransition transition = isFullRefund ? PaymentTransition.REFUND : PaymentTransition.PARTIAL_REFUND;
     paymentStatusChanger.changePayment(depositPayment, transition, subscribe.getOrderItem().getId(), ActorType.SYSTEM);
 
-    // 구독 회차 상태 처리
-    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
-    LocalDate now = LocalDate.now();
-
     // 구독 결제 환불 이벤트 처리
     eventPublisher.publishEvent(new RefundCompletedEvent(
             subscribe.getOrderItem().getId(),
@@ -201,7 +193,7 @@ public class RefundServiceImpl implements RefundService {
     try {
       // 결제 24 시간 이내 확인
       if (payment.getRegDate() != null &&
-              ChronoUnit.HOURS.between(payment.getRegDate(), LocalDateTime.now()) <= 24) {
+              ChronoUnit.HOURS.between(payment.getRegDate(), LocalDateTime.now()) < 24) {
         return true;
       }
       // 배송 상태 ready 상태 확인(준비중)
@@ -217,6 +209,26 @@ public class RefundServiceImpl implements RefundService {
   // 실제 자동 환불 실행
   private void processAutoRefund(Payment payment, RefundRequest request) {
     try {
+      if (request == null) {
+        log.warn("[SKIP] RefundRequest 없음 → 자동 환불 대상 아님: paymentId={}", payment.getId());
+        return;
+      }
+      // 중복 환불 방지
+      if (refundRepository.existsByPayment(payment)) {
+        log.debug("[SKIP] 이미 자동 환불된 결제 → paymentId={}", payment.getId());
+        return;
+      }
+      // RefundRequest null-safe 처리
+      if (request == null) {
+        request = RefundRequest.builder()
+                .orderItem(payment.getOrderItem())
+                .member(payment.getMember())
+                .reasonCode(ReasonCode.AUTO_REFUND)
+                .status(RefundRequestStatus.AUTO_REFUNDED)
+                .build();
+      }
+
+      // pg사 요청
       CancelRequest cancelRequest = new CancelRequest();
       cancelRequest.setImpUid(payment.getImpUid());
       cancelRequest.setMerchantUid(payment.getMerchantUid());
@@ -256,6 +268,58 @@ public class RefundServiceImpl implements RefundService {
     }
   }
 
+  // 스케줄러 자동 환불
+  @Override
+  public void processAutoRefundBatch() {
+    // 환불 요청
+    List<RefundRequest> pendingRequests = refundRequestRepository.findAll().stream()
+            .filter(req -> req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN
+                    || req.getStatus() == RefundRequestStatus.AUTO_REFUNDED)
+            .toList();
+
+    if (pendingRequests.isEmpty()) {
+      log.info("[AUTO REFUND] 처리 대상 환불 요청 없음");
+      return;
+    }
+    for (RefundRequest req : pendingRequests) {
+      try {
+        Payment payment = paymentRepository.findByOrderItem(req.getOrderItem())
+                .stream()
+                .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID)
+                .findFirst()
+                .orElse(null);
+
+        if (payment == null) continue;
+
+        // 자동 환불 조건: 배송이 시작 전이거나 (READY) / 결제 24시간 이내
+        boolean eligible = isAutoRefund(payment);
+        if (!eligible) {
+          log.debug("[SKIP] 자동 환불 조건 불충족 → orderItemId={}", req.getOrderItem().getId());
+          continue;
+        }
+
+        // 이미 환불된 결제는 스킵
+        if (refundRepository.existsByPayment(payment)) {
+          log.debug("[SKIP] 이미 환불된 결제 → paymentId={}", payment.getId());
+          continue;
+        }
+
+        // PortOne 호출 및 DB 처리
+        processAutoRefund(payment, req);
+
+        // 상태 변경 (APPROVED_WAITING_RETURN → AUTO_REFUNDED)
+        req.setStatus(RefundRequestStatus.AUTO_REFUNDED);
+        refundRequestRepository.saveAndFlush(req);
+
+        log.info("[AUTO REFUND] 자동 환불 처리 완료 → refundRequestId={}, paymentId={}",
+                req.getId(), payment.getId());
+
+      } catch (Exception e) {
+        log.error("[AUTO REFUND] 자동 환불 처리 중 오류 → refundRequestId={}, message={}",
+                req.getId(), e.getMessage());
+      }
+    }
+  }
   @Override
   public void cancelRefund(Long refundId) {
     // 필요시 롤백 처리 구현
