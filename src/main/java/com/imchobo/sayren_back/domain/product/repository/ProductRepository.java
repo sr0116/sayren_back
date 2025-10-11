@@ -34,6 +34,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
   // 등록 승인대기 상품 목록
   List<Product> findByIsUseFalse();
 
-  // 등록 승인 목록
+  // 등록 승인 완료 목록
   List<Product> findByIsUseTrue();
 }

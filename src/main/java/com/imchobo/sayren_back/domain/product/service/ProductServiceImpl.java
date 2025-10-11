@@ -172,6 +172,7 @@ public class ProductServiceImpl implements ProductService {
             .toList();
   }
 
+  // 등록 승인 대기 상품
   @Override
   public List<ProductPendingDTO> getApprovedProducts() {
     return productRepository.findByIsUseTrue()
@@ -186,6 +187,7 @@ public class ProductServiceImpl implements ProductService {
             .toList();
   }
 
+  // 등록 승인 완료 상품 삭제(비활성)
   @Override
   @Transactional
   public void cancelUseProduct(Long id) {
