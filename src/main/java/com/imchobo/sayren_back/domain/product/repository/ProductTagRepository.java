@@ -8,5 +8,4 @@ import java.util.zip.ZipFile;
 
 public interface ProductTagRepository extends JpaRepository<ProductTag, Long> {
     List<ProductTag> findByProductId(Long productId);
-
 }
