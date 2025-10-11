@@ -29,5 +29,8 @@ public class PaymentInfoResponse {
   @JsonProperty("error_code")
   private String errorCode;  // PortOne 내부 에러 코드
 
+  @JsonProperty("receipt_url")
+  private String receiptUrl;
+
 
 }

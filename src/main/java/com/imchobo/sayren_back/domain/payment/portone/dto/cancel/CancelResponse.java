@@ -19,5 +19,6 @@ public class CancelResponse {
   private String merchantUid;
 
   private Long amount;
+
   private String reason;
 }

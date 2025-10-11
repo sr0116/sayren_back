@@ -45,6 +45,11 @@ public class RefundEventHandler {
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void onRefundRequestChanged(RefundRequestEvent event) {
+    // 일반 사용자시
+    if (event.getActor() == ActorType.USER) {
+      log.debug("[SKIP] 사용자 환불 요청 이벤트 감지 → 승인 로직 생략");
+      return;
+    }
     Long subscribeId = event.getSubscribeId();
     Long orderItemId = event.getOrderItemId();
     RefundRequestStatus status = event.getStatus();

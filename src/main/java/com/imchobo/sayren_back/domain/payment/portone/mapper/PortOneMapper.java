@@ -22,6 +22,7 @@ public interface PortOneMapper {
   @Mapping(source = "status", target = "status", qualifiedByName = "toStringSafe")
   @Mapping(source = "fail_reason", target = "failReason", qualifiedByName = "toStringSafe")
   @Mapping(source = "error_code", target = "errorCode", qualifiedByName = "toStringSafe")
+  @Mapping(source = "receipt_url", target = "receiptUrl", qualifiedByName = "toStringSafe")
   PaymentInfoResponse toPaymentInfoResponse(Map<String, Object> response);
 
   // Map → DTO 변환 (결제 검증 응답)

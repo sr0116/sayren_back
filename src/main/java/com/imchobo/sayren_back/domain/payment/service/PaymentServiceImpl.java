@@ -159,6 +159,7 @@ public class PaymentServiceImpl implements PaymentService {
 
 //  상태 반영
     payment.setImpUid(impUid);
+    payment.setReceipt(paymentInfo.getReceiptUrl());
     paymentStatusChanger.changePayment(payment, transition, payment.getOrderItem().getId(), ActorType.SYSTEM);
 
     // 회차 결제시 회차 상태 갱신

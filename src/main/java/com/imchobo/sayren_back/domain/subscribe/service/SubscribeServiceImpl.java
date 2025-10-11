@@ -15,8 +15,6 @@ import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundReque
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
-import com.imchobo.sayren_back.domain.payment.refund.service.RefundRequestService;
-import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeCancelHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
@@ -28,7 +26,6 @@ import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
-import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeCreationException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
 import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.SubscribeRoundNotFoundException;
@@ -69,10 +66,8 @@ public class SubscribeServiceImpl implements SubscribeService {
   private final SubscribeRoundRepository subscribeRoundRepository;
   private final SubscribeRoundMapper subscribeRoundMapper;
   private final ApplicationEventPublisher eventPublisher;
-  private final RefundService refundService;
   private final SubscribeCancelHandler subscribeCancelHandler;
   private final RefundRequestRepository refundRequestRepository;
-  private final RefundRequestService refundRequestService;
 
 
   // 구독 테이블 생성
@@ -105,7 +100,6 @@ public class SubscribeServiceImpl implements SubscribeService {
     // 최초 상태(PENDING_PAYMENT) 기록
     subscribeEventHandler.recordInit(savedSubscribe);
 
-//    subscribeStatusChanger.changeSubscribe(savedSubscribe, SubscribeTransition.PREPARE, ActorType.SYSTEM);
     return savedSubscribe;
   }
 
@@ -126,7 +120,6 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     subscribeHistoryRepository.findFirstBySubscribeOrderByRegDateDesc(subscribe)
             .ifPresent(history -> dto.setReasonCode(history.getReasonCode()));
-
 
     return dto;
   }
@@ -188,7 +181,6 @@ public class SubscribeServiceImpl implements SubscribeService {
     return dtos;
   }
 
-
   // 배송 완료 후 상태 변경 (ACTIVE)
   @Transactional
   @Override
@@ -217,7 +209,6 @@ public class SubscribeServiceImpl implements SubscribeService {
     subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
 
     // (나중에 배송 이벤트 처리 할거고 지금은 임시 )
-    // 상태 ACTIVE 전환 (이 안에서 save + event + history 기록까지 자동 처리)
     // orderItem에서 deliveryItems를 통해 배송 추적
     List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
     Delivery delivery = deliveryItems.stream()
@@ -227,7 +218,6 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     if (delivery.getStatus() == DeliveryStatus.DELIVERED) {
       subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
-
 
       // 회차 dueDate 확정
       List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
@@ -316,10 +306,7 @@ public class SubscribeServiceImpl implements SubscribeService {
               .build();
 
       refundRequestRepository.saveAndFlush(request);
-
-//      // 구독 상태 변경 (환불 승인) 중복인 것 같아서 임시 주석
-//      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_APPROVE, ActorType.ADMIN);
-
+      // 환불 요청 이벤트 처리 (알림이랑 연동됨)
       eventPublisher.publishEvent(new RefundRequestEvent(
               subscribe.getOrderItem().getId(),
               subscribe.getId(),
