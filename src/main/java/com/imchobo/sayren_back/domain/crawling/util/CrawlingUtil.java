@@ -108,64 +108,102 @@ public class CrawlingUtil {
     }
   }
 
-  public String getDescription(WebDriver driver) throws Exception {
-    WebElement placeholder = driver.findElement(By.className("iw_placeholder"));
-    String html = placeholder.getDomProperty("outerHTML");
-    Document doc = Jsoup.parse(html);
+    public String getDescription(WebDriver driver) throws Exception {
+        WebElement placeholder = driver.findElement(By.className("iw_placeholder"));
+        String html = placeholder.getDomProperty("outerHTML");
+        Document doc = Jsoup.parse(html);
 
-    StringBuilder result = new StringBuilder();
+        // 후기/리뷰/모바일 중복 섹션 통째로 제거
+        doc.select(".carousel-box, .ui_carousel_slide, .review, .customer-review, .mo-only, .mobile-only").remove();
 
-    int textCount = 0;
-    int imgCount = 0;
+        StringBuilder result = new StringBuilder();
+        int textCount = 0;
+        int imgCount = 0;
 
-    for (Element comp : doc.select(".iw_component")) {
+        // 컴포넌트 단위 순회
+        for (Element comp : doc.select(".iw_component, section.component")) {
 
-      // 텍스트 추출
-      for (Element t : comp.select(".txt, p, span, strong")) {
-        if (textCount >= 10) break;
-        String text = t.text().trim();
-        if (!text.isEmpty()) {
-          result.append("<p>").append(text).append("</p>\n");
-          textCount++;
+            // 설명 텍스트 블록 찾기
+            Element textBlock = comp.selectFirst(".text, .text-area, .text.font-regular, .component-inner, .head-copy, .title");
+            if (textBlock != null) {
+                String text = textBlock.text().trim();
+
+                // 불필요한 문구 필터링 (UI / 반복 / 버튼류 등)
+                if (!text.isEmpty()
+                        && !text.contains("일시 정지")
+                        && !text.contains("보기")
+                        && !text.contains("버튼")
+                        && !text.contains("더 보기")
+                        && !text.contains("간편모드")
+                        && !text.contains("전문가 모드")
+                        && !text.contains("모드")
+                        && !text.contains("설정")
+                        && !text.contains("선택")) {
+
+                    // 중복 텍스트 방지
+                    if (!result.toString().contains("<p>" + text + "</p>")) {
+                        result.append("<p>").append(text).append("</p>\n");
+                        textCount++;
+                    }
+                }
+            }
+
+            // 이미지 태그 처리 (PC용 우선, 중복 제거)
+            Element imgTag = comp.selectFirst("img[data-pc-src], img[data-src], img[src]");
+            if (imgTag != null && imgCount < 7) {
+                String src;
+
+                // PC용 이미지(data-pc-src)가 있으면 우선 사용
+                if (imgTag.hasAttr("data-pc-src")) {
+                    src = imgTag.attr("data-pc-src");
+                } else if (imgTag.hasAttr("data-src")) {
+                    src = imgTag.attr("data-src");
+                } else {
+                    src = imgTag.attr("src");
+                }
+
+                if (src != null && !src.isBlank()) {
+                    if (!src.startsWith("http")) {
+                        src = "https://www.lge.co.kr" + src;
+                    }
+
+                    // URL 인코딩
+                    src = src.replace(" ", "%20")
+                            .replaceAll("\\(", "%28")
+                            .replaceAll("\\)", "%29")
+                            .replaceAll("\\+", "%2B");
+
+                    // 후기(review) 이미지 및 노이즈 필터링
+                    String alt = imgTag.attr("alt").toLowerCase();
+                    if (src.contains("/review/") || alt.contains("리뷰") || alt.contains("후기") ||
+                            alt.contains("고객") || alt.contains("손가락") || alt.contains("배경") ||
+                            alt.contains("아이콘") || alt.contains("카드") || alt.contains("배너") ||
+                            alt.contains("로고")) {
+                        continue;
+                    }
+
+                    try {
+                        String s3Url = s3UploadUtil.getFullUrl(s3UploadUtil.upload(src));
+
+                        // 스타일 제거, PC 이미지 기준으로만 <img> 추가
+                        result.append("<img src=\"").append(s3Url).append("\"/>\n");
+                        imgCount++;
+                    } catch (Exception e) {
+                        System.err.println("이미지 업로드 실패: " + e.getMessage());
+                    }
+                }
+            }
+
+            // 상한 제한 + 이미지가 없는 경우 글 과도 방지
+            if ((textCount >= 10 && imgCount >= 7) || (imgCount == 0 && textCount > 5))
+                break;
         }
-      }
 
-      // 이미지 추출
-      for (Element img : comp.select("img")) {
-        if (imgCount >= 5) break;
-
-        String src = img.hasAttr("data-pc-src") ? img.attr("data-pc-src") : img.attr("src");
-        if (src == null || src.isBlank()) continue;
-        if (!src.startsWith("http")) src = "https://www.lge.co.kr" + src;
-
-        // 추가: URL 인코딩(공백, 괄호, + 기호 등 처리)
-        src = src.replace(" ", "%20");
-        src = src.replaceAll("\\(", "%28").replaceAll("\\)", "%29");
-        src = src.replaceAll("\\+", "%2B");
-
-
-        String alt = img.attr("alt").toLowerCase();
-        if (alt.contains("손가락") || alt.contains("배경") || alt.contains("아이콘")
-                || alt.contains("카드") || alt.contains("배너") || alt.contains("로고"))
-          continue;
-
-        try {
-          String s3Url = s3UploadUtil.getFullUrl(s3UploadUtil.upload(src));
-          result.append("<img src=\"").append(s3Url)
-                  .append("\" style=\"width:100%;height:auto;display:block;\"/>\n");
-          imgCount++;
-        } catch (Exception e) {
-          System.err.println("이미지 업로드 실패: " + e.getMessage());
-        }
-      }
-
-      if (textCount >= 12 && imgCount >= 10) break;
+        return replaceBrandName(result.toString());
     }
 
-    return replaceBrandName(result.toString());
-  }
 
-  public List<String> getDescriptionImageUrls(WebDriver driver) throws Exception {
+    public List<String> getDescriptionImageUrls(WebDriver driver) throws Exception {
         WebElement firstBlock = driver.findElement(By.className("iw_placeholder"));
         String html = firstBlock.getDomProperty("outerHTML");
         org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(html);

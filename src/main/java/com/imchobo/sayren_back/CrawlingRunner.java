@@ -25,7 +25,7 @@ public class CrawlingRunner implements CommandLineRunner {
     public void run(String... args) throws Exception {
         try {
             System.out.println("크롤링 시작!");
-            crawlingService.crawlCategory("https://www.lge.co.kr/category/massage-chairs");
+            crawlingService.crawlCategory("https://www.lge.co.kr/category/air-conditioners");
             System.out.println("크롤링 완료!");
         } catch (Exception e) {
             System.err.println("크롤링 중 오류 발생: " + e.getMessage());
