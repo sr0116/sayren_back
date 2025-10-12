@@ -2,14 +2,18 @@ package com.imchobo.sayren_back.domain.product.service;
 
 import com.imchobo.sayren_back.domain.attach.dto.ProductAttachResponseDTO;
 import com.imchobo.sayren_back.domain.attach.repository.ProductAttachRepository;
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductModifyRequestDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductPendingDTO;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.product.entity.ProductStock;
 import com.imchobo.sayren_back.domain.product.entity.ProductTag;
+import com.imchobo.sayren_back.domain.product.mapper.ProductMapper;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductStockRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductTagRepository;
@@ -17,6 +21,9 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +37,7 @@ public class ProductServiceImpl implements ProductService {
   private final ProductStockRepository productStockRepository;
   private final ProductTagRepository productTagRepository;
   private final ProductAttachRepository productAttachRepository;
-
+  private final ProductMapper productMapper;
 
   private Long calcDeposit(Long price) {
     // 보증금: 원가의 20%
@@ -115,6 +122,11 @@ public class ProductServiceImpl implements ProductService {
     return productRepository.findById(id)
             .map(p -> new ProductDetailsResponseDTO(
                     p.getId(),
+                    // thumbnail
+                    productAttachRepository.findByProductIdAndIsThumbnailTrue(p.getId())
+                            .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                                    + a.getPath() + "/" + a.getUuid())
+                            .orElse(null),
                     p.getName(),
                     p.getDescription() != null ? p.getDescription() : "",
                     p.getPrice().intValue(),
@@ -149,52 +161,192 @@ public class ProductServiceImpl implements ProductService {
             .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + id));
   }
 
+//  @Override
+//  public List<ProductPendingDTO> getPendingProducts() {
+//    return productRepository.findByIsUseFalse()
+//            .stream()
+//            .map(p -> ProductPendingDTO.builder()
+//                    .productId(p.getId())
+//                    .productName(p.getName())
+//                    .modelName(p.getModelName())
+//                    .productCategory(p.getProductCategory())
+//                    .isUse(p.getIsUse())
+//                    .build())
+//            .toList();
+//  }
+//  // 등록 승인대기 상품
+//  @Override
+//  public List<ProductPendingDTO> getApprovedProducts() {
+//    return productRepository.findByIsUseTrue()
+//            .stream()
+//            .map(p -> ProductPendingDTO.builder()
+//                    .productId(p.getId())
+//                    .productName(p.getName())
+//                    .modelName(p.getModelName())
+//                    .productCategory(p.getProductCategory())
+//                    .isUse(p.getIsUse())
+//                    .build())
+//            .toList();
+//  }
+
   @Override
   public void useProduct(Long id) {
     Product product = productRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
-    product.setIsUse(true); // 승인 처리 (isUse 재활용)
+    product.setIsUse(true); // 승인 처리
     productRepository.save(product);
-  }
-
-  @Override
-  public List<ProductPendingDTO> getPendingProducts() {
-    return productRepository.findByIsUseFalse()
-            .stream()
-
-            .map(p -> ProductPendingDTO.builder()
-                    .productId(p.getId())
-                    .productName(p.getName())
-                    .modelName(p.getModelName())
-                    .productCategory(p.getProductCategory())
-                    .isUse(p.getIsUse())
-                    .build())
-            .toList();
   }
 
   // 등록 승인 대기 상품
   @Override
-  public List<ProductPendingDTO> getApprovedProducts() {
-    return productRepository.findByIsUseTrue()
-            .stream()
-            .map(p -> ProductPendingDTO.builder()
-                    .productId(p.getId())
-                    .productName(p.getName())
-                    .modelName(p.getModelName())
-                    .productCategory(p.getProductCategory())
-                    .isUse(p.getIsUse())
-                    .build())
-            .toList();
+  public PageResponseDTO<ProductPendingDTO, Product> getPendingProducts(PageRequestDTO pageRequestDTO) {
+    Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize());
+    Page<Product> result = productRepository.findByIsUseFalse(pageable);
+
+    return PageResponseDTO.of(result, product -> ProductPendingDTO.builder()
+            .productId(product.getId())
+            .productName(product.getName())
+            .modelName(product.getModelName())
+            .productCategory(product.getProductCategory())
+            .isUse(product.getIsUse())
+            .thumbnailUrl(
+                    productAttachRepository.findByProductIdAndIsThumbnailTrue(product.getId())
+                            .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                                    + a.getPath() + "/" + a.getUuid())
+                            .orElse(null))
+            .build()
+    );
   }
 
-  // 등록 승인 완료 상품 삭제(비활성)
+
+  // 삭제상품 목록
+  @Override
+  public PageResponseDTO<ProductPendingDTO, Product> getApprovedProducts(PageRequestDTO pageRequestDTO) {
+    Pageable pageable = PageRequest.of(pageRequestDTO.getPage() - 1, pageRequestDTO.getSize());
+    Page<Product> result = productRepository.findByIsUseTrue(pageable);
+
+    return PageResponseDTO.of(result, product -> ProductPendingDTO.builder()
+            .productId(product.getId())
+            .productName(product.getName())
+            .modelName(product.getModelName())
+            .productCategory(product.getProductCategory())
+            .isUse(product.getIsUse())
+            .thumbnailUrl(
+                    productAttachRepository.findByProductIdAndIsThumbnailTrue(product.getId())
+                            .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                                    + a.getPath() + "/" + a.getUuid())
+                            .orElse(null))
+            .build());
+  }
+
+  // 관리자 상품 삭제(비활성화) 페이지네이션
   @Override
   @Transactional
   public void cancelUseProduct(Long id) {
     Product product = productRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
-
-    product.setIsUse(false); // 승인 취소 → 대기 상태로 복귀
+    product.setIsUse(false); // false = 비활성화 상태
     productRepository.save(product);
+  }
+
+  // 상품 승인대기 상세보기
+  @Override
+  @Transactional(readOnly = true)
+  public ProductDetailsResponseDTO getProductDetailForAdmin(Long id) {
+    Product product = productRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+    return ProductDetailsResponseDTO.builder()
+            .productId(product.getId())
+            .thumbnailUrl(
+                    productAttachRepository.findByProductIdAndIsThumbnailTrue(product.getId())
+                    .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                            + a.getPath() + "/" + a.getUuid())
+                    .orElse(null))
+            .productName(product.getName())
+            .description(product.getDescription() != null ? product.getDescription() : "")
+            .price(product.getPrice().intValue())
+            .isUse(product.getIsUse())
+            .productCategory(product.getProductCategory())
+            .modelName(product.getModelName())
+            .regDate(product.getRegDate())
+            // 재고
+            .productStock(productStockRepository.findByProductId(product.getId())
+                    .map(ProductStock::getStock)
+                    .orElse(0))
+            // 태그
+            .productTags(productTagRepository.findByProductId(product.getId()).stream()
+                    .map(ProductTag::getTagValue)
+                    .toList())
+            // 첨부파일
+            .attachList(productAttachRepository.findByProductId(product.getId()).stream()
+                    .map(a -> ProductAttachResponseDTO.builder()
+                            .attachId(a.getId())
+                            .url("https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                                    + a.getPath() + "/" + a.getUuid())
+                            .build()
+                    )
+                    .toList())
+            // 주문 플랜 타입
+            .planTypes(product.getOrderItems().stream()
+                    .map(item -> item.getOrderPlan().getType().name())
+                    .distinct()
+                    .toList())
+            // 보증금, 렌탈가
+            .deposit(calcDeposit(product.getPrice()))
+            .rentalPrice(calcRentalPrice(product.getPrice(), 24))
+            .build();
+  }
+
+
+  // 상품 승인 전 수정
+  @Override
+  @Transactional
+  public void modifyProduct(Long id, ProductModifyRequestDTO dto) {
+    Product product = productRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+    // 이름
+    if (dto.getProductName() != null && !dto.getProductName().isBlank()) {
+      product.setName(dto.getProductName());
+    }
+
+    // 설명
+    if (dto.getDescription() != null && !dto.getDescription().isBlank()) {
+      product.setDescription(dto.getDescription());
+    }
+
+    // 가격
+    if (dto.getPrice() != null && dto.getPrice() > 0) {
+      product.setPrice(dto.getPrice().longValue());
+    }
+
+    // 카테고리
+    if (dto.getProductCategory() != null && !dto.getProductCategory().isBlank()) {
+      product.setProductCategory(dto.getProductCategory());
+    }
+
+    // 모델명
+    if (dto.getModelName() != null && !dto.getModelName().isBlank()) {
+      product.setModelName(dto.getModelName());
+    }
+
+    // 판매 여부 (isUse)
+    if (dto.getIsUse() != null) {
+      product.setIsUse(dto.getIsUse());
+    }
+  }
+
+  // 큐레이션
+  @Override
+  public Page<ProductListResponseDTO> getFilteredProducts(ProductListResponseDTO filter, Pageable pageable) {
+
+    String keyword = filter.getProductName();
+    String category = filter.getProductCategory();
+    String sort = "latest"; // 기본값
+
+    Page<Product> products = productRepository.searchByFilter(keyword, category, sort, pageable);
+
+    return products.map(productMapper::toListDTO);
   }
 }

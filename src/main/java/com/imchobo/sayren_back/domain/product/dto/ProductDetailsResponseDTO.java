@@ -16,6 +16,9 @@ public class ProductDetailsResponseDTO {
   // 상품 번호
   private Long productId;
 
+  // 썸네일
+  private String thumbnailUrl;
+
   // 상품 이름
   private String productName;
 

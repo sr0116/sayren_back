@@ -1,48 +1,66 @@
 package com.imchobo.sayren_back.domain.product.controller;
 
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductModifyRequestDTO;
+import com.imchobo.sayren_back.domain.product.dto.ProductPendingDTO;
+import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.product.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
     @RestController
-    @RequestMapping("/api/admin/product")
+    @RequestMapping("/api/product")
     @RequiredArgsConstructor
     public class ProductController {
         private final ProductService productService;
 
         @GetMapping
-        public List<ProductListResponseDTO> list(@RequestParam(required = false) String type, String category) {
-            return productService.getAllProducts(type, category);
+        public ResponseEntity<List<ProductListResponseDTO>> getAllProducts(
+                @RequestParam(required = false) String type,
+                @RequestParam(required = false) String category) {
+
+            // isUse=true만 보여주도록
+            List<ProductListResponseDTO> products = productService.getAllProducts(type, category)
+                    .stream()
+                    .filter(ProductListResponseDTO::getIsUse) // 승인된 상품만
+                    .toList();
+
+            return ResponseEntity.ok(products);
         }
 
-        // 승인처리
-        @PostMapping("/use/{id}")
-        public ResponseEntity<?> useProduct(@PathVariable Long id) {
-            productService.useProduct(id);
-            return ResponseEntity.ok("상품 승인 완료");
+        // 사용자용 단일 상품 상세 조회
+        @GetMapping("/{id}")
+        public ResponseEntity<ProductDetailsResponseDTO> getProduct(@PathVariable Long id) {
+            ProductDetailsResponseDTO dto = productService.getProductById(id);
+
+            // 승인되지 않은 상품은 사용자 접근 불가
+            if (!dto.getIsUse()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "승인되지 않은 상품입니다.");
+            }
+
+            return ResponseEntity.ok(dto);
         }
 
-        // 승인 대기목록
-        @GetMapping("/pending")
-        public ResponseEntity<?> getPendingProducts() {
-            return ResponseEntity.ok(productService.getPendingProducts());
+        // 큐레이션
+        @GetMapping("/filter")
+        public ResponseEntity<Page<ProductListResponseDTO>> getFilteredProducts(
+                ProductListResponseDTO filter,
+                @PageableDefault(size = 12) Pageable pageable) {
+
+            Page<ProductListResponseDTO> result = productService.getFilteredProducts(filter, pageable);
+            return ResponseEntity.ok(result);
         }
 
-        // 승인 처리된 상품 목록
-        @GetMapping("/approved")
-        public ResponseEntity<?> getApprovedProducts() {
-            return ResponseEntity.ok(productService.getApprovedProducts());
-        }
-
-        // 승인 취소(삭제/ 등록 대기로 전환)
-        @PostMapping("/cancel/{id}")
-        public ResponseEntity<?> cancelApprovedProduct(@PathVariable Long id) {
-            productService.cancelUseProduct(id);
-            return ResponseEntity.ok("상품이 삭제(비활성화) 되었습니다");
-        }
 }
