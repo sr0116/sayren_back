@@ -11,6 +11,7 @@ import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundExcepti
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.payment.calculator.RentalPriceCalculator;
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
@@ -18,10 +19,7 @@ import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRep
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeCancelHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
-import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
+import com.imchobo.sayren_back.domain.subscribe.dto.*;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
@@ -68,6 +66,7 @@ public class SubscribeServiceImpl implements SubscribeService {
   private final ApplicationEventPublisher eventPublisher;
   private final SubscribeCancelHandler subscribeCancelHandler;
   private final RefundRequestRepository refundRequestRepository;
+  private final RentalPriceCalculator rentalPriceCalculator;
 
 
   // 구독 테이블 생성
@@ -78,14 +77,22 @@ public class SubscribeServiceImpl implements SubscribeService {
     //dto -> entity (기본값 세팅 PENDING_PAYMENT)
     Subscribe subscribe = subscribeMapper.toEntity(dto);
     // 보증금 및 월 렌탈료 저장
-    Long productPrice = orderItem.getProductPriceSnapshot(); //상품 총 가격
-    // 월렌탈료 먼저 계산
-    Long monthlyFee = productPrice / dto.getTotalMonths();
-    // 보증금 계산
-    Long depositSnapshot = calculateDeposit(productPrice);
-    // 스냅샷 값
-    subscribe.setMonthlyFeeSnapshot(monthlyFee); // 렌탈료
-    subscribe.setDepositSnapshot(depositSnapshot); // 보증금
+    Long productPrice = orderItem.getProductPriceSnapshot(); // 상품 총 가격
+    RentalPriceDTO rentalPrice = rentalPriceCalculator.calculate(productPrice, dto.getTotalMonths());
+
+    // 월렌탈료
+    subscribe.setMonthlyFeeSnapshot(rentalPrice.getMonthlyFee());
+    // 보증금
+    subscribe.setDepositSnapshot(rentalPrice.getDeposit());
+
+//    Long productPrice = orderItem.getProductPriceSnapshot(); //상품 총 가격
+//    // 월렌탈료 먼저 계산
+//    Long monthlyFee = productPrice / dto.getTotalMonths();
+//    // 보증금 계산
+//    Long depositSnapshot = calculateDeposit(productPrice);
+//    // 스냅샷 값
+//    subscribe.setMonthlyFeeSnapshot(monthlyFee); // 렌탈료
+//    subscribe.setDepositSnapshot(depositSnapshot); // 보증금
 
     // 로그인 유저 주입
     Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member

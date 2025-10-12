@@ -46,16 +46,21 @@ public class PurchaseRefundCalculator implements RefundCalculator {
 
     if (defective) {
       log.info("불량 / 배송 문제시 전액 환불");
-      return amount;
+      return roundToTenWon(amount);
     }
 
     if (daysAfterDelivery <= 7) {
       Long deduction = amount * 5 / 100;
+      Long refundAmount = Math.max(amount - deduction, 0L);
       log.info("환불: 단순 변심 7일 이내 → 원금 {} - 차감 {} = {}", amount, deduction, amount - deduction);
-      return amount - deduction;
+      return roundToTenWon(refundAmount);
     }
     log.info("환불: 단순 변심 7일 초과 → 환불 불가");
-    return 0L;
+    throw new RefundPolicyViolationException("단순 변심 환불은 배송 7일 이내만 가능합니다.");
+  }
 
+  // 10원 단위 내림 (버림)
+  private long roundToTenWon(long value) {
+    return (value / 10) * 10;
   }
 }

@@ -153,7 +153,6 @@ public class PaymentServiceImpl implements PaymentService {
     log.info("PortOne 결제 정보: {}", paymentInfo);
     log.info("DB 결제 금액={}, PortOne 결제 금액={}", payment.getAmount(), paymentInfo.getAmount());
 
-
     // 포트원 매핑
     PaymentTransition transition = PaymentTransition.fromPortOne(paymentInfo, payment.getAmount());
 
@@ -185,15 +184,6 @@ public class PaymentServiceImpl implements PaymentService {
     return paymentMapper.toResponseDTO(payment);
   }
 
-  @Override
-  @Transactional
-  public void refund(Long paymentId, Long amount, String reason) {
-    // 나중에 payment 에서 refund 서비스 위임해서 히스토리만 기록하거나
-    // reason code만 따로 변경하게 상태값 변경
-    // 구독 일반 결제 구분해서
-//    refundService.requestRefund(paymentId, amount, reason);
-
-  }
 
   // 회차 결제 준비용
   @Override
@@ -228,8 +218,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     return paymentMapper.toResponseDTO(savedPayment);
   }
-
-
 
   // 사용자 전용 전체 결제 내역(요약)
   @Override

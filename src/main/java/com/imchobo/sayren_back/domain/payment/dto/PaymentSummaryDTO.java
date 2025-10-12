@@ -17,6 +17,7 @@ public class  PaymentSummaryDTO {
   private PaymentStatus paymentStatus;
   private LocalDateTime regDate;
 
+  //  가격 스냅샵/ 유형
   private String productName;
   private Long priceSnapshot;
   private OrderPlanType orderPlanType;

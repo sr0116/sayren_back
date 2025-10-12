@@ -22,10 +22,4 @@ public interface SubscribeHistoryMapper {
   // 리스트 변환
   List<SubscribeHistoryResponseDTO> toResponseDTOList(List<SubscribeHistory> entities);
 
-  // 엔티티 -> 엔티티
-  default SubscribeHistory fromSubscribe(Subscribe subscribe){
-    return SubscribeHistory.builder()
-            .subscribe(subscribe)
-            .build();
-  }
 }
