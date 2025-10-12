@@ -13,4 +13,5 @@ public class ProductPendingDTO {
   private String modelName;
   private String productCategory;
   private Boolean isUse;
+  private String thumbnailUrl;
 }
