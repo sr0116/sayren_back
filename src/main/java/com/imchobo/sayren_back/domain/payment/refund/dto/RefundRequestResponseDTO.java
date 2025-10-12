@@ -27,4 +27,6 @@ public class RefundRequestResponseDTO {
   // 추가 필드
   private OrderPlanType orderPlanType;          // 일반/구독 구분
   private String productName;         // 상품명 (스냅샷 or orderItem에서 가져오기)
+  private String memberName;           // (관리자 전용) 요청자
+  private String memberEmail;          // (관리자 전용) 요청자 이메일
 }

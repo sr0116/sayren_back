@@ -36,7 +36,6 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
 
     List<SubscribeRound> rounds = new ArrayList<>();
 
-
     for (int i = 1; i <= totalMonths; i++) {
       Long amount = (i == 1) ? monthlyFee + deposit // 1회차 = 월 렌탈료 + 보증금
               : monthlyFee;          // 나머지 회차 = 월 렌탈료만
@@ -45,6 +44,7 @@ public class SubscribeRoundServiceImpl implements SubscribeRoundService {
               .subscribe(subscribe)
               .roundNo(i)
               .amount(amount)
+              // 배송 완료 전이므로 dueDate는 null → activateAfterDelivery()에서 확정
               .dueDate(startDate != null ? startDate.plusMonths(i - 1) : null)
               .build();
 

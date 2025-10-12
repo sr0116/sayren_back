@@ -21,10 +21,4 @@ public interface PaymentHistoryMapper {
 
   List<PaymentHistoryResponseDTO> toResponseList(List<PaymentHistory> histories);
 
-  // 엔티티 -> 엔티티
-  default PaymentHistory fromPayment(Payment payment){
-    return PaymentHistory.builder()
-            .payment(payment)
-            .build();
-  }
 }

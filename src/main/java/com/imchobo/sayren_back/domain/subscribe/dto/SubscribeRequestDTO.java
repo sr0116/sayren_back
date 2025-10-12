@@ -16,6 +16,7 @@ public class SubscribeRequestDTO {
 
   // 멤버 나중에 jwt 나 context에서 받아올거라 지워야 함
 
+
   @NotNull(message = "월 렌탈료는 필수입니다.")
   @PositiveOrZero(message = "월 렌탈료는 0 이상이어야 합니다.")
   private Long monthlyFeeSnapshot;

@@ -18,4 +18,5 @@ public class SubscribeSummaryDTO {
   private LocalDate startDate;
   private LocalDate endDate;
   private Long monthlyFeeSnapshot;
+  private String productName;
 }

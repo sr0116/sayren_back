@@ -40,7 +40,6 @@ public class RentalRefundCalculator implements RefundCalculator {
             .orElseThrow(() -> new DeliveryNotFoundException(payment.getOrderItem().getId()));
     Delivery delivery = deliveryItem.getDelivery();
 
-
     // 배송일 기준 경과 일수 계산
     LocalDate deliveredAt = delivery.getModDate().toLocalDate();
     int daysAfterDelivery = (int) ChronoUnit.DAYS.between(deliveredAt, LocalDate.now());
@@ -51,8 +50,9 @@ public class RentalRefundCalculator implements RefundCalculator {
 
     if (defective) {
       log.info("불량 / 배송 문제시 전액 환불");
-      return deposit;
+      return roundToTenWon(deposit);
     }
+
     // 렌탈 구매시에 단순 변심 환불 위약금
     if (daysAfterDelivery <= 7) {
       Long deduction = (deposit * 5) / 100; // 상품 전체 금액 기준 5% 차감
@@ -62,6 +62,8 @@ public class RentalRefundCalculator implements RefundCalculator {
     }
     int totalMonths = orderItem.getOrderPlan().getMonth();
     int remainingMonths = (int) ChronoUnit.MONTHS.between(LocalDate.now(), subscribe.getEndDate());
+    // 남은 개월 수 음수 방지
+    remainingMonths = Math.max(remainingMonths, 0);
 
     // 계약 기간별 위약금률
     int penaltyRate;
@@ -78,6 +80,11 @@ public class RentalRefundCalculator implements RefundCalculator {
     Long refundAmount = Math.max(deposit - penalty, 0L);
     log.info("렌탈 환불: 변심 7일 초과 → 보증금 {} - 위약금 {} = {}", deposit, penalty, refundAmount);
 
-    return refundAmount;
+    return roundToTenWon(refundAmount);
+  }
+
+  // 10원 단위 내림 (버림)
+  private long roundToTenWon(long value) {
+    return (value / 10) * 10;
   }
 }
