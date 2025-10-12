@@ -106,7 +106,8 @@ public class PaymentServiceImpl implements PaymentService {
     payment.setMember(currentMember);
     payment.setMerchantUid(merchantUid);
     payment.setOrderItem(orderItem);
-    payment.setPaymentType(PaymentType.CARD);
+//    payment.setPaymentType(PaymentType.CARD); // 포트원에서 세팅
+
 
     // 1회차 결제 고정
     if (planType == OrderPlanType.RENTAL) {
@@ -159,6 +160,13 @@ public class PaymentServiceImpl implements PaymentService {
 //  상태 반영
     payment.setImpUid(impUid);
     payment.setReceipt(paymentInfo.getReceiptUrl());
+    if (paymentInfo.getPaymentType() != null) {
+      payment.setPaymentType(paymentInfo.getPaymentType());
+    } else {
+      // 기본값 세팅
+      payment.setPaymentType(PaymentType.CARD);
+    }
+
     paymentStatusChanger.changePayment(payment, transition, payment.getOrderItem().getId(), ActorType.SYSTEM);
 
     // 회차 결제시 회차 상태 갱신

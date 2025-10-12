@@ -7,6 +7,7 @@ import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.en.PaymentType;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
@@ -52,6 +53,12 @@ public class MappingUtil {
   @Named("mapRefundRequestId")
   public Long refundRequestEntityToId(RefundRequest refundRequest) {
     return refundRequest != null ? refundRequest.getId() : null;
+  }
+  // 이넘타입
+  @Named("toPaymentType")
+  public PaymentType toPaymentType(Object pgProvider) {
+    if (pgProvider == null) return PaymentType.CARD;
+    return PaymentType.fromPortOne(pgProvider.toString());
   }
 
 
