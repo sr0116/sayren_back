@@ -189,8 +189,11 @@ public class SubscribeEventHandler {
                   round.setPayStatus(transition.getStatus());
                   round.setFailedAt(LocalDateTime.now());
 
+                  LocalDate dueDate = round.getDueDate();
+                  LocalDateTime graceEndAt = round.getGracePeriodEndAt();
+
                   // 예정일 이전이라면 연체 X → 단순 실패 알림만
-                  if (LocalDate.now().isBefore(round.getDueDate())) {
+                  if (dueDate != null && LocalDate.now().isBefore(dueDate)) {
                     NotificationCreateDTO dto = new NotificationCreateDTO();
                     dto.setMemberId(subscribe.getMember().getId());
                     dto.setType(NotificationType.SUBSCRIBE);
@@ -205,10 +208,9 @@ public class SubscribeEventHandler {
                     notificationService.send(dto);
                     log.info("조기 결제 실패 알림 전송 완료 → memberId={}, subscribeId={}, roundNo={}",
                             subscribe.getMember().getId(), subscribe.getId(), round.getRoundNo());
-
-                    return; // 조기 실패는 여기서 종료 (유예기간 X)
+                    return;
                   }
-                  // 예정일 이후 실패 -> 유예기간 3일 + 알림
+                  // 예정일이 null이거나 (즉, 아직 설정 안됨) 혹은 이미 지난 경우 → 유예기간 부여
                   round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3));
                   subscribeRoundRepository.save(round);
 
@@ -227,20 +229,17 @@ public class SubscribeEventHandler {
                   log.info("유예기간 시작 알림 전송 완료 → memberId={}, subscribeId={}, roundNo={}",
                           subscribe.getMember().getId(), subscribe.getId(), round.getRoundNo());
 
-                  // 회차별 상테 저장
+                  // 회차별 상태 저장 및 구독 전체 실패 처리
                   if (round.getRoundNo() == 1) {
-                    // 결제 실패 시 처리 구독 전체 실패 처리
                     failAllRounds(subscribe, transition);
                     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
                     log.info("구독 [{}] 1회차 결제 실패 → 전체 FAILED", subscribe.getId());
                   } else {
-                    // n회차 -> 유예 기간
-                    round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3));
-//                    subscribeRoundRepository.save(round);
                     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE_PENDING, ActorType.SYSTEM);
                     log.info("구독 [{}] {}회차 결제 실패 → 유예기간 3일 시작", subscribe.getId(), round.getRoundNo());
                   }
                 }
+
                 // 결제 유예기간 초과
                 case PAY_TIMEOUT -> {
                   // 스케줄러에서 처리 (주석)
