@@ -1,9 +1,14 @@
 package com.imchobo.sayren_back.domain.product.service;
 
 import com.imchobo.sayren_back.domain.attach.dto.ProductAttachResponseDTO;
+import com.imchobo.sayren_back.domain.attach.entity.Attach;
 import com.imchobo.sayren_back.domain.attach.repository.ProductAttachRepository;
+import com.imchobo.sayren_back.domain.board.en.CategoryType;
+import com.imchobo.sayren_back.domain.board.entity.Board;
+import com.imchobo.sayren_back.domain.board.repository.BoardRepository;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.common.en.CommonStatus;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
@@ -19,6 +24,7 @@ import com.imchobo.sayren_back.domain.product.repository.ProductStockRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductTagRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
@@ -27,6 +33,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -38,6 +45,7 @@ public class ProductServiceImpl implements ProductService {
   private final ProductTagRepository productTagRepository;
   private final ProductAttachRepository productAttachRepository;
   private final ProductMapper productMapper;
+  private final BoardRepository boardRepository;
 
   private Long calcDeposit(Long price) {
     // 보증금: 원가의 20%
@@ -62,58 +70,44 @@ public class ProductServiceImpl implements ProductService {
   }
 
 
-  @Override
-  @EventListener(ApplicationReadyEvent.class)
-  public void preloadProducts() {
-    List<ProductListResponseDTO> list = getAllProducts(null, null);
-    redisUtil.setObject("PRODUCTS", list);
-  }
+//  @Override
+//  @EventListener(ApplicationReadyEvent.class)
+//  public void preloadProducts() {
+//    List<ProductListResponseDTO> list = getAllProducts(null, null);
+//    redisUtil.setObject("PRODUCTS", list);
+//  }
 
 
   @Override
-  public List<ProductListResponseDTO> getAllProducts(String type, String category) {
-    List<Product> products;
+  @Transactional
+  public List<ProductListResponseDTO> getAllProducts() {
+    List<ProductListResponseDTO> productList = new ArrayList<>();
 
-    if (category != null && !category.isEmpty()) {
-      if (type != null && !type.isEmpty()) {
-        products = productRepository.findByCategoryAndType(
-                category,
-                OrderPlanType.valueOf(type.toUpperCase())
-        );
-      } else {
-        products = productRepository.findByProductCategory(category);
-      }
-    } else {
-      if (type != null && !type.isEmpty()) {
-        products = productRepository.findByOrderPlanType(
-                OrderPlanType.valueOf(type.toUpperCase())
-        );
-      } else {
-        products = productRepository.findAll();
-      }
-    }
+    List<Board> boardList = boardRepository.findAll().stream().filter(board -> {
+      return (board.getProduct() != null && board.getCategory().getType().equals(CategoryType.PRODUCT));
+    }).toList();
 
-    return products.stream()
-            .map(p -> ProductListResponseDTO.builder()
-                    .productId(p.getId())
-                    .thumbnailUrl(
-                            productAttachRepository.findByProductIdAndIsThumbnailTrue(p.getId())
-                                    .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
-                                            + a.getPath() + "/" + a.getUuid())
-                                    .orElse(null))
-                    .productName(p.getName())
-                    .description(p.getDescription() != null ? p.getDescription() : "")
-                    .price(p.getPrice())
-                    .isUse(p.getIsUse())
-                    .productCategory(p.getProductCategory())
-                    .modelName(p.getModelName())
-                    .tags(productTagRepository.findByProductId(p.getId()).stream()
-                            .map(ProductTag::getTagValue)
-                            .toList())
-                    .deposit(calcDeposit(p.getPrice()))
-                    .rentalPrice(calcRentalPrice(p.getPrice(), 24))
-                    .build())
-            .toList();
+    boardList.forEach(board -> {
+      Product product = board.getProduct();
+      Hibernate.initialize(product);
+      List<Attach> attachList = productAttachRepository.findByProductId(product.getId()).stream().filter(Attach::isThumbnail).toList();
+      Attach attach = !attachList.isEmpty() ? attachList.getFirst() : null;
+      String thumbnailUrl = attach != null ? "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/" + attach.getPath() + "/" + attach.getUuid() : null;
+      List<String> tags = productTagRepository.findByProductId(product.getId()).stream().map(ProductTag::getTagName).toList();
+
+      productList.add(ProductListResponseDTO.builder()
+                      .productId(product.getId())
+                      .thumbnailUrl(thumbnailUrl)
+                      .tags(tags)
+                      .status(board.getStatus())
+                      .productName(product.getName())
+                      .category(board.getCategory().getName())
+                      .modelName(product.getModelName())
+                      .price(product.getPrice())
+              .build());
+    });
+
+    return productList;
   }
 
 
@@ -342,7 +336,7 @@ public class ProductServiceImpl implements ProductService {
   public Page<ProductListResponseDTO> getFilteredProducts(ProductListResponseDTO filter, Pageable pageable) {
 
     String keyword = filter.getProductName();
-    String category = filter.getProductCategory();
+    String category = filter.getCategory();
     String sort = "latest"; // 기본값
 
     Page<Product> products = productRepository.searchByFilter(keyword, category, sort, pageable);

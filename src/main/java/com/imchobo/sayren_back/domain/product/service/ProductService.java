@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.product.service;
 
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.common.en.CommonStatus;
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.ProductModifyRequestDTO;
@@ -14,8 +15,9 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface ProductService {
-  void preloadProducts();
-  List<ProductListResponseDTO> getAllProducts(String type, String category);
+//  void preloadProducts();
+
+  List<ProductListResponseDTO> getAllProducts();
   ProductDetailsResponseDTO getProductById(Long id);
 
 
