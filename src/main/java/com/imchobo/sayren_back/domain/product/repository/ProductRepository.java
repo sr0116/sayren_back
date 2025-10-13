@@ -3,6 +3,8 @@ package com.imchobo.sayren_back.domain.product.repository;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
 import com.imchobo.sayren_back.domain.product.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,7 +35,29 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
   // 등록 승인대기 상품 목록
   List<Product> findByIsUseFalse();
-
   // 등록 승인 완료 목록
   List<Product> findByIsUseTrue();
+
+  // 등록 승인대기 상품 목록 페이징 조회
+  Page<Product> findByIsUseFalse(Pageable pageable);
+
+  // 등록 승인 완료 상품 페이지 조회
+  Page<Product> findByIsUseTrue(Pageable pageable);
+
+
+  // 큐레이션 필터
+  @Query("""
+          SELECT DISTINCT p
+          FROM Product p
+          WHERE p.isUse = true
+          AND (:#{#keyword} IS NULL OR p.name LIKE %:#{#keyword}%)
+          AND (:#{#category} IS NULL OR p.productCategory = :#{#category})
+          ORDER BY p.regDate DESC
+        """)
+  Page<Product> searchByFilter(
+          @Param("keyword") String keyword,
+          @Param("category") String category,
+          @Param("sort") String sort,
+          Pageable pageable
+  );
 }

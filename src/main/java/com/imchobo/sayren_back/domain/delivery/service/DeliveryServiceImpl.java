@@ -1,13 +1,18 @@
 package com.imchobo.sayren_back.domain.delivery.service;
 
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.common.exception.SayrenException;
 import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.address.repository.AddressRepository;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryResponseDTO;
+import com.imchobo.sayren_back.domain.delivery.dto.admin.DeliveryStatusChangeDTO;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
+import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundException;
 import com.imchobo.sayren_back.domain.delivery.mapper.DeliveryMapper;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
@@ -19,6 +24,7 @@ import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,6 +77,11 @@ public class DeliveryServiceImpl implements DeliveryService {
         return deliveryMapper.toResponseDTO(saved);
     }
 
+    @Override
+    public PageResponseDTO<DeliveryResponseDTO, Delivery> getAllList(PageRequestDTO pageRequestDTO) {
+        Page<Delivery> result = deliveryRepository.findAll(pageRequestDTO.getPageable());
+        return PageResponseDTO.of(result, deliveryMapper::toResponseDTO);
+    }
 
     // 결제 성공 직후 orderItemId 기반 배송 자동 생성
     @Override
@@ -133,6 +144,20 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     // ===== 상태 전환 =====
 
+
+    @Override
+    public void changeStatus(DeliveryStatusChangeDTO deliveryStatusChangeDTO) {
+        Long deliveryId = deliveryStatusChangeDTO.getDeliveryId();
+        switch (deliveryStatusChangeDTO.getStatus()) {
+            case READY -> ship(deliveryId);
+            case SHIPPING -> complete(deliveryId);
+            case DELIVERED -> returnReady(deliveryId);
+            case RETURN_READY -> inReturning(deliveryId);
+            case IN_RETURNING -> returned(deliveryId);
+            default -> throw new DeliveryNotFoundException(deliveryId);
+        }
+    }
+
     @Override
     public DeliveryResponseDTO ship(Long id) {
         Delivery d = mustFind(id);
@@ -166,8 +191,11 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     @Override
+    @Transactional
     public DeliveryResponseDTO returnReady(Long id) {
         Delivery d = mustFind(id);
+        d.setType(DeliveryType.RETURN);
+
         ensure(d.getStatus() == DeliveryStatus.DELIVERED, "DELIVERED → RETURN_READY만 가능");
 
         // DELIVERED → RETURN_READY 전환 + 이벤트 발행
