@@ -25,4 +25,10 @@ public class AdminDeliveryController {
     deliveryService.changeStatus(deliveryStatusChangeDTO);
     return ResponseEntity.ok(Map.of("message", "success"));
   }
+
+  @PostMapping("/changed-status")
+  public ResponseEntity<?> changedDeliveryStatus(@RequestBody DeliveryStatusChangeDTO dto) {
+    deliveryService.changedStatus(dto);
+    return ResponseEntity.ok(Map.of("message", "배송 상태가 성공적으로 변경되었습니다."));
+  }
 }
