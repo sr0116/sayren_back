@@ -25,7 +25,7 @@ public class OrderItemServiceImpl implements OrderItemService {
       .productName(orderItem.getProduct().getName())
       .priceSnapshot(orderItem.getProductPriceSnapshot())
       .planId(orderItem.getOrderPlan() != null ? orderItem.getOrderPlan().getId() : null)
-      .planType(orderItem.getOrderPlan() != null ? orderItem.getOrderPlan().getType().name() : null) // ✅ 추가
+      .planType(orderItem.getOrderPlan() != null ? orderItem.getOrderPlan().getType().name() : null)
       .build();
   }
 }

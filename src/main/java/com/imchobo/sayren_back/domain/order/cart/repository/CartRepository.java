@@ -1,6 +1,8 @@
 package com.imchobo.sayren_back.domain.order.cart.repository;
 
+import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
+import com.imchobo.sayren_back.domain.product.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -17,4 +19,6 @@ public interface CartRepository extends JpaRepository<CartItem, Long> {
   
   // 회원 장바구니 전체 비우기 (주문 완료 후 카트 비움)
   void deleteByMemberId(Long memberId);
+
+  boolean existsByMemberAndProduct(Member member, Product product);
 }
