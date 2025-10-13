@@ -58,7 +58,7 @@ public class RentalRefundCalculator implements RefundCalculator {
       Long deduction = (deposit * 5) / 100; // 상품 전체 금액 기준 5% 차감
       Long refundAmount =  Math.max(deposit - deduction, 0L);
       log.info("렌탈 환불: 변심 7일 이내 → 보증금 {} - 차감 {} = {}", deposit, deduction, refundAmount);
-      return Math.max(refundAmount, 0L);
+      return roundToTenWon(refundAmount);
     }
     int totalMonths = orderItem.getOrderPlan().getMonth();
     int remainingMonths = (int) ChronoUnit.MONTHS.between(LocalDate.now(), subscribe.getEndDate());
@@ -83,8 +83,8 @@ public class RentalRefundCalculator implements RefundCalculator {
     return roundToTenWon(refundAmount);
   }
 
-  // 10원 단위 내림 (버림)
+  // 10원 단위 올림 환불 처리
   private long roundToTenWon(long value) {
-    return (value / 10) * 10;
+    return ((value + 9) / 10) * 10;
   }
 }

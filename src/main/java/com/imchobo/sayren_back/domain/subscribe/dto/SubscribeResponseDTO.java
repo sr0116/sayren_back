@@ -30,5 +30,6 @@ public class SubscribeResponseDTO {
   private String memberName;
   private String memberEmail;
   private String productName;
+  private String productCategory;
 
 }
