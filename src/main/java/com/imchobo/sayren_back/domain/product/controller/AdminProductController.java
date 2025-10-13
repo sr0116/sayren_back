@@ -23,7 +23,7 @@ public class AdminProductController {
 
     @GetMapping
     public List<ProductListResponseDTO> list(@RequestParam(required = false) String type, String category) {
-        return productService.getAllProducts(type, category);
+        return productService.getAllProducts();
     }
 
     // 승인처리

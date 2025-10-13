@@ -21,7 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
     @RestController
-    @RequestMapping("/api/product")
+    @RequestMapping("/api/user/product")
     @RequiredArgsConstructor
     public class ProductController {
         private final ProductService productService;
@@ -31,13 +31,7 @@ import java.util.List;
                 @RequestParam(required = false) String type,
                 @RequestParam(required = false) String category) {
 
-            // isUse=true만 보여주도록
-            List<ProductListResponseDTO> products = productService.getAllProducts(type, category)
-                    .stream()
-                    .filter(ProductListResponseDTO::getIsUse) // 승인된 상품만
-                    .toList();
-
-            return ResponseEntity.ok(products);
+            return ResponseEntity.ok(productService.getAllProducts());
         }
 
         // 사용자용 단일 상품 상세 조회
