@@ -5,6 +5,7 @@ import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.exception.SayrenException;
 import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.address.repository.AddressRepository;
+import com.imchobo.sayren_back.domain.delivery.component.DeliveryStatusChanger;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryResponseDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.admin.DeliveryStatusChangeDTO;
@@ -42,9 +43,10 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final AddressRepository addressRepository; // 배송지 조회
     private final DeliveryMapper deliveryMapper; // 엔티티 ↔ DTO 변환
     private final DeliveryFlowOrchestrator flow; // 상태 전환 + 이벤트 발행 처리
+    private final DeliveryStatusChanger deliveryStatusChanger;
 
 
-      //사용자 직접 생성 (테스트/예외 케이스용)
+    //사용자 직접 생성 (테스트/예외 케이스용)
 
     @Override
     public DeliveryResponseDTO create(DeliveryRequestDTO dto) {
@@ -157,6 +159,20 @@ public class DeliveryServiceImpl implements DeliveryService {
             default -> throw new DeliveryNotFoundException(deliveryId);
         }
     }
+
+    @Override
+    public void changedStatus(DeliveryStatusChangeDTO dto) {
+        Delivery delivery = mustFind(dto.getDeliveryId());
+        OrderItem orderItem = delivery.getDeliveryItems().get(0).getOrderItem();
+
+        switch (dto.getStatus()) {
+            case SHIPPING -> deliveryStatusChanger.changeDeliveryStatus(delivery, delivery.getType(), DeliveryStatus.SHIPPING, orderItem);
+            case DELIVERED -> deliveryStatusChanger.changeDeliveryStatus(delivery, delivery.getType(), DeliveryStatus.DELIVERED, orderItem);
+            case RETURNED -> deliveryStatusChanger.changeDeliveryStatus(delivery, DeliveryType.RETURN, DeliveryStatus.RETURNED, orderItem);
+            default -> throw new IllegalStateException("잘못된 상태 전환 요청: " + dto.getStatus());
+        }
+    }
+
 
     @Override
     public DeliveryResponseDTO ship(Long id) {

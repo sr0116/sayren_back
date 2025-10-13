@@ -19,6 +19,7 @@ import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRep
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeCancelHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
+import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeActivatedEvent;
 import com.imchobo.sayren_back.domain.subscribe.dto.*;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
@@ -43,6 +44,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -193,6 +195,8 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Transactional
   @Override
   public void activateAfterDelivery(Long subscribeId, OrderItem orderItem) {
+    log.info("현재 트랜잭션 활성화 여부={}", TransactionSynchronizationManager.isActualTransactionActive());
+
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
     //   구독 준비중
@@ -205,43 +209,29 @@ public class SubscribeServiceImpl implements SubscribeService {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
 
-    // 구독 개월 수 가져오기
-    Integer months = subscribe.getOrderItem().getOrderPlan().getMonth();
-    if (months == null || months <= 0) {
-      throw new IllegalStateException("구독 기간(month)이 잘못 설정됨");
-    }
-
-    // 시작일/종료일 확정
-    LocalDate startDate = LocalDate.now();
-    subscribe.setStartDate(startDate);
-    subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
-
-    // (나중에 배송 이벤트 처리 할거고 지금은 임시 )
-    // orderItem에서 deliveryItems를 통해 배송 추적
+    // orderItem을 통한 배송 상태 확인
     List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
     Delivery delivery = deliveryItems.stream()
             .map(DeliveryItem::getDelivery)
             .findFirst()
             .orElseThrow(() -> new DeliveryNotFoundException(orderItem.getId()));
 
+    // 배송 완료 상태가 되어야만 구독 활성화 이벤트가 발행됨
     if (delivery.getStatus() == DeliveryStatus.DELIVERED) {
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
-
-      // 회차 dueDate 확정
-      List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
-      for (SubscribeRound round : rounds) {
-        round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
-      }
-
-      log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
-              subscribeId, startDate, subscribe.getEndDate(), rounds.size());
+      eventPublisher.publishEvent(new SubscribeActivatedEvent(subscribeId, LocalDate.now()));
+      log.info("[SERVICE] 배송 완료 감지 → 구독 활성화 이벤트 발행 완료 (subscribeId={})", subscribeId);
+    } else {
+      log.info("[SERVICE] 배송 상태가 DELIVERED가 아니므로 활성화 이벤트 발행 생략 (status={})", delivery.getStatus());
     }
+    // 이벤트 쪽에서 시작일 확정
   }
 
   // 배송 회수 완료 후 상태 변경
   @Transactional
   @Override
   public void cancelAfterReturn(Long subscribeId, OrderItem orderItem) {
+    log.info("현재 트랜잭션 활성화 여부={}", TransactionSynchronizationManager.isActualTransactionActive());
+
     // 구독 엔티티 조회
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
