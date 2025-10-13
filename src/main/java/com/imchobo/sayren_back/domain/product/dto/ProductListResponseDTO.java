@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.product.dto;
 
+import com.imchobo.sayren_back.domain.board.entity.Category;
+import com.imchobo.sayren_back.domain.common.en.CommonStatus;
 import lombok.*;
 
 import java.util.List;
@@ -18,23 +20,13 @@ public class ProductListResponseDTO {
   private String productName;
   // 가격
   private Long price;
-  // 판매 여부
-  private Boolean isUse;
   // 모델명
   private String modelName;
   // 태그
   private List<String> tags;
+  // 게시글 상태
+  private CommonStatus status;
 
   // 상품 카테고리
-  private String productCategory;
-
-  // 상세설명
-  private String description;
-
-  // 보증금
-  private Long deposit; // (20% 고정)
-
-  // 최대 혜택가
-  private Long rentalPrice;
-
+  private String category;
 }
