@@ -24,6 +24,7 @@ import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
+import com.imchobo.sayren_back.domain.subscribe.exception.ActiveSubscriptionException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
 import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.SubscribeRoundNotFoundException;
@@ -356,29 +357,34 @@ public class SubscribeServiceImpl implements SubscribeService {
   // 구독 중인 상품 존재 여부 확인 (관리자 같은 경우에는 멤버 아이디로)
   @Transactional(readOnly = true)
   @Override
-  public boolean hasActiveSubscription(Long memberId) {
-    // ACTIVE, PREPARING, PENDING_PAYMENT 상태면 구독 관련 결제 대기, 구독 준비중, 구독중 상태 -> 탈퇴 X
-    return subscribeRepository.existsByMember_IdAndStatusIn(
-            memberId,
-            List.of(
-                    SubscribeStatus.ACTIVE,
-                    SubscribeStatus.PREPARING,
-                    SubscribeStatus.PENDING_PAYMENT
-            )
+  public void validateNoActiveSubscription(Long memberId) {
+    List<SubscribeStatus> activeStatuses = List.of(
+            SubscribeStatus.ACTIVE,
+            SubscribeStatus.PREPARING,
+            SubscribeStatus.PENDING_PAYMENT
     );
+
+    boolean exists = subscribeRepository.existsByMember_IdAndStatusIn(memberId, activeStatuses);
+    if (exists) {
+      throw new ActiveSubscriptionException(memberId);
+    }
   }
+
 
   // 사용자 같은 경우 시큐리티 쪽에서 멤버 가져오기
   @Transactional(readOnly = true)
-  public boolean hasActiveSubscriptionForCurrentUser() {
+  public void validateNoActiveSubscriptionForCurrentUser() {
     Member currentMember = SecurityUtil.getMemberEntity();
-    return subscribeRepository.existsByMember_IdAndStatusIn(
-            currentMember.getId(),
-            List.of(
-                    SubscribeStatus.ACTIVE,
-                    SubscribeStatus.PREPARING,
-                    SubscribeStatus.PENDING_PAYMENT
-            )
+
+    List<SubscribeStatus> activeStatuses = List.of(
+            SubscribeStatus.ACTIVE,
+            SubscribeStatus.PREPARING,
+            SubscribeStatus.PENDING_PAYMENT
     );
+
+    boolean exists = subscribeRepository.existsByMember_IdAndStatusIn(currentMember.getId(), activeStatuses);
+    if (exists) {
+      throw new ActiveSubscriptionException();
+    }
   }
 }

@@ -3,6 +3,7 @@ package com.imchobo.sayren_back.domain.payment.portone.dto.payment;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.imchobo.sayren_back.domain.payment.en.PaymentType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,14 @@ public class PaymentInfoResponse {
   private String merchantUid;
 
   private Long amount;
+
+  @JsonProperty("pg_provider")
+  private String pgProvider;
+  private PaymentType paymentType; // 위의 pg_provider 변환
+
+  @JsonProperty("pay_method")
+  private String payMethod;
+
   private String status;
 
   @JsonProperty("fail_reason")

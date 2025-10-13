@@ -34,7 +34,7 @@ public class PaymentResponseDTO {
   private Long subscribeId;
   private Long roundId;
   private Integer roundNo;
-  private PaymentStatus roundStatus;
+  private PaymentStatus subscribeRoundStatus;
   private LocalDate dueDate;           // 납부 예정일
   private LocalDateTime paidDate;      // 실제 결제 완료일
 
@@ -42,6 +42,7 @@ public class PaymentResponseDTO {
   private RefundRequestStatus refundStatus;
 
   // 회원 정보 (관리자 화면 전용)
-  private String memberName;
-  private String memberEmail;
+  private String buyerName;
+  private String buyerEmail;
+  private String buyerTel;
 }

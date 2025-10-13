@@ -11,9 +11,11 @@ public class SubscribeRoundResponseDTO {
 
   private Long subscribeRoundId;
   private Long subscribeId;
+
   private Long amount;
   private Integer roundNo;
   private PaymentStatus payStatus;
+
   private LocalDate dueDate;
   private LocalDateTime paidDate;
   private LocalDateTime regDate;

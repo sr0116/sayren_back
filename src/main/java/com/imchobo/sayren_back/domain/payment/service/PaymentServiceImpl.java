@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.payment.service;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
@@ -72,10 +73,8 @@ public class PaymentServiceImpl implements PaymentService {
   // 상태 변경 컴포넌트 이벤트 처리
   private final PaymentStatusChanger paymentStatusChanger;
   private final PaymentHistoryRecorder paymentHistoryRecorder;
-  private final RefundRequestRepository refundRequestRepository;
   private final RefundRepository refundRepository;
-
-
+  private final MemberRepository memberRepository;
 
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
@@ -84,6 +83,10 @@ public class PaymentServiceImpl implements PaymentService {
   public PaymentResponseDTO prepare(PaymentRequestDTO dto) {
     // 현재 로그인 한 멤버 정보 조회
     Member currentMember = SecurityUtil.getMemberEntity();
+    if (currentMember.getName() == null || currentMember.getEmail() == null) {
+      currentMember = memberRepository.findById(currentMember.getId())
+              .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."));
+    }
 
     // 주문 아이템 조회(예외 처리 나중에 추가)
     OrderItem orderItem = orderItemRepository.findById(dto.getOrderItemId())
@@ -106,7 +109,8 @@ public class PaymentServiceImpl implements PaymentService {
     payment.setMember(currentMember);
     payment.setMerchantUid(merchantUid);
     payment.setOrderItem(orderItem);
-    payment.setPaymentType(PaymentType.CARD);
+//    payment.setPaymentType(PaymentType.CARD); // 포트원에서 세팅
+
 
     // 1회차 결제 고정
     if (planType == OrderPlanType.RENTAL) {
@@ -159,6 +163,13 @@ public class PaymentServiceImpl implements PaymentService {
 //  상태 반영
     payment.setImpUid(impUid);
     payment.setReceipt(paymentInfo.getReceiptUrl());
+    if (paymentInfo.getPaymentType() != null) {
+      payment.setPaymentType(paymentInfo.getPaymentType());
+    } else {
+      // 기본값 세팅
+      payment.setPaymentType(PaymentType.CARD);
+    }
+
     paymentStatusChanger.changePayment(payment, transition, payment.getOrderItem().getId(), ActorType.SYSTEM);
 
     // 회차 결제시 회차 상태 갱신
@@ -199,6 +210,10 @@ public class PaymentServiceImpl implements PaymentService {
   @Transactional
   public PaymentResponseDTO prepareForRound(SubscribeRound round) {
     Member currentMember = SecurityUtil.getMemberEntity();
+    if (currentMember.getName() == null || currentMember.getEmail() == null) {
+      currentMember = memberRepository.findById(currentMember.getId())
+              .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."));
+    }
     OrderItem orderItem = round.getSubscribe().getOrderItem();
 
     String merchantUid = "pay_" + UUID.randomUUID().toString().replace("-", "");

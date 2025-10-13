@@ -28,7 +28,7 @@ public class PurchaseRefundCalculator implements RefundCalculator {
   @Override
   public Long calculateRefundAmount(Payment payment, RefundRequest request) {
 
-    Long amount = payment.getAmount();
+    Long baseAmount = payment.getOrderItem().getProductPriceSnapshot();
 
     DeliveryItem deliveryItem = deliveryItemRepository
             .findTopByOrderItemOrderByDelivery_RegDate_Desc(payment.getOrderItem())
@@ -46,21 +46,21 @@ public class PurchaseRefundCalculator implements RefundCalculator {
 
     if (defective) {
       log.info("불량 / 배송 문제시 전액 환불");
-      return roundToTenWon(amount);
+      return roundUpToTenWon(baseAmount);
     }
 
     if (daysAfterDelivery <= 7) {
-      Long deduction = amount * 5 / 100;
-      Long refundAmount = Math.max(amount - deduction, 0L);
-      log.info("환불: 단순 변심 7일 이내 → 원금 {} - 차감 {} = {}", amount, deduction, amount - deduction);
-      return roundToTenWon(refundAmount);
+      Long deduction = baseAmount * 5 / 100; // 5% 차감
+      Long refundAmount = Math.max(baseAmount - deduction, 0L);
+      log.info("단순 변심 7일 이내 환불: 원금 {} - 차감 {} = {}", baseAmount, deduction, refundAmount);
+      return roundUpToTenWon(refundAmount);
     }
     log.info("환불: 단순 변심 7일 초과 → 환불 불가");
     throw new RefundPolicyViolationException("단순 변심 환불은 배송 7일 이내만 가능합니다.");
   }
 
-  // 10원 단위 내림 (버림)
-  private long roundToTenWon(long value) {
-    return (value / 10) * 10;
+  // 10원 단위 올림
+  private long roundUpToTenWon(long value) {
+    return ((value + 9) / 10) * 10;
   }
 }

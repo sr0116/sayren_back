@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.order.controller;
 
+import com.imchobo.sayren_back.domain.order.dto.DirectOrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderResponseDTO;
 import com.imchobo.sayren_back.domain.order.service.OrderService;
@@ -11,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 @RestController
 @RequestMapping("/api/user/orders")
 @RequiredArgsConstructor
@@ -18,34 +20,56 @@ public class OrderController {
 
   private final OrderService orderService;
 
-  // 장바구니 → 주문 생성
-    @PostMapping("/create")
-    public ResponseEntity<OrderResponseDTO> createOrder(
-            @RequestBody OrderRequestDTO dto,
-            @AuthenticationPrincipal MemberAuthDTO authMember) {
-        Long memberId = authMember.getId(); //  인증된 사용자 ID 바로 가져옴
-        return ResponseEntity.ok(orderService.createOrder(memberId, dto));
-    }
-  // 내 주문 전체 조회
+
+    //장바구니 기반 주문 생성
+
+  @PostMapping("/create")
+  public ResponseEntity<OrderResponseDTO> createOrder(
+    @RequestBody OrderRequestDTO dto,
+    @AuthenticationPrincipal MemberAuthDTO authMember) {
+    Long memberId = authMember.getId();
+    return ResponseEntity.ok(orderService.createOrder(memberId, dto));
+  }
+
+
+    //바로구매 주문 생성 (장바구니 생략)
+
+  @PostMapping("/direct-create")
+  public ResponseEntity<OrderResponseDTO> createDirectOrder(
+    @RequestBody DirectOrderRequestDTO dto,
+    @AuthenticationPrincipal MemberAuthDTO authMember) {
+    Long memberId = authMember.getId();
+    return ResponseEntity.ok(orderService.createDirectOrder(memberId, dto));
+  }
+
+
+    //내 주문 전체 조회
+
   @GetMapping("/my")
   public ResponseEntity<List<OrderResponseDTO>> getMyOrders(Authentication authentication) {
     Long memberId = Long.valueOf(authentication.getName());
     return ResponseEntity.ok(orderService.getOrdersByMemberId(memberId));
   }
 
-  // 단일 주문 조회
+
+    //단일 주문 조회
+
   @GetMapping("/{id}")
   public ResponseEntity<OrderResponseDTO> getOrder(@PathVariable Long id) {
     return ResponseEntity.ok(orderService.getOrderById(id));
   }
 
-  // 결제 완료 → 상태 PAID
+
+   // 결제 완료 → 상태 PAID
+
   @PostMapping("/{id}/paid")
   public ResponseEntity<OrderResponseDTO> markAsPaid(@PathVariable Long id) {
     return ResponseEntity.ok(orderService.markAsPaid(id));
   }
 
-  // 결제 실패/취소 → 상태 CANCELED
+
+   //결제 실패/취소 → 상태 CANCELED
+
   @PostMapping("/{id}/cancel")
   public ResponseEntity<OrderResponseDTO> cancelOrder(
     @PathVariable Long id,

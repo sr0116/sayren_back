@@ -38,19 +38,21 @@ public interface SubscribeMapper {
   SubscribeRequestDTO toRequestDTO(OrderItem orderItem, Order order, OrderPlan plan);
 
   // 응답 DTO (Subscribe → SubscribeResponseDTO)
-  @Mapping(source = "id", target = "subscribeId")   // PK 매핑
+  @Mapping(source = "id", target = "subscribeId")
   @Mapping(source = "orderItem.id", target = "orderItemId")
-  @Mapping(source = "orderItem.orderPlan.month", target = "totalMonths") // 총 개월수
+  @Mapping(source = "orderItem.orderPlan.month", target = "totalMonths")
+  @Mapping(source = "member.name", target = "memberName")
+  @Mapping(source = "member.email", target = "memberEmail")
+  @Mapping(source = "orderItem.product.name", target = "productName")
+  @Mapping(source = "orderItem.product.productCategory", target = "productCategory")
   SubscribeResponseDTO toResponseDTO(Subscribe entity);
 
   List<SubscribeResponseDTO> toResponseDTOList(List<Subscribe> entity);
 
   // 요약 DTO
   @Mapping(source = "id", target = "subscribeId")
-  @Mapping(source = "status", target = "status")
-  @Mapping(source = "startDate", target = "startDate")
-  @Mapping(source = "endDate", target = "endDate")
   @Mapping(source = "monthlyFeeSnapshot", target = "monthlyFeeSnapshot")
+  @Mapping(source = "orderItem.product.name", target = "productName")
   SubscribeSummaryDTO toSummaryDTO(Subscribe entity);
 
  // 조회 리스트(요약)
