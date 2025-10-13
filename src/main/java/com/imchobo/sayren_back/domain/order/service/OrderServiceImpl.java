@@ -6,19 +6,21 @@ import com.imchobo.sayren_back.domain.delivery.address.repository.AddressReposit
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.domain.order.component.StatusChanger;
+import com.imchobo.sayren_back.domain.order.dto.DirectOrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderResponseDTO;
 import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.en.OrderStatus;
-import com.imchobo.sayren_back.domain.order.exception.EmptyCartException;
-import com.imchobo.sayren_back.domain.order.exception.InvalidOrderStatusException;
-import com.imchobo.sayren_back.domain.order.exception.OrderAlreadyCanceledException;
-import com.imchobo.sayren_back.domain.order.exception.OrderNotFoundException;
+import com.imchobo.sayren_back.domain.order.exception.*;
 import com.imchobo.sayren_back.domain.order.mapper.OrderMapper;
 import com.imchobo.sayren_back.domain.order.cart.repository.CartRepository;
 import com.imchobo.sayren_back.domain.order.repository.OrderRepository;
+import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
+import com.imchobo.sayren_back.domain.order.OrderPlan.repository.OrderPlanRepository;
+import com.imchobo.sayren_back.domain.product.entity.Product;
+import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
 import com.imchobo.sayren_back.domain.order.component.event.OrderPlacedEvent;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -38,11 +40,15 @@ public class OrderServiceImpl implements OrderService {
   private final MemberRepository memberRepository;
   private final AddressRepository addressRepository;
   private final CartRepository cartRepository;
+  private final ProductRepository productRepository;
+  private final OrderPlanRepository orderPlanRepository;
   private final OrderMapper orderMapper;
   private final ApplicationEventPublisher eventPublisher;
   private final StatusChanger statusChanger;
 
-  // 새로 추가된 DTO 기반 메서드
+
+    // 장바구니 기반 주문 생성
+
   @Override
   public OrderResponseDTO createOrder(Long memberId, OrderRequestDTO dto) {
     if (dto.getAddressId() != null) {
@@ -59,16 +65,18 @@ public class OrderServiceImpl implements OrderService {
       .name(dto.getReceiverName())
       .tel(dto.getReceiverTel())
       .zipcode(dto.getZipcode())
-      .address(dto.getDetail())   //  detail → address 로 매핑
-      .isDefault(false)           // 기본배송지 여부 (필요시 true)
+      .address(dto.getDetail())
+      .isDefault(false)
       .memo(dto.getMemo())
       .build();
-
 
     Address savedAddress = addressRepository.save(newAddress);
 
     return createOrderFromCart(memberId, savedAddress.getId());
   }
+
+
+   //장바구니 기반 주문 처리
 
   @Override
   public OrderResponseDTO createOrderFromCart(Long memberId, Long addressId) {
@@ -98,23 +106,74 @@ public class OrderServiceImpl implements OrderService {
         .build()
       ).collect(Collectors.toList());
 
-      // (연관관계 세팅)
-      order.setOrderItems(orderItems);
+    order.setOrderItems(orderItems);
 
-      // 엔티티 저장
-      Order savedOrder = orderRepository.save(order);
+    Order savedOrder = orderRepository.save(order);
 
-      // 장바구니 비우기
-      cartRepository.deleteAll(cartItems);
+    // 장바구니 비우기
+    cartRepository.deleteAll(cartItems);
 
-      // 이벤트 발행 (배송 자동 생성)
-      eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
+    // 이벤트 발행 (배송 자동 생성)
+    eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
 
-      // 상태 기록
-      statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
+    // 상태 기록
+    statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
 
-      return orderMapper.toResponseDTO(savedOrder);
+    return orderMapper.toResponseDTO(savedOrder);
   }
+
+
+   // [신규 추가] 바로구매(장바구니 생략) 주문 생성
+
+  @Transactional
+  public OrderResponseDTO createDirectOrder(Long memberId, DirectOrderRequestDTO dto) {
+    Member member = memberRepository.findById(memberId)
+      .orElseThrow(() -> new OrderNotFoundException(memberId));
+
+    Product product = productRepository.findById(dto.getProductId())
+      .orElseThrow(() -> new EntityNotFoundException("상품 없음: " + dto.getProductId()));
+
+    OrderPlan plan = orderPlanRepository.findById(dto.getPlanId())
+      .orElseThrow(() -> new EntityNotFoundException("요금제 없음: " + dto.getPlanId()));
+
+    // 배송지 생성
+    Address address = Address.builder()
+      .member(member)
+      .name(dto.getReceiverName())
+      .tel(dto.getReceiverTel())
+      .zipcode(dto.getZipcode())
+      .address(dto.getDetail())
+      .memo(dto.getMemo())
+      .isDefault(false)
+      .build();
+    addressRepository.save(address);
+
+    // 주문 생성
+    Order order = Order.builder()
+      .member(member)
+      .address(address)
+      .status(OrderStatus.PENDING)
+      .build();
+
+    OrderItem orderItem = OrderItem.builder()
+      .order(order)
+      .product(product)
+      .orderPlan(plan)
+      .productPriceSnapshot(product.getPrice())
+      .build();
+
+    order.setOrderItems(List.of(orderItem));
+    Order savedOrder = orderRepository.save(order);
+
+    // 이벤트 발행 (배송 자동 생성)
+    eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
+
+    // 상태 기록
+    statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
+
+    return orderMapper.toResponseDTO(savedOrder);
+  }
+
   @Override
   public OrderResponseDTO markAsPaid(Long orderId) {
     Order order = orderRepository.findById(orderId)
