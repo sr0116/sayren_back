@@ -54,9 +54,9 @@ public interface SubscribeService {
   SubscribeRoundResponseDTO getRoundDetail(Long subscribeId, Integer roundNo);
 
   // 구독 상태 여부 (관리자)
-  boolean hasActiveSubscription(Long memberId);
+  void validateNoActiveSubscription(Long memberId);
 
   // 일반 회원
-  boolean hasActiveSubscriptionForCurrentUser();
+  void validateNoActiveSubscriptionForCurrentUser();
 
 }

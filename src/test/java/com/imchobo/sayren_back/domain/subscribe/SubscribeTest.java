@@ -195,7 +195,7 @@ public class SubscribeTest {
 
 
     // when: 구독 활성화 처리 호출
-  Long subscribeId = 295L;
+  Long subscribeId = 300L;
   OrderItem orderItem = delivery.getDeliveryItems()
           .get(0)
           .getOrderItem();
