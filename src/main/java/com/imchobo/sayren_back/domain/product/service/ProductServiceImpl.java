@@ -93,7 +93,7 @@ public class ProductServiceImpl implements ProductService {
       List<Attach> attachList = productAttachRepository.findByProductId(product.getId()).stream().filter(Attach::isThumbnail).toList();
       Attach attach = !attachList.isEmpty() ? attachList.getFirst() : null;
       String thumbnailUrl = attach != null ? "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/" + attach.getPath() + "/" + attach.getUuid() : null;
-      List<String> tags = productTagRepository.findByProductId(product.getId()).stream().map(ProductTag::getTagName).toList();
+      List<String> tags = productTagRepository.findByProductId(product.getId()).stream().map((t) -> {return t.getTagName() + "#" + t.getTagValue();}).toList();
 
       productList.add(ProductListResponseDTO.builder()
                       .productId(product.getId())
