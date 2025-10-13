@@ -44,6 +44,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
@@ -304,14 +305,20 @@ public class SubscribeServiceImpl implements SubscribeService {
               .build();
 
       refundRequestRepository.saveAndFlush(request);
-      // 환불 요청 이벤트 처리 (알림이랑 연동됨)
-      eventPublisher.publishEvent(new RefundRequestEvent(
-              subscribe.getOrderItem().getId(),
-              subscribe.getId(),
-              request.getStatus(),
-              reasonCode,
-              ActorType.ADMIN
-      ));
+      // 트랜잭션 커밋 후 이벤트 발행 (핸들러에서 이후 회수/환불 처리)
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          eventPublisher.publishEvent(new RefundRequestEvent(
+                  subscribe.getOrderItem().getId(),
+                  subscribe.getId(),
+                  RefundRequestStatus.APPROVED_WAITING_RETURN,
+                  reasonCode,
+                  ActorType.ADMIN
+          ));
+          log.info("[EVENT][AFTER_COMMIT] 구독 환불 승인 이벤트 발행 → subscribeId={}, status=APPROVED_WAITING_RETURN", subscribeId);
+        }
+      });
       return;
     }
     // 거절시 상태 복원 처리
