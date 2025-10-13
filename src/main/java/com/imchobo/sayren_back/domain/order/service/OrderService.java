@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.order.service;
 
+import com.imchobo.sayren_back.domain.order.dto.DirectOrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderResponseDTO;
 
@@ -24,4 +25,7 @@ public interface OrderService {
 
   // 결제 실패/취소 → 주문 상태 CANCELED
   OrderResponseDTO cancel(Long orderId, String reason);
+    //바로구매주문
+  OrderResponseDTO createDirectOrder(Long memberId, DirectOrderRequestDTO dto);
+
 }
