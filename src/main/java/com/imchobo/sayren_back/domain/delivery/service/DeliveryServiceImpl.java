@@ -160,6 +160,12 @@ public class DeliveryServiceImpl implements DeliveryService {
         }
     }
 
+    // 현재 이벤트 기반으로 처리해야 구독 상태 변경 및 환불 처리, 알림이랑 연동돼서 기존에 만들어 두었던 배송 이벤트 처리
+    // 기반으로 배송 상태 변경 서비스 및 컨트롤러 추가했습니다
+    // 프론트랑 연동할 때 이전에 changeStatus() api 훅으로 사용했던 컴포넌트들 changedStatus() 기반으로 수정했으니
+    // 확입 부탁드립니다.(프론트 단에서 배송 상태 위에 정의해주신대로 준비-> 배송중 -> 배송 완료 -> 회수 완료 로만 상태 변경 가능하게 해둬서 내용은 같습니다.)
+    // 배송 링크 경로는 나중에 마이페이지에 배송 내역 경로 생기면
+    // 그거에 맞게 다시 알림 이벤트 핸들러에서 수정해주세요
     @Override
     public void changedStatus(DeliveryStatusChangeDTO dto) {
         Delivery delivery = mustFind(dto.getDeliveryId());
