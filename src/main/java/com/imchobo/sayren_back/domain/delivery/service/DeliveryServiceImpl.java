@@ -1,13 +1,19 @@
 package com.imchobo.sayren_back.domain.delivery.service;
 
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
+import com.imchobo.sayren_back.domain.common.exception.SayrenException;
 import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.address.repository.AddressRepository;
+import com.imchobo.sayren_back.domain.delivery.component.DeliveryStatusChanger;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryResponseDTO;
+import com.imchobo.sayren_back.domain.delivery.dto.admin.DeliveryStatusChangeDTO;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
+import com.imchobo.sayren_back.domain.delivery.exception.DeliveryNotFoundException;
 import com.imchobo.sayren_back.domain.delivery.mapper.DeliveryMapper;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
@@ -19,6 +25,7 @@ import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,9 +43,10 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final AddressRepository addressRepository; // 배송지 조회
     private final DeliveryMapper deliveryMapper; // 엔티티 ↔ DTO 변환
     private final DeliveryFlowOrchestrator flow; // 상태 전환 + 이벤트 발행 처리
+    private final DeliveryStatusChanger deliveryStatusChanger;
 
 
-      //사용자 직접 생성 (테스트/예외 케이스용)
+    //사용자 직접 생성 (테스트/예외 케이스용)
 
     @Override
     public DeliveryResponseDTO create(DeliveryRequestDTO dto) {
@@ -71,6 +79,11 @@ public class DeliveryServiceImpl implements DeliveryService {
         return deliveryMapper.toResponseDTO(saved);
     }
 
+    @Override
+    public PageResponseDTO<DeliveryResponseDTO, Delivery> getAllList(PageRequestDTO pageRequestDTO) {
+        Page<Delivery> result = deliveryRepository.findAll(pageRequestDTO.getPageable());
+        return PageResponseDTO.of(result, deliveryMapper::toResponseDTO);
+    }
 
     // 결제 성공 직후 orderItemId 기반 배송 자동 생성
     @Override
@@ -133,6 +146,40 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     // ===== 상태 전환 =====
 
+
+    @Override
+    public void changeStatus(DeliveryStatusChangeDTO deliveryStatusChangeDTO) {
+        Long deliveryId = deliveryStatusChangeDTO.getDeliveryId();
+        switch (deliveryStatusChangeDTO.getStatus()) {
+            case READY -> ship(deliveryId);
+            case SHIPPING -> complete(deliveryId);
+            case DELIVERED -> returnReady(deliveryId);
+            case RETURN_READY -> inReturning(deliveryId);
+            case IN_RETURNING -> returned(deliveryId);
+            default -> throw new DeliveryNotFoundException(deliveryId);
+        }
+    }
+
+    // 현재 이벤트 기반으로 처리해야 구독 상태 변경 및 환불 처리, 알림이랑 연동돼서 기존에 만들어 두었던 배송 이벤트 처리
+    // 기반으로 배송 상태 변경 서비스 및 컨트롤러 추가했습니다
+    // 프론트랑 연동할 때 이전에 changeStatus() api 훅으로 사용했던 컴포넌트들 changedStatus() 기반으로 수정했으니
+    // 확입 부탁드립니다.(프론트 단에서 배송 상태 위에 정의해주신대로 준비-> 배송중 -> 배송 완료 -> 회수 완료 로만 상태 변경 가능하게 해둬서 내용은 같습니다.)
+    // 배송 링크 경로는 나중에 마이페이지에 배송 내역 경로 생기면
+    // 그거에 맞게 다시 알림 이벤트 핸들러에서 수정해주세요
+    @Override
+    public void changedStatus(DeliveryStatusChangeDTO dto) {
+        Delivery delivery = mustFind(dto.getDeliveryId());
+        OrderItem orderItem = delivery.getDeliveryItems().get(0).getOrderItem();
+
+        switch (dto.getStatus()) {
+            case SHIPPING -> deliveryStatusChanger.changeDeliveryStatus(delivery, delivery.getType(), DeliveryStatus.SHIPPING, orderItem);
+            case DELIVERED -> deliveryStatusChanger.changeDeliveryStatus(delivery, delivery.getType(), DeliveryStatus.DELIVERED, orderItem);
+            case RETURNED -> deliveryStatusChanger.changeDeliveryStatus(delivery, DeliveryType.RETURN, DeliveryStatus.RETURNED, orderItem);
+            default -> throw new IllegalStateException("잘못된 상태 전환 요청: " + dto.getStatus());
+        }
+    }
+
+
     @Override
     public DeliveryResponseDTO ship(Long id) {
         Delivery d = mustFind(id);
@@ -166,8 +213,11 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     @Override
+    @Transactional
     public DeliveryResponseDTO returnReady(Long id) {
         Delivery d = mustFind(id);
+        d.setType(DeliveryType.RETURN);
+
         ensure(d.getStatus() == DeliveryStatus.DELIVERED, "DELIVERED → RETURN_READY만 가능");
 
         // DELIVERED → RETURN_READY 전환 + 이벤트 발행

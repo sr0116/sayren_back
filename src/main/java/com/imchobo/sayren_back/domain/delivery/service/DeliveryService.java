@@ -1,8 +1,11 @@
 package com.imchobo.sayren_back.domain.delivery.service;
 
+import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
+import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryResponseDTO;
-import com.imchobo.sayren_back.domain.order.entity.Order;
+import com.imchobo.sayren_back.domain.delivery.dto.admin.DeliveryStatusChangeDTO;
+import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 
 import java.util.List;
 
@@ -18,7 +21,12 @@ public interface DeliveryService {
     // 주문 ID 기준 조회
     List<DeliveryResponseDTO> getByOrder(Long orderId);
 
+    // 전체조회(어드민)
+    PageResponseDTO<DeliveryResponseDTO, Delivery> getAllList(PageRequestDTO pageRequestDTO);
+
     // ── 상태 전환 ────────────────────────────────
+    void changeStatus(DeliveryStatusChangeDTO deliveryStatusChangeDTO);
+    void changedStatus(DeliveryStatusChangeDTO dto);
 
     // 배송 시작 (READY → SHIPPING)
     DeliveryResponseDTO ship(Long id);

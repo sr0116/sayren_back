@@ -19,11 +19,13 @@ import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRep
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeCancelHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
+import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeActivatedEvent;
 import com.imchobo.sayren_back.domain.subscribe.dto.*;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
+import com.imchobo.sayren_back.domain.subscribe.exception.ActiveSubscriptionException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeStatusInvalidException;
 import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.SubscribeRoundNotFoundException;
@@ -42,6 +44,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -192,6 +196,8 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Transactional
   @Override
   public void activateAfterDelivery(Long subscribeId, OrderItem orderItem) {
+    log.info("현재 트랜잭션 활성화 여부={}", TransactionSynchronizationManager.isActualTransactionActive());
+
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
     //   구독 준비중
@@ -204,43 +210,29 @@ public class SubscribeServiceImpl implements SubscribeService {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
 
-    // 구독 개월 수 가져오기
-    Integer months = subscribe.getOrderItem().getOrderPlan().getMonth();
-    if (months == null || months <= 0) {
-      throw new IllegalStateException("구독 기간(month)이 잘못 설정됨");
-    }
-
-    // 시작일/종료일 확정
-    LocalDate startDate = LocalDate.now();
-    subscribe.setStartDate(startDate);
-    subscribe.setEndDate(startDate.plusMonths(months)); // 총개월 수
-
-    // (나중에 배송 이벤트 처리 할거고 지금은 임시 )
-    // orderItem에서 deliveryItems를 통해 배송 추적
+    // orderItem을 통한 배송 상태 확인
     List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
     Delivery delivery = deliveryItems.stream()
             .map(DeliveryItem::getDelivery)
             .findFirst()
             .orElseThrow(() -> new DeliveryNotFoundException(orderItem.getId()));
 
+    // 배송 완료 상태가 되어야만 구독 활성화 이벤트가 발행됨
     if (delivery.getStatus() == DeliveryStatus.DELIVERED) {
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
-
-      // 회차 dueDate 확정
-      List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribe(subscribe);
-      for (SubscribeRound round : rounds) {
-        round.setDueDate(startDate.plusMonths(round.getRoundNo() - 1));
-      }
-
-      log.info("구독 [{}] 활성화 완료. 시작일: {}, 종료일: {}, 총 {}회차 dueDate 확정",
-              subscribeId, startDate, subscribe.getEndDate(), rounds.size());
+      eventPublisher.publishEvent(new SubscribeActivatedEvent(subscribeId, LocalDate.now()));
+      log.info("[SERVICE] 배송 완료 감지 → 구독 활성화 이벤트 발행 완료 (subscribeId={})", subscribeId);
+    } else {
+      log.info("[SERVICE] 배송 상태가 DELIVERED가 아니므로 활성화 이벤트 발행 생략 (status={})", delivery.getStatus());
     }
+    // 이벤트 쪽에서 시작일 확정
   }
 
   // 배송 회수 완료 후 상태 변경
   @Transactional
   @Override
   public void cancelAfterReturn(Long subscribeId, OrderItem orderItem) {
+    log.info("현재 트랜잭션 활성화 여부={}", TransactionSynchronizationManager.isActualTransactionActive());
+
     // 구독 엔티티 조회
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
@@ -313,14 +305,20 @@ public class SubscribeServiceImpl implements SubscribeService {
               .build();
 
       refundRequestRepository.saveAndFlush(request);
-      // 환불 요청 이벤트 처리 (알림이랑 연동됨)
-      eventPublisher.publishEvent(new RefundRequestEvent(
-              subscribe.getOrderItem().getId(),
-              subscribe.getId(),
-              request.getStatus(),
-              reasonCode,
-              ActorType.ADMIN
-      ));
+      // 트랜잭션 커밋 후 이벤트 발행 (핸들러에서 이후 회수/환불 처리)
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          eventPublisher.publishEvent(new RefundRequestEvent(
+                  subscribe.getOrderItem().getId(),
+                  subscribe.getId(),
+                  RefundRequestStatus.APPROVED_WAITING_RETURN,
+                  reasonCode,
+                  ActorType.ADMIN
+          ));
+          log.info("[EVENT][AFTER_COMMIT] 구독 환불 승인 이벤트 발행 → subscribeId={}, status=APPROVED_WAITING_RETURN", subscribeId);
+        }
+      });
       return;
     }
     // 거절시 상태 복원 처리
@@ -356,29 +354,34 @@ public class SubscribeServiceImpl implements SubscribeService {
   // 구독 중인 상품 존재 여부 확인 (관리자 같은 경우에는 멤버 아이디로)
   @Transactional(readOnly = true)
   @Override
-  public boolean hasActiveSubscription(Long memberId) {
-    // ACTIVE, PREPARING, PENDING_PAYMENT 상태면 구독 관련 결제 대기, 구독 준비중, 구독중 상태 -> 탈퇴 X
-    return subscribeRepository.existsByMember_IdAndStatusIn(
-            memberId,
-            List.of(
-                    SubscribeStatus.ACTIVE,
-                    SubscribeStatus.PREPARING,
-                    SubscribeStatus.PENDING_PAYMENT
-            )
+  public void validateNoActiveSubscription(Long memberId) {
+    List<SubscribeStatus> activeStatuses = List.of(
+            SubscribeStatus.ACTIVE,
+            SubscribeStatus.PREPARING,
+            SubscribeStatus.PENDING_PAYMENT
     );
+
+    boolean exists = subscribeRepository.existsByMember_IdAndStatusIn(memberId, activeStatuses);
+    if (exists) {
+      throw new ActiveSubscriptionException(memberId);
+    }
   }
+
 
   // 사용자 같은 경우 시큐리티 쪽에서 멤버 가져오기
   @Transactional(readOnly = true)
-  public boolean hasActiveSubscriptionForCurrentUser() {
+  public void validateNoActiveSubscriptionForCurrentUser() {
     Member currentMember = SecurityUtil.getMemberEntity();
-    return subscribeRepository.existsByMember_IdAndStatusIn(
-            currentMember.getId(),
-            List.of(
-                    SubscribeStatus.ACTIVE,
-                    SubscribeStatus.PREPARING,
-                    SubscribeStatus.PENDING_PAYMENT
-            )
+
+    List<SubscribeStatus> activeStatuses = List.of(
+            SubscribeStatus.ACTIVE,
+            SubscribeStatus.PREPARING,
+            SubscribeStatus.PENDING_PAYMENT
     );
+
+    boolean exists = subscribeRepository.existsByMember_IdAndStatusIn(currentMember.getId(), activeStatuses);
+    if (exists) {
+      throw new ActiveSubscriptionException();
+    }
   }
 }

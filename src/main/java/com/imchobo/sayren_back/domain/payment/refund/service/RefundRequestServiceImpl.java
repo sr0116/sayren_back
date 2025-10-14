@@ -31,6 +31,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Objects;
@@ -131,45 +133,61 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     );
   }
 
-  // 환불
+  // 환불 (구독 / 일반 모두)
   @Transactional
   @Override
   public RefundRequestResponseDTO processRefundRequest(Long refundRequestId, RefundRequestStatus status, ReasonCode reasonCode) {
     RefundRequest request = refundRequestRepository.findById(refundRequestId)
             .orElseThrow(() -> new RefundRequestNotFoundException(refundRequestId));
 
-    if (request.getStatus() != RefundRequestStatus.PENDING) {
-      throw new RefundRequestStatusInvalidException("이미 처리된 환불 요청");
-    }
-    // 관리자 승인일때만 상태 전환
-    if (status == RefundRequestStatus.APPROVED) {
-      request.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
-      log.info("[ADMIN ACTION] 환불 승인 처리 완료 (회수 대기 상태로 변경) → refundRequestId={}", refundRequestId);
-    } else {
-      request.setStatus(status);
+    // 유효 상태 검증
+    if (!List.of(
+            RefundRequestStatus.PENDING,
+            RefundRequestStatus.APPROVED_WAITING_RETURN,
+            RefundRequestStatus.APPROVED
+    ).contains(request.getStatus())) {
+      throw new RefundRequestStatusInvalidException(
+              "이미 처리된 환불 요청입니다. (현재 상태=" + request.getStatus() + ")"
+      );
     }
 
-    // 상태 사유 코드 변경 저장
+    // 승인 처리
+    if (status == RefundRequestStatus.APPROVED) {
+      // 기존 상태가 PENDING이면 회수 대기 전환
+      if (request.getStatus() == RefundRequestStatus.PENDING) {
+        request.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
+        log.info("[ADMIN ACTION] 환불 승인 처리 → 회수 대기 상태로 변경 (refundRequestId={})", refundRequestId);
+      } else if (request.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
+        log.info("[SKIP] 이미 APPROVED_WAITING_RETURN 상태 → 중복 승인 생략 (refundRequestId={})", refundRequestId);
+      }
+    } else {
+      // 거절, 취소 등
+      request.setStatus(status);
+      log.info("[ADMIN ACTION] 환불 상태 변경 → refundRequestId={}, status={}", refundRequestId, status);
+    }
+
     request.setReasonCode(reasonCode);
     refundRequestRepository.saveAndFlush(request);
 
-
-    // 구독 결제 여부 확인
     Long subscribeId = subscribeRepository.findByOrderItem(request.getOrderItem())
             .map(Subscribe::getId)
             .orElse(null);
 
-    // 관리자 승인/거절 이벤트 발행
-    eventPublisher.publishEvent(new RefundRequestEvent(
-            request.getOrderItem().getId(),
-            subscribeId,
-            request.getStatus(),
-            reasonCode,
-            ActorType.ADMIN
-    ));
-
-    log.info("[EVENT] 관리자 환불 처리 이벤트 발행 → orderItemId={}, subscribeId={}, status={}, actor=ADMIN",
-            request.getOrderItem().getId(), subscribeId, request.getStatus());
+    // AFTER_COMMIT에서 이벤트 발행 (핸들러가 후속 처리)
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+      @Override
+      public void afterCommit() {
+        eventPublisher.publishEvent(new RefundRequestEvent(
+                request.getOrderItem().getId(),
+                subscribeId,
+                request.getStatus(),
+                reasonCode,
+                ActorType.ADMIN
+        ));
+        log.info("[EVENT][AFTER_COMMIT] RefundRequestEvent 발행 완료 → orderItemId={}, subscribeId={}, status={}",
+                request.getOrderItem().getId(), subscribeId, request.getStatus());
+      }
+    });
     return refundRequestMapper.toResponseDTO(request);
   }
 
