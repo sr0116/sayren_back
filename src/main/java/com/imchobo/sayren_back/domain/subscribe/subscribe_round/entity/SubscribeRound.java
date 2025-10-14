@@ -49,7 +49,6 @@ public class SubscribeRound extends CreatedEntity {
 
   // 납부 예정일 (스케줄링에 필요)
   // NOT NULL
-  @Column(name = "due_date", nullable = false)
   private LocalDate dueDate;
 
   // 실제 결제 완료일 (NULL 허용)

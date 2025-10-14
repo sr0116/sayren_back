@@ -16,6 +16,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 @Component
 @RequiredArgsConstructor
@@ -33,6 +34,14 @@ public class RentalRefundCalculator implements RefundCalculator {
     OrderItem orderItem = payment.getOrderItem();
     Subscribe subscribe = payment.getSubscribeRound().getSubscribe();
     Long deposit = subscribe.getDepositSnapshot();
+
+    if (payment.getRegDate() != null &&
+            ChronoUnit.HOURS.between(payment.getRegDate(), LocalDateTime.now()) < 24) {
+      log.info("렌탈 결제 24시간 이내 환불 요청 → 보증금 전액 환불");
+      return roundToTenWon(deposit);
+    }
+
+
 
     // 배송 정보 조회
     DeliveryItem deliveryItem = deliveryItemRepository

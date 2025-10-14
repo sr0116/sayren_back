@@ -89,15 +89,6 @@ public class SubscribeServiceImpl implements SubscribeService {
     // 보증금
     subscribe.setDepositSnapshot(rentalPrice.getDeposit());
 
-//    Long productPrice = orderItem.getProductPriceSnapshot(); //상품 총 가격
-//    // 월렌탈료 먼저 계산
-//    Long monthlyFee = productPrice / dto.getTotalMonths();
-//    // 보증금 계산
-//    Long depositSnapshot = calculateDeposit(productPrice);
-//    // 스냅샷 값
-//    subscribe.setMonthlyFeeSnapshot(monthlyFee); // 렌탈료
-//    subscribe.setDepositSnapshot(depositSnapshot); // 보증금
-
     // 로그인 유저 주입
     Member currentMember = SecurityUtil.getMemberEntity(); // 또는 상위에서 받아온 member
     subscribe.setMember(currentMember);

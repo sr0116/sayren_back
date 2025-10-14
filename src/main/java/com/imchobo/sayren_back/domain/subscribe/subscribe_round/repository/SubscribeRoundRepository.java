@@ -49,6 +49,10 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
 
   List<SubscribeRound> findByPayStatusIn(Collection<PaymentStatus> payStatuses);
 
+
+  @Query("SELECT sr FROM SubscribeRound sr JOIN FETCH sr.subscribe s WHERE s.id = :subscribeId")
+  List<SubscribeRound> findBySubscribeIdWithLock(@Param("subscribeId") Long subscribeId);
+
   // 취고 승인 시, 해당 회차 이후만 canceled 처리
   @Modifying
   @Query("update SubscribeRound  r set r.payStatus = :status where r.subscribe = :subscribe and r.dueDate > :today")

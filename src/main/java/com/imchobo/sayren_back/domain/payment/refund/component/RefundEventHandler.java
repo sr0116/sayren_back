@@ -1,17 +1,18 @@
 package com.imchobo.sayren_back.domain.payment.refund.component;
 
-
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.delivery.component.event.DeliveryStatusChangedEvent;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
+import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeCancelHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -42,16 +44,22 @@ public class RefundEventHandler {
   private final OrderItemRepository orderItemRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final SubscribeCancelHandler subscribeCancelHandler;
+  private final PaymentRepository paymentRepository;
 
-  // 관리자가 환불 승인/ 거절/ 취소 등 시에 호출됨
+  /**
+   * 관리자가 환불 요청 승인/거절/취소할 때 호출됨
+   * - APPROVED_WAITING_RETURN 상태로 변경 후 이벤트 재발행
+   * - 승인 후 실제 환불은 '배송 회수 완료' 이벤트에서 수행
+   */
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void onRefundRequestChanged(RefundRequestEvent event) {
-    // 일반 사용자시
+
     if (event.getActor() == ActorType.USER) {
-      log.debug("[SKIP] 사용자 환불 요청 이벤트 감지 → 승인 로직 생략");
+      log.debug("[SKIP] 사용자 요청 이벤트 → 관리자 승인 로직 생략");
       return;
     }
+
     Long subscribeId = event.getSubscribeId();
     Long orderItemId = event.getOrderItemId();
     RefundRequestStatus status = event.getStatus();
@@ -69,135 +77,117 @@ public class RefundEventHandler {
         refundRequestRepository.saveAndFlush(req);
         log.info("환불 요청 거절/취소 반영 완료 → refundRequestId={}, status={}", req.getId(), status);
 
-        // 이벤트 재발행 (NotificationEventHandler가 AFTER_COMMIT에서 감지)
+        // 재발행 → 알림 처리 핸들러에서 후속 작업
         eventPublisher.publishEvent(
                 new RefundRequestEvent(orderItemId, subscribeId, status, req.getReasonCode(), ActorType.ADMIN)
         );
-        log.debug("[RE-PUBLISH] 환불 요청 이벤트 재전파 완료 → status={}", status);
       });
       return;
     }
 
-    // 일반 결제 환불 승인
+    // 일반 결제 환불 승인 처리
     if (subscribeId == null) {
       refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(
               orderItemRepository.findById(orderItemId)
                       .orElseThrow(() -> new RuntimeException("OrderItem 없음: " + orderItemId))
       ).ifPresent(req -> {
-        if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
-          log.debug("[SKIP] 이미 APPROVED_WAITING_RETURN 상태 → 중복 재발행 생략");
-          return;
-        }
-
         if (req.getStatus() == RefundRequestStatus.PENDING) {
           req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
           req.setReasonCode(event.getReason());
           refundRequestRepository.saveAndFlush(req);
-          log.info("일반 결제 환불 승인 → PENDING → APPROVED_WAITING_RETURN");
+          log.info("일반 결제 환불 승인 완료 → 상태: PENDING → APPROVED_WAITING_RETURN");
 
           eventPublisher.publishEvent(
-                  new RefundRequestEvent(orderItemId, null, RefundRequestStatus.APPROVED_WAITING_RETURN, req.getReasonCode(), ActorType.ADMIN)
+                  new RefundRequestEvent(orderItemId, null, RefundRequestStatus.APPROVED_WAITING_RETURN,
+                          req.getReasonCode(), ActorType.ADMIN)
           );
-          log.debug("[RE-PUBLISH] 일반 결제 환불 승인 이벤트 재전파 완료");
-        } else {
-          log.warn("일반 결제 환불 승인 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
         }
       });
       return;
     }
-    // 구독 환불 승인
+
+    // 구독 결제 환불 승인 처리
     subscribeRepository.findById(subscribeId).ifPresent(subscribe -> {
       refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
-              .ifPresentOrElse(req -> {
-                if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
-                  log.debug("[SKIP] 이미 APPROVED_WAITING_RETURN 상태 → 중복 재발행 생략");
-                  return;
-                }
+              .ifPresent(req -> {
                 if (req.getStatus() == RefundRequestStatus.PENDING) {
                   req.setStatus(RefundRequestStatus.APPROVED_WAITING_RETURN);
                   req.setReasonCode(event.getReason());
                   refundRequestRepository.saveAndFlush(req);
-                  log.info("구독 환불 승인 → PENDING → APPROVED_WAITING_RETURN (회수 대기)");
+                  log.info("구독 결제 환불 승인 완료 → PENDING → APPROVED_WAITING_RETURN");
 
-                  // 구독 상태 변경은 아직 수행하지 않음 (환불 성공 후 실행)
                   eventPublisher.publishEvent(
                           new RefundRequestEvent(orderItemId, subscribeId,
                                   RefundRequestStatus.APPROVED_WAITING_RETURN,
                                   req.getReasonCode(),
                                   ActorType.ADMIN)
                   );
-                  log.debug("[RE-PUBLISH] 구독 환불 승인 이벤트 재전파 완료");
-                } else {
-                  log.warn("구독 환불 승인 불가: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
                 }
-              }, () -> log.warn("해당 구독의 환불 요청 없음: subscribeId={}", subscribeId));
+              });
     });
   }
 
-  // 배송 회수 완료 이벤트 → 자동 환불 처리
+  /**
+   * 배송 회수 완료 이벤트 → 자동 환불 처리 (일반 결제)
+   * - APPROVED_WAITING_RETURN 상태일 경우 자동 실행
+   * - RefundService.executeRefund() 내부에서 전체/부분 구분 처리
+   */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleDeliveryReturned(DeliveryStatusChangedEvent event) {
-    // 배송 상태가 RETURNED가 아닐 경우 종료
     if (event.getStatus() != DeliveryStatus.RETURNED) return;
 
-    log.info("배송 회수 완료 이벤트 감지 → 환불 자동 처리 시작: deliveryId={}, orderItemId={}",
+    log.info("배송 회수 완료 이벤트 감지 → 자동 환불 처리 시작: deliveryId={}, orderItemId={}",
             event.getDeliveryId(), event.getOrderItemId());
 
-    try {
-      // orderItemId로 RefundRequest 조회
-      refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(
-              orderItemRepository.findById(event.getOrderItemId())
-                      .orElseThrow(() -> new RuntimeException("OrderItem 없음: " + event.getOrderItemId()))
-      ).ifPresent(req -> {
-        if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
-          try {
-            // 환불 실행
-            refundService.executeRefund(
-                    req,
-                    req.getReasonCode() != null ? req.getReasonCode() : ReasonCode.AUTO_REFUND
-            );
+    refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(
+            orderItemRepository.findById(event.getOrderItemId())
+                    .orElseThrow(() -> new RuntimeException("OrderItem 없음: " + event.getOrderItemId()))
+    ).ifPresent(req -> {
+      if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
+        try {
+          refundService.executeRefund(req,
+                  req.getReasonCode() != null ? req.getReasonCode() : ReasonCode.AUTO_REFUND);
 
-            // Detached 방지용 재조회 후 상태 확정
-            RefundRequest managed = refundRequestRepository.findById(req.getId())
-                    .orElseThrow(() -> new RuntimeException("RefundRequest 재조회 실패"));
-            managed.setStatus(RefundRequestStatus.APPROVED);
-            refundRequestRepository.saveAndFlush(managed);
+          // 상태 확정
+          RefundRequest managed = refundRequestRepository.findById(req.getId())
+                  .orElseThrow(() -> new RuntimeException("RefundRequest 재조회 실패"));
+          managed.setStatus(RefundRequestStatus.APPROVED);
+          refundRequestRepository.saveAndFlush(managed);
 
-            log.info("환불 성공: refundRequestId={}, orderItemId={}", req.getId(), event.getOrderItemId());
-            subscribeRepository.findByOrderItem(req.getOrderItem())
-                    .ifPresent(subscribe -> {
-                      try {
-                        // 구독 상태를 RETURNED_AND_CANCELED 로 변경
-                        subscribeCancelHandler.handle(
-                                subscribe,
-                                RefundRequestStatus.APPROVED,
-                                req.getReasonCode()
-                        );
-                        log.info("구독 회수 완료 → 상태 RETURNED_AND_CANCELED 전환 완료: subscribeId={}", subscribe.getId());
-                      } catch (Exception e) {
-                        log.error("구독 상태 전환 중 오류 발생: subscribeId={}, message={}", subscribe.getId(), e.getMessage());
-                      }
-                    });
-          } catch (Exception e) {
-            log.error("환불 처리 실패: refundRequestId={}, orderItemId={}, error={}",
-                    req.getId(), event.getOrderItemId(), e.getMessage(), e);
-          }
-        } else {
-          log.warn("환불 요청이 승인 대기 상태가 아님 → refundRequestId={}, status={}",
-                  req.getId(), req.getStatus());
+          log.info("일반 결제 환불 완료 → refundRequestId={}, orderItemId={}",
+                  req.getId(), event.getOrderItemId());
+
+          // 구독이 연결된 경우, 상태 변경 처리
+          subscribeRepository.findByOrderItem(req.getOrderItem())
+                  .ifPresent(subscribe -> {
+                    try {
+                      subscribeCancelHandler.handle(
+                              subscribe,
+                              RefundRequestStatus.APPROVED,
+                              req.getReasonCode()
+                      );
+                    } catch (Exception e) {
+                      log.error("구독 상태 전환 중 오류 발생: {}", e.getMessage());
+                    }
+                  });
+
+        } catch (Exception e) {
+          log.error("환불 처리 실패: refundRequestId={}, orderItemId={}, message={}",
+                  req.getId(), event.getOrderItemId(), e.getMessage());
         }
-      });
-    } catch (Exception e) {
-      log.error("배송 회수 환불 처리 중 예외 발생: deliveryId={}, orderItemId={}, message={}",
-              event.getDeliveryId(), event.getOrderItemId(), e.getMessage(), e);
-    }
+      }
+    });
   }
-  // 구독 회수 완료 되었을 때 환불 실행
+
+  /**
+   * 구독 회수 완료 시 환불 실행
+   * - RefundService.executeRefundForSubscribe() 내부에서 전체/부분 자동 판정
+   * - 최신 Payment 상태를 기반으로 회차 결제 상태 업데이트
+   */
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void onDeliveryReturnedSubscribe(SubscribeStatusChangedEvent event) {
-    // 구독 상태가 RETURNED_AND_CANCELED로 전환된 시점에만 실행
     if (event.getTransition() != SubscribeTransition.RETURNED_AND_CANCELED) return;
 
     Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
@@ -205,45 +195,73 @@ public class RefundEventHandler {
 
     refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(subscribe.getOrderItem())
             .ifPresent(req -> {
-              // 회수 대기 상태일 때만 환불 실행
               if (req.getStatus() == RefundRequestStatus.APPROVED_WAITING_RETURN) {
                 try {
-                  log.info("회수 완료 이벤트 감지 → PortOne 환불 처리 시작: refundRequestId={}, subscribeId={}",
+                  log.info("구독 회수 완료 이벤트 감지 → PortOne 환불 처리 시작: refundRequestId={}, subscribeId={}",
                           req.getId(), subscribe.getId());
 
-                  // PortOne 환불 실행
+                  // 실제 PG 환불 실행
                   refundService.executeRefundForSubscribe(subscribe, req);
 
-                  // 구독 회차 상태 일괄 변경
+                  // 결제 상태 최신화 (Payment 테이블에서 실제 상태 조회)
+                  // 최신 결제 상태 조회 (Repository 사용)
+                  PaymentStatus latestStatus = paymentRepository
+                          .findTopByOrderItemOrderByIdDesc(subscribe.getOrderItem())
+                          .map(Payment::getPaymentStatus)
+                          .orElse(PaymentStatus.REFUNDED);
+
+
                   List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
-                  rounds.forEach(r -> r.setPayStatus(PaymentStatus.REFUNDED));
+
+                  switch (latestStatus) {
+                    case REFUNDED -> {
+                      // 전체 환불 → 모든 회차 REFUNDED 처리
+                      rounds.forEach(r -> r.setPayStatus(PaymentStatus.REFUNDED));
+                      log.info("전체 환불 완료 → 모든 회차 REFUNDED 처리");
+                    }
+                    case PARTIAL_REFUNDED -> {
+                      // 부분 환불 → 미래 회차만 CANCELED
+                      for (SubscribeRound r : rounds) {
+                        if (r.getDueDate() != null && r.getDueDate().isAfter(LocalDate.now())
+                                && r.getPayStatus() != PaymentStatus.PAID) {
+                          r.setPayStatus(PaymentStatus.CANCELED);
+                        }
+                      }
+                      log.info("부분 환불 완료 → 미래 회차 CANCELED, 기존 회차 유지");
+                    }
+                    case CANCELED -> {
+                      for (SubscribeRound r : rounds) {
+                        if (r.getDueDate() != null && r.getDueDate().isAfter(LocalDate.now())) {
+                          r.setPayStatus(PaymentStatus.CANCELED);
+                        }
+                      }
+                      log.info("예약 결제 취소 처리 완료 → 미래 회차 CANCELED");
+                    }
+                    default -> log.info("기타 상태({}) → 회차 변경 없음", latestStatus);
+                  }
+
                   subscribeRoundRepository.saveAll(rounds);
 
-                  // 환불 상태 확정 갱신
+                  // 환불 요청 상태 확정
                   RefundRequest managed = refundRequestRepository.findById(req.getId())
                           .orElseThrow(() -> new RuntimeException("RefundRequest 재조회 실패"));
                   managed.setStatus(RefundRequestStatus.APPROVED);
                   refundRequestRepository.saveAndFlush(managed);
 
-                  // 환불 성공 후 구독 상태 최종 변경
+                  // 구독 상태 최종 종료
                   subscribeCancelHandler.handle(
                           subscribe,
                           RefundRequestStatus.APPROVED,
                           req.getReasonCode() != null ? req.getReasonCode() : ReasonCode.AUTO_REFUND
                   );
 
-                  log.info("회수 완료 → 환불 및 구독 종료 처리 완료: refundRequestId={}, subscribeId={}, 상태=APPROVED_WAITING_RETURN→APPROVED",
-                          req.getId(), subscribe.getId());
+                  log.info("구독 회수 완료 → 환불/회차/구독 상태 최종 확정 완료");
 
                 } catch (Exception e) {
-                  log.error("PortOne 환불 실패: refundRequestId={}, subscribeId={}, message={}",
+                  log.error("구독 환불 처리 실패: refundRequestId={}, subscribeId={}, message={}",
                           req.getId(), subscribe.getId(), e.getMessage());
                 }
-              } else {
-                log.warn("회수 완료 이벤트 무시: refundRequestId={}, 현재 상태={}", req.getId(), req.getStatus());
               }
             });
   }
-
 }
-

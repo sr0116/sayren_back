@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.concurrent.CompletableFuture;
@@ -31,7 +32,7 @@ public class SubscribeStatusChanger {
   private final ApplicationEventPublisher eventPublisher;
 
   // 구독 상태 변경
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void changeSubscribe(Subscribe subscribe, SubscribeTransition transition, ActorType actor) {
     subscribe.setStatus(transition.getStatus());
     subscribeRepository.saveAndFlush(subscribe);

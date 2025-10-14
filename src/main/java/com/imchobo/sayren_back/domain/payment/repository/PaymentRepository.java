@@ -74,6 +74,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   // 멤버별 결제 조회
   List<Payment> findByMemberOrderByRegDateDesc(Member member);
 
+  @Query("SELECT p FROM Payment p WHERE p.orderItem = :orderItem ORDER BY p.id DESC LIMIT 1")
+  Optional<Payment> findLatestByOrderItem(@Param("orderItem") OrderItem orderItem);
+
+  Optional<Payment> findTopByOrderItemOrderByIdDesc(OrderItem orderItem);
 
   List<Payment> findByOrderItemId(Long orderItemId);
 }
