@@ -17,6 +17,7 @@ public enum ReasonCode {
   RETURN_DELAY,         // 회수 지연
   RETURN_FAILED,        // 회수 실패
   OUT_OF_STOCK,         // 재고 부족
+  CUSTOMER_CANCEL_BEFORE_DELIVERY, // 배송 전 취소
 
   SERVICE_ERROR,        // 서비스 오류
   SYSTEM_ERROR,         // 시스템 장애

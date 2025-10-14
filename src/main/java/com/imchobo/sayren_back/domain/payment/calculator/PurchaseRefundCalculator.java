@@ -14,6 +14,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 @Component
@@ -29,6 +30,12 @@ public class PurchaseRefundCalculator implements RefundCalculator {
   public Long calculateRefundAmount(Payment payment, RefundRequest request) {
 
     Long baseAmount = payment.getOrderItem().getProductPriceSnapshot();
+
+    if (payment.getRegDate() != null &&
+            ChronoUnit.HOURS.between(payment.getRegDate(), LocalDateTime.now()) < 24) {
+      log.info("일반 결제 24시간 이내 환불 요청 → 전액 환불");
+      return roundUpToTenWon(baseAmount);
+    }
 
     DeliveryItem deliveryItem = deliveryItemRepository
             .findTopByOrderItemOrderByDelivery_RegDate_Desc(payment.getOrderItem())

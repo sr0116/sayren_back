@@ -20,18 +20,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AutoRefundScheduler {
 
-  private final PaymentRepository paymentRepository;
-  private final RefundRequestRepository refundRequestRepository;
-  private final RefundService refundService;
-
-  //  @Scheduled(cron = "0 0 2 * * *") // 매일 새벽 2시 실행
-//  @Scheduled(fixedRate = 30000)
-  @Transactional
-  public void checkAutoRefundTargets() {
-    log.info("===== [AUTO REFUND] 자동 환불 점검 시작 =====");
-
-    refundService.processAutoRefundBatch();
-
-    log.info("===== [AUTO REFUND] 자동 환불 점검 종료 =====");
-  }
+//  private final PaymentRepository paymentRepository;
+//  private final RefundRequestRepository refundRequestRepository;
+//  private final RefundService refundService;
+//
+//  //  @Scheduled(cron = "0 0 2 * * *") // 매일 새벽 2시 실행
+////  @Scheduled(fixedRate = 30000)
+//  @Transactional
+//  public void checkAutoRefundTargets() {
+//    log.info("===== [AUTO REFUND] 자동 환불 점검 시작 =====");
+//
+//    refundService.processAutoRefundBatch();
+//
+//    log.info("===== [AUTO REFUND] 자동 환불 점검 종료 =====");
+//  }
 }
