@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.common.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -26,4 +27,17 @@ public class GlobalExceptionHandler {
         "message", ex.getMessage()
       ));
   }
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<Map<String, String>> handleValidationException(MethodArgumentNotValidException ex) {
+    String message = ex.getBindingResult().getAllErrors().getFirst().getDefaultMessage();
+    return ResponseEntity
+      .status(HttpStatus.BAD_REQUEST)
+      .body(Map.of(
+        "errorCode", "VALIDATION_FAILED",
+        "message", message
+      ));
+  }
+
+
 }
