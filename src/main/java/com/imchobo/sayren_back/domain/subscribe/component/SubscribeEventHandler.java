@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.subscribe.component;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.common.en.ReasonCode;
+import com.imchobo.sayren_back.domain.delivery.component.event.DeliveryStatusChangedEvent;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
@@ -13,9 +14,11 @@ import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
+import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeActivatedEvent;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeRoundDueEvent;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
@@ -26,6 +29,7 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.Subscribe
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -50,6 +54,7 @@ public class SubscribeEventHandler {
   private final DeliveryItemRepository deliveryItemRepository;
   private final NotificationService notificationService;
   private final SubscribeStatusChanger subscribeStatusChanger;
+  private final ApplicationEventPublisher eventPublisher;
 
   // 최초 구독 생성 시 기록
   public void recordInit(Subscribe subscribe) {
@@ -189,8 +194,11 @@ public class SubscribeEventHandler {
                   round.setPayStatus(transition.getStatus());
                   round.setFailedAt(LocalDateTime.now());
 
+                  LocalDate dueDate = round.getDueDate();
+                  LocalDateTime graceEndAt = round.getGracePeriodEndAt();
+
                   // 예정일 이전이라면 연체 X → 단순 실패 알림만
-                  if (LocalDate.now().isBefore(round.getDueDate())) {
+                  if (dueDate != null && LocalDate.now().isBefore(dueDate)) {
                     NotificationCreateDTO dto = new NotificationCreateDTO();
                     dto.setMemberId(subscribe.getMember().getId());
                     dto.setType(NotificationType.SUBSCRIBE);
@@ -205,10 +213,9 @@ public class SubscribeEventHandler {
                     notificationService.send(dto);
                     log.info("조기 결제 실패 알림 전송 완료 → memberId={}, subscribeId={}, roundNo={}",
                             subscribe.getMember().getId(), subscribe.getId(), round.getRoundNo());
-
-                    return; // 조기 실패는 여기서 종료 (유예기간 X)
+                    return;
                   }
-                  // 예정일 이후 실패 -> 유예기간 3일 + 알림
+                  // 예정일이 null이거나 (즉, 아직 설정 안됨) 혹은 이미 지난 경우 → 유예기간 부여
                   round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3));
                   subscribeRoundRepository.save(round);
 
@@ -227,20 +234,17 @@ public class SubscribeEventHandler {
                   log.info("유예기간 시작 알림 전송 완료 → memberId={}, subscribeId={}, roundNo={}",
                           subscribe.getMember().getId(), subscribe.getId(), round.getRoundNo());
 
-                  // 회차별 상테 저장
+                  // 회차별 상태 저장 및 구독 전체 실패 처리
                   if (round.getRoundNo() == 1) {
-                    // 결제 실패 시 처리 구독 전체 실패 처리
                     failAllRounds(subscribe, transition);
                     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
                     log.info("구독 [{}] 1회차 결제 실패 → 전체 FAILED", subscribe.getId());
                   } else {
-                    // n회차 -> 유예 기간
-                    round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3));
-//                    subscribeRoundRepository.save(round);
                     subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE_PENDING, ActorType.SYSTEM);
                     log.info("구독 [{}] {}회차 결제 실패 → 유예기간 3일 시작", subscribe.getId(), round.getRoundNo());
                   }
                 }
+
                 // 결제 유예기간 초과
                 case PAY_TIMEOUT -> {
                   // 스케줄러에서 처리 (주석)
@@ -297,6 +301,7 @@ public class SubscribeEventHandler {
 
     subscribeRoundRepository.saveAll(rounds);
   }
+
   // 모든 회차 상태 변경 (refunded)
   private void cancelAllRounds(Subscribe subscribe, SubscribeRoundTransition transition) {
     List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
@@ -359,5 +364,39 @@ public class SubscribeEventHandler {
             event.getPhase(), member.getId(), subscribe.getId(), round.getRoundNo());
   }
 
+  // 배송 완료시 이벤트 처리
+  @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+  public void onDeliveryStatusChanged(DeliveryStatusChangedEvent event) {
 
+    if (event.getStatus() != DeliveryStatus.DELIVERED) return;
+
+    log.info("[EVENT] 배송 완료 감지 → orderItemId={}", event.getOrderItemId());
+
+    subscribeRepository.findByOrderItem_Id(event.getOrderItemId())
+            .ifPresentOrElse(subscribe -> {
+              // 이미 ACTIVE라면 스킵
+              if (subscribe.getStatus() == SubscribeStatus.ACTIVE) {
+                log.info("[SKIP] 이미 ACTIVE 상태이므로 생략 → subscribeId={}", subscribe.getId());
+                return;
+              }
+
+              // 구독 개월 수 계산
+              int months = subscribe.getOrderItem().getOrderPlan().getMonth();
+              LocalDate start = LocalDate.now();
+              LocalDate end = start.plusMonths(months);
+
+              // 시작일 / 종료일 확정
+              subscribe.setStartDate(start);
+              subscribe.setEndDate(end);
+
+              // 상태 ACTIVE로 전환
+              subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.START, ActorType.SYSTEM);
+
+              log.info("[DELIVERY→SUBSCRIBE] 구독 기간 확정 및 ACTIVE 전환 완료 → start={}, end={}", start, end);
+
+              // 활성화 이벤트 발행
+              eventPublisher.publishEvent(new SubscribeActivatedEvent(subscribe.getId(), start));
+
+            }, () -> log.warn("[DELIVERY→SUBSCRIBE] orderItemId={} 에 해당 구독 없음", event.getOrderItemId()));
+  }
 }

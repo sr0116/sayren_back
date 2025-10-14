@@ -5,6 +5,7 @@ import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.exception.SayrenException;
 import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.address.repository.AddressRepository;
+import com.imchobo.sayren_back.domain.delivery.component.DeliveryStatusChanger;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryResponseDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.admin.DeliveryStatusChangeDTO;
@@ -42,9 +43,10 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final AddressRepository addressRepository; // 배송지 조회
     private final DeliveryMapper deliveryMapper; // 엔티티 ↔ DTO 변환
     private final DeliveryFlowOrchestrator flow; // 상태 전환 + 이벤트 발행 처리
+    private final DeliveryStatusChanger deliveryStatusChanger;
 
 
-      //사용자 직접 생성 (테스트/예외 케이스용)
+    //사용자 직접 생성 (테스트/예외 케이스용)
 
     @Override
     public DeliveryResponseDTO create(DeliveryRequestDTO dto) {
@@ -157,6 +159,26 @@ public class DeliveryServiceImpl implements DeliveryService {
             default -> throw new DeliveryNotFoundException(deliveryId);
         }
     }
+
+    // 현재 이벤트 기반으로 처리해야 구독 상태 변경 및 환불 처리, 알림이랑 연동돼서 기존에 만들어 두었던 배송 이벤트 처리
+    // 기반으로 배송 상태 변경 서비스 및 컨트롤러 추가했습니다
+    // 프론트랑 연동할 때 이전에 changeStatus() api 훅으로 사용했던 컴포넌트들 changedStatus() 기반으로 수정했으니
+    // 확입 부탁드립니다.(프론트 단에서 배송 상태 위에 정의해주신대로 준비-> 배송중 -> 배송 완료 -> 회수 완료 로만 상태 변경 가능하게 해둬서 내용은 같습니다.)
+    // 배송 링크 경로는 나중에 마이페이지에 배송 내역 경로 생기면
+    // 그거에 맞게 다시 알림 이벤트 핸들러에서 수정해주세요
+    @Override
+    public void changedStatus(DeliveryStatusChangeDTO dto) {
+        Delivery delivery = mustFind(dto.getDeliveryId());
+        OrderItem orderItem = delivery.getDeliveryItems().get(0).getOrderItem();
+
+        switch (dto.getStatus()) {
+            case SHIPPING -> deliveryStatusChanger.changeDeliveryStatus(delivery, delivery.getType(), DeliveryStatus.SHIPPING, orderItem);
+            case DELIVERED -> deliveryStatusChanger.changeDeliveryStatus(delivery, delivery.getType(), DeliveryStatus.DELIVERED, orderItem);
+            case RETURNED -> deliveryStatusChanger.changeDeliveryStatus(delivery, DeliveryType.RETURN, DeliveryStatus.RETURNED, orderItem);
+            default -> throw new IllegalStateException("잘못된 상태 전환 요청: " + dto.getStatus());
+        }
+    }
+
 
     @Override
     public DeliveryResponseDTO ship(Long id) {

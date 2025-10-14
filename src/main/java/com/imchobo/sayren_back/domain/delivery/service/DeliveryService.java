@@ -26,7 +26,7 @@ public interface DeliveryService {
 
     // ── 상태 전환 ────────────────────────────────
     void changeStatus(DeliveryStatusChangeDTO deliveryStatusChangeDTO);
-
+    void changedStatus(DeliveryStatusChangeDTO dto);
 
     // 배송 시작 (READY → SHIPPING)
     DeliveryResponseDTO ship(Long id);

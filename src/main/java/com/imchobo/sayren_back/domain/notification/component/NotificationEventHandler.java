@@ -97,7 +97,7 @@ public class NotificationEventHandler {
         switch (status) {
           case PENDING -> {
             dto.setTitle("환불 요청 접수");
-            dto.setMessage("상품 [" + productName + "]의 환불이 요청되었습니다. 회수 완료 후 환불이 진행됩니다.");
+            dto.setMessage("상품 [" + productName + "]의 환불이 요청되었습니다. 환불 승인 완료 후 환불이 진행됩니다.");
           }
           case APPROVED, APPROVED_WAITING_RETURN -> {
             dto.setTitle("결제 환불 승인");
