@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.common.util;
 
 import com.imchobo.sayren_back.domain.attach.entity.Attach;
+import com.imchobo.sayren_back.domain.attach.repository.ProductAttachRepository;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.order.entity.Order;
@@ -12,13 +13,21 @@ import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
+import lombok.extern.log4j.Log4j2;
 import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 
 
 
+@Log4j2
 @Component
 public class MappingUtil {
+  private final ProductAttachRepository productAttachRepository;
+
+  public MappingUtil(ProductAttachRepository productAttachRepository) {
+    this.productAttachRepository = productAttachRepository;
+  }
+
   // 필수 fk  → 엔티티 매핑 매서드
   @Named("mapPayment")
   public Payment paymentIdToEntity(Long paymentId) {
@@ -77,22 +86,25 @@ public class MappingUtil {
             + attach.getPath() + "/" + attach.getUuid();
   }
 
-  // 상품 대표 이미지 URL 추출 (Product 엔티티에 attachList 없어도 Reflection으로 처리)
-  @Named("mapProductMainImageUrl")
-  public String mapProductMainImageUrl(Object product) {
+  // 상품 대표 이미지 URL 매핑 (기존 mapAttachUrl 재사용)
+  @Named("mapProductThumbnailUrl")
+  public String mapProductThumbnailUrl(Object product) {
     if (product == null) return null;
+
     try {
-      // product.attachList 존재할 때만 처리
-      var list = (java.util.List<?>) product.getClass().getMethod("getAttachList").invoke(product);
-      if (list == null || list.isEmpty()) return null;
+      // Reflection으로 productId 추출
+      Long productId = (Long) product.getClass().getMethod("getId").invoke(product);
+      if (productId == null) return null;
 
-      Object first = list.get(0);
-      String path = first.getClass().getMethod("getPath").invoke(first).toString();
-      String uuid = first.getClass().getMethod("getUuid").invoke(first).toString();
+      // attachRepository로 DB 조회
+      return productAttachRepository.findByProductIdAndIsThumbnailTrue(productId)
+              .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                      + a.getPath() + "/" + a.getUuid())
+              .orElse("/image/image2.svg");
 
-      return "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/" + path + "/" + uuid;
     } catch (Exception e) {
-      return null; // attachList 없거나 reflection 실패 시 null 반환
+      log.warn("[MappingUtil] 썸네일 조회 실패: {}", e.getMessage());
+      return "/images/no-image.png";
     }
   }
 
