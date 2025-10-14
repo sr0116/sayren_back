@@ -16,7 +16,7 @@ public class GlobalExceptionHandler {
     HttpStatus status = switch (ex.getErrorCode()) {
       case "TOKEN_EXPIRED", "UNAUTHORIZED_ACCESS", "UNAUTHORIZED" -> HttpStatus.UNAUTHORIZED; // 401
       case "ACCESS_DENIED", "ROLE_NOT_ALLOWED" -> HttpStatus.FORBIDDEN; // 403
-      case "EMAIL_ALREADY_EXISTS", "SOCIAL_LINK_FAILED", "ALREADY_LINKED_PROVIDER" -> HttpStatus.CONFLICT; // 409
+      case "EMAIL_ALREADY_EXISTS", "SOCIAL_LINK_FAILED", "ALREADY_LINKED_PROVIDER", "DELETED_MEMBER" -> HttpStatus.CONFLICT; // 409
       default -> HttpStatus.BAD_REQUEST; // 400
     };
 
