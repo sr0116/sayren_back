@@ -112,18 +112,40 @@ public class SubscribeEventHandler {
     // 회차 상태 처리 저장 (회차 이벤트 처리 사용)
     switch (transition) {
       case RETURNED_AND_CANCELED, ADMIN_FORCE_END -> {
-        List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
-        rounds.forEach(r ->
-                subscribeStatusChanger.changeSubscribeRound(r, SubscribeRoundTransition.CANCEL)
-        );
-        log.info("[ROUND] 구독 종료/취소 → 전체 회차 REFUNDED 처리 완료 - subscribeId={}", subscribe.getId());
-      }
+        // 회차 상태 변경은 RefundEventHandler가 PaymentStatus 기반으로 처리하므로 여기서는 구독 상태만 기록
+        // 미납·연체 회차를 직접 CANCELED 처리하도록 로직 추가
+          log.info("[ROUND] 구독 종료/취소 감지 → 회차 상태 변경 수행 (subscribeId={})", subscribe.getId());
 
-      case FAIL_PAYMENT -> {
+          // 모든 회차 조회 후, 결제 완료된 회차를 제외하고 상태 변경
+          List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
+
+          for (SubscribeRound round : rounds) {
+            PaymentStatus payStatus = round.getPayStatus();
+
+            //  미납·실패·기존 취소·부분환불 회차만 CANCELED 처리
+            if (payStatus == PaymentStatus.PENDING
+                    || payStatus == PaymentStatus.FAILED
+                    || payStatus == PaymentStatus.CANCELED
+                    || payStatus == PaymentStatus.PARTIAL_REFUNDED) {
+              round.setPayStatus(PaymentStatus.CANCELED);
+              round.setFailedAt(LocalDateTime.now());
+            }
+          }
+
+          // 회차 일괄 저장 추가
+          subscribeRoundRepository.saveAll(rounds);
+          log.info("[ROUND] 구독 종료/취소 → 미납/연체 회차 CANCELED 처리 완료 (총 {}건)", rounds.size());
+        }
+
+        case FAIL_PAYMENT -> {
+        if (subscribe.getStatus() == SubscribeStatus.CANCELED
+                || subscribe.getStatus() == SubscribeStatus.ENDED) {
+          log.info("[SKIP] 이미 CANCELED 또는 ENDED 상태이므로 FAILED 처리 생략 → subscribeId={}", subscribe.getId());
+          return;
+        }
+
         List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
-        rounds.forEach(r ->
-                subscribeStatusChanger.changeSubscribeRound(r, SubscribeRoundTransition.PAY_FAIL)
-        );
+        rounds.forEach(r -> subscribeStatusChanger.changeSubscribeRound(r, SubscribeRoundTransition.PAY_FAIL));
         log.info("[ROUND] 결제 실패 → 전체 회차 FAILED 처리 완료 - subscribeId={}", subscribe.getId());
       }
 
@@ -137,7 +159,7 @@ public class SubscribeEventHandler {
   public void handlePaymentStatusChanged(PaymentStatusChangedEvent event) {
     log.info("[EVENT] handlePaymentStatusChanged → paymentId={}, transition={}", event.getPaymentId(), event.getTransition());
 
-    // 해당 최차 조회
+    // 해당 회차 조회
     paymentRepository.findById(event.getPaymentId())
             .map(Payment::getSubscribeRound)
             .ifPresent(round -> {
@@ -191,48 +213,51 @@ public class SubscribeEventHandler {
                 }
                 // 결제 실패 (1회차 , n회차 분기 처리)
                 case PAY_FAIL, RETRY_FAIL -> {
-                  round.setPayStatus(transition.getStatus());
+                  // 유예 기간 및 해당 기간 내 결제 실패시
+                  round.setPayStatus(PaymentStatus.PENDING);
                   round.setFailedAt(LocalDateTime.now());
-
+                  // 유예 기간은 실 납부일 결제 이후 3일까지 가능하게
                   LocalDate dueDate = round.getDueDate();
-                  LocalDateTime graceEndAt = round.getGracePeriodEndAt();
+                  if (dueDate != null) {
+                    round.setGracePeriodEndAt(dueDate.plusDays(3).atStartOfDay());
+                  } else {
+                    // dueDate가 없을 경우 현재 시점 기준 +3
+                    round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3));
+                  }
 
                   // 예정일 이전이라면 연체 X → 단순 실패 알림만
                   if (dueDate != null && LocalDate.now().isBefore(dueDate)) {
-                    NotificationCreateDTO dto = new NotificationCreateDTO();
-                    dto.setMemberId(subscribe.getMember().getId());
-                    dto.setType(NotificationType.SUBSCRIBE);
-                    dto.setTitle("결제 실패");
-                    dto.setMessage(String.format("[%s] %d회차 결제가 실패했습니다. 예정일까지 다시 결제해주세요.",
+                    NotificationCreateDTO earlyFailDto = new NotificationCreateDTO();
+                    earlyFailDto.setMemberId(subscribe.getMember().getId());
+                    earlyFailDto.setType(NotificationType.SUBSCRIBE);
+                    earlyFailDto.setTitle("결제 실패");
+                    earlyFailDto.setMessage(String.format("[%s] %d회차 결제가 실패했습니다. 예정일(%s) 전까지 다시 결제할 수 있습니다.",
                             subscribe.getOrderItem().getProduct().getName(),
-                            round.getRoundNo()));
-                    dto.setLinkUrl(String.format("/mypage/subscribe/%d?round=%d",
+                            round.getRoundNo(),
+                            dueDate));
+                    earlyFailDto.setLinkUrl(String.format("/mypage/subscribe/%d?round=%d",
                             subscribe.getId(), round.getRoundNo()));
-                    dto.setTargetId(round.getId());
-
-                    notificationService.send(dto);
-                    log.info("조기 결제 실패 알림 전송 완료 → memberId={}, subscribeId={}, roundNo={}",
+                    earlyFailDto.setTargetId(round.getId());
+                    notificationService.send(earlyFailDto);
+                    log.info("예정일 이전 결제 실패 알림 전송 완료 → memberId={}, subscribeId={}, roundNo={}",
                             subscribe.getMember().getId(), subscribe.getId(), round.getRoundNo());
-                    return;
                   }
                   // 예정일이 null이거나 (즉, 아직 설정 안됨) 혹은 이미 지난 경우 → 유예기간 부여
-                  round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3));
-                  subscribeRoundRepository.save(round);
-
-                  NotificationCreateDTO overdueDto = new NotificationCreateDTO();
-                  overdueDto.setMemberId(subscribe.getMember().getId());
-                  overdueDto.setType(NotificationType.SUBSCRIBE);
-                  overdueDto.setTitle("결제 실패 - 유예기간 시작");
-                  overdueDto.setMessage(String.format("[%s] %d회차 결제가 실패했습니다. 3일 내 결제하지 않으면 서비스가 중단됩니다.",
-                          subscribe.getOrderItem().getProduct().getName(),
-                          round.getRoundNo()));
-                  overdueDto.setLinkUrl(String.format("/mypage/subscribe/%d?round=%d",
-                          subscribe.getId(), round.getRoundNo()));
-                  overdueDto.setTargetId(round.getId());
-
-                  notificationService.send(overdueDto);
-                  log.info("유예기간 시작 알림 전송 완료 → memberId={}, subscribeId={}, roundNo={}",
-                          subscribe.getMember().getId(), subscribe.getId(), round.getRoundNo());
+                  else {
+                    NotificationCreateDTO overdueDto = new NotificationCreateDTO();
+                    overdueDto.setMemberId(subscribe.getMember().getId());
+                    overdueDto.setType(NotificationType.SUBSCRIBE);
+                    overdueDto.setTitle("결제 지연 - 유예기간 시작");
+                    overdueDto.setMessage(String.format("[%s] %d회차 결제가 미납 상태입니다. 결제일 이후 3일 내에 결제하지 않으면 서비스가 중단됩니다.",
+                            subscribe.getOrderItem().getProduct().getName(),
+                            round.getRoundNo()));
+                    overdueDto.setLinkUrl(String.format("/mypage/subscribe/%d?round=%d",
+                            subscribe.getId(), round.getRoundNo()));
+                    overdueDto.setTargetId(round.getId());
+                    notificationService.send(overdueDto);
+                    log.info("유예기간 시작 알림 전송 완료 → memberId={}, subscribeId={}, roundNo={}",
+                            subscribe.getMember().getId(), subscribe.getId(), round.getRoundNo());
+                  }
 
                   // 회차별 상태 저장 및 구독 전체 실패 처리
                   if (round.getRoundNo() == 1) {
@@ -259,36 +284,48 @@ public class SubscribeEventHandler {
                   subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.FAIL_PAYMENT, ActorType.SYSTEM);
                   log.info("구독 [{}] INIT_FAIL → 전체 FAILED", subscribe.getId());
                 }
-                //  전체 환불 / 취소 처리 (기존 로직 유지)
-                case CANCEL_ALL -> {
-                  cancelAllRounds(subscribe, transition);
+
+                // 전체 환불 / 취소 처리 (보증금 포함 전체 환불)
+                case CANCEL_ALL, CANCEL_FUTURE_ONLY -> {
                   subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
-                  log.info("구독 [{}] 전체 CANCEL 처리 (모든 회차 REFUNDED)", subscribe.getId());
+                  log.info("구독 [{}] 환불 요청 감지 → RETURNED_AND_CANCELED 전환 (회차 변경은 RefundEventHandler에서 처리)", subscribe.getId());
                 }
 
-                //  보증금 기준 부분 환불 (미래 회차만 취소)
-                case CANCEL_FUTURE_ONLY -> {
-                  // 이미 납부된 회차는 유지, 오늘 이후 회차만 FAILED 처리
-                  subscribeRoundRepository.cancelFutureRounds(subscribe, PaymentStatus.FAILED, LocalDate.now());
-                  log.info("구독 [{}] 보증금 환불 완료 → 미래 회차 payStatus=FAILED 처리 완료", subscribe.getId());
+//                // 전체 환불 / 취소 처리 (보증금 포함 전체 환불)
+//                case CANCEL_ALL -> {
+//                  cancelAllRounds(subscribe, transition);
+//                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
+//                  log.info("구독 [{}] 전체 CANCEL 처리 (보증금 포함 모든 회차 REFUNDED)", subscribe.getId());
+//                }
 
-                  // 구독 상태 전환 (회수 및 종료)
-                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
-                  log.info("구독 [{}] CANCEL_FUTURE_ONLY → RETURNED_AND_CANCELED", subscribe.getId());
-                }
-
+//                // 보증금 기준 부분 환불 (미래 회차만 취소)
+//                case CANCEL_FUTURE_ONLY -> {
+//                  List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
+//
+//                  //  오늘 이후 회차만 CANCELED 처리, 이미 납부된 회차는 유지
+//                  for (SubscribeRound r : rounds) {
+//                    if (r.getDueDate() != null && r.getDueDate().isAfter(LocalDate.now())
+//                            && r.getPayStatus() != PaymentStatus.PAID) {
+//                      r.setPayStatus(PaymentStatus.CANCELED);
+//                      subscribeRoundRepository.save(r);
+//                      log.debug("회차 {} 취소 처리 완료 (dueDate={}, status=CANCELED)", r.getRoundNo(), r.getDueDate());
+//                    }
+//                  }
+//                  subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.RETURNED_AND_CANCELED, ActorType.SYSTEM);
+//                  log.info("구독 [{}] CANCEL_FUTURE_ONLY → 미래 회차만 CANCELED, 보증금 환불 완료", subscribe.getId());
+//                }
                 // 강제 종료
-                case FORCED_END -> {
+                  case FORCED_END -> {
                   failAllRounds(subscribe, transition);
                   subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.OVERDUE_FINAL, ActorType.SYSTEM);
                   log.info("구독 [{}] FORCED_END → 전체 FAILED", subscribe.getId());
                 }
+                default -> log.debug("기타 상태 전환 생략 → transition={}", transition);
               }
             });
   }
 
   // 헬퍼 메서드
-
   // 모든 회차 상태 변경 (fail)
   private void failAllRounds(Subscribe subscribe, SubscribeRoundTransition transition) {
     List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
@@ -298,7 +335,6 @@ public class SubscribeEventHandler {
       r.setPayStatus(transition.getStatus());
       r.setFailedAt(now);
     });
-
     subscribeRoundRepository.saveAll(rounds);
   }
 
@@ -311,17 +347,13 @@ public class SubscribeEventHandler {
 
   // 결제 이벤트 처리 -> 회차 이벤트 연결
   private SubscribeRoundTransition mapToRoundTransition(PaymentTransition transition) {
-    if (transition == null) {
-      log.error("[FATAL] PaymentTransition이 null → SubscribeRoundTransition 매핑 실패");
-      return null;
-    }
+    if (transition == null) return null;
     return switch (transition) {
       case COMPLETE -> SubscribeRoundTransition.PAY_SUCCESS;
       case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM -> SubscribeRoundTransition.PAY_FAIL;
       case FAIL_TIMEOUT -> SubscribeRoundTransition.PAY_TIMEOUT;
-      case REFUND, PARTIAL_REFUND -> SubscribeRoundTransition.CANCEL;
-      case CANCEL_FUTURE_ONLY -> SubscribeRoundTransition.CANCEL_FUTURE_ONLY;
-      default -> SubscribeRoundTransition.PAY_FAIL;
+      case REFUND, PARTIAL_REFUND, CANCEL_FUTURE_ONLY -> null; // 환불 관련 이벤트 무시
+      default -> null;
     };
   }
 

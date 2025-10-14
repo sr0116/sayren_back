@@ -144,8 +144,6 @@ public class SubscribeRoundScheduler {
     }
   }
 }
-
-
 // 실제 빌링키 연결한다고 했을 때 기준 (지금은 사용 안함)
 //    for (SubscribeRound round : dueRounds) {
 //      try {

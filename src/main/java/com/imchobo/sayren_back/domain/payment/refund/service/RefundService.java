@@ -13,7 +13,7 @@ public interface RefundService {
   // 구독 취소 승인 시에 환불
   void executeRefundForSubscribe(Subscribe subscribe, RefundRequest refundRequest);
   // 필요시 환불 취소/롤백도 여기서 관리
-  void cancelRefund(Long refundId);
+//  void cancelRefund(Long refundId);
 
-  void processAutoRefundBatch();
+//  void processAutoRefundBatch();
 }
