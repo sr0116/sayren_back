@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DeliveryItemRepository extends JpaRepository<DeliveryItem, Long> {
+
   List<DeliveryItem> findByOrderItem_Order_Id(Long orderId);
 
   List<DeliveryItem> findByOrderItem(OrderItem orderItem);
@@ -18,7 +19,7 @@ public interface DeliveryItemRepository extends JpaRepository<DeliveryItem, Long
 
   Optional<DeliveryItem> findTopByOrderItemOrderByDelivery_RegDate_Desc(OrderItem orderItem);
 
-  DeliveryRepository findByDelivery(Delivery delivery);
+  List<DeliveryItem> findByDelivery(Delivery delivery);
 
   List<DeliveryItem> findByDelivery_Status(DeliveryStatus status);
 }

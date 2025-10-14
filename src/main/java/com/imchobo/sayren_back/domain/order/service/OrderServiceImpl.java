@@ -4,26 +4,27 @@ import com.imchobo.sayren_back.domain.common.en.ActorType;
 import com.imchobo.sayren_back.domain.delivery.address.entity.Address;
 import com.imchobo.sayren_back.domain.delivery.address.repository.AddressRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
-import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
-import com.imchobo.sayren_back.domain.order.component.StatusChanger;
+import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
+import com.imchobo.sayren_back.domain.order.cart.repository.CartRepository;
 import com.imchobo.sayren_back.domain.order.dto.DirectOrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderResponseDTO;
-import com.imchobo.sayren_back.domain.order.cart.entity.CartItem;
+import com.imchobo.sayren_back.domain.order.en.OrderStatus;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
-import com.imchobo.sayren_back.domain.order.en.OrderStatus;
 import com.imchobo.sayren_back.domain.order.exception.*;
 import com.imchobo.sayren_back.domain.order.mapper.OrderMapper;
-import com.imchobo.sayren_back.domain.order.cart.repository.CartRepository;
 import com.imchobo.sayren_back.domain.order.repository.OrderRepository;
 import com.imchobo.sayren_back.domain.order.OrderPlan.entity.OrderPlan;
 import com.imchobo.sayren_back.domain.order.OrderPlan.repository.OrderPlanRepository;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
+import com.imchobo.sayren_back.domain.order.component.StatusChanger;
 import com.imchobo.sayren_back.domain.order.component.event.OrderPlacedEvent;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,13 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Log4j2
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class OrderServiceImpl implements OrderService {
 
   private final OrderRepository orderRepository;
-  private final MemberRepository memberRepository;
   private final AddressRepository addressRepository;
   private final CartRepository cartRepository;
   private final ProductRepository productRepository;
@@ -46,21 +47,17 @@ public class OrderServiceImpl implements OrderService {
   private final ApplicationEventPublisher eventPublisher;
   private final StatusChanger statusChanger;
 
-
-    // 장바구니 기반 주문 생성
-
+  /** 장바구니 기반 주문 생성 */
   @Override
-  public OrderResponseDTO createOrder(Long memberId, OrderRequestDTO dto) {
-    if (dto.getAddressId() != null) {
-      // 기존 배송지 사용
-      return createOrderFromCart(memberId, dto.getAddressId());
-    }
+  public OrderResponseDTO createOrder(OrderRequestDTO dto) {
+    Member member = SecurityUtil.getMemberEntity();
+    Long memberId = member.getId();
 
-    // 새 배송지 생성
-    Member member = memberRepository.findById(memberId)
-      .orElseThrow(() -> new OrderNotFoundException(memberId));
+    log.info("[장바구니 주문 생성] memberId={}", memberId);
 
-    Address newAddress = Address.builder()
+    Long addressId = dto.getAddressId() != null
+      ? dto.getAddressId()
+      : addressRepository.save(Address.builder()
       .member(member)
       .name(dto.getReceiverName())
       .tel(dto.getReceiverTel())
@@ -68,28 +65,22 @@ public class OrderServiceImpl implements OrderService {
       .address(dto.getDetail())
       .isDefault(false)
       .memo(dto.getMemo())
-      .build();
+      .build()).getId();
 
-    Address savedAddress = addressRepository.save(newAddress);
-
-    return createOrderFromCart(memberId, savedAddress.getId());
+    return createOrderFromCart(addressId);
   }
 
-
-   //장바구니 기반 주문 처리
-
+  /** 장바구니 기반 주문 처리 */
   @Override
-  public OrderResponseDTO createOrderFromCart(Long memberId, Long addressId) {
-    Member member = memberRepository.findById(memberId)
-      .orElseThrow(() -> new OrderNotFoundException(memberId));
+  public OrderResponseDTO createOrderFromCart(Long addressId) {
+    Long memberId = SecurityUtil.getMemberAuthDTO().getId();
+    Member member = SecurityUtil.getMemberEntity();
 
     Address address = addressRepository.findById(addressId)
-      .orElseThrow(() -> new EntityNotFoundException("주소 없음: " + addressId));
+      .orElseThrow(() -> new OrderNotFoundException(addressId));
 
     List<CartItem> cartItems = cartRepository.findByMemberId(memberId);
-    if (cartItems.isEmpty()) {
-      throw new EmptyCartException(memberId);
-    }
+    if (cartItems.isEmpty()) throw new EmptyCartException(memberId);
 
     Order order = Order.builder()
       .member(member)
@@ -98,37 +89,32 @@ public class OrderServiceImpl implements OrderService {
       .build();
 
     List<OrderItem> orderItems = cartItems.stream()
-      .map(cart -> OrderItem.builder()
+      .map(c -> OrderItem.builder()
         .order(order)
-        .product(cart.getProduct())
-        .orderPlan(cart.getOrderPlan())
-        .productPriceSnapshot(cart.getProduct().getPrice())
-        .build()
-      ).collect(Collectors.toList());
+        .product(c.getProduct())
+        .orderPlan(c.getOrderPlan())
+        .productPriceSnapshot(c.getProduct().getPrice())
+        .build())
+      .toList();
 
     order.setOrderItems(orderItems);
-
     Order savedOrder = orderRepository.save(order);
 
-    // 장바구니 비우기
     cartRepository.deleteAll(cartItems);
-
-    // 이벤트 발행 (배송 자동 생성)
-    eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
-
-    // 상태 기록
     statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
+    eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
 
     return orderMapper.toResponseDTO(savedOrder);
   }
 
+  /** 바로구매 주문 생성 */
+  @Override
+  public OrderResponseDTO createDirectOrder(DirectOrderRequestDTO dto) {
+    Long memberId = SecurityUtil.getMemberAuthDTO().getId();
+    Member member = SecurityUtil.getMemberEntity();
 
-   // [신규 추가] 바로구매(장바구니 생략) 주문 생성
-
-  @Transactional
-  public OrderResponseDTO createDirectOrder(Long memberId, DirectOrderRequestDTO dto) {
-    Member member = memberRepository.findById(memberId)
-      .orElseThrow(() -> new OrderNotFoundException(memberId));
+    log.info("[바로구매 주문 생성] memberId={}, productId={}, planId={}",
+      memberId, dto.getProductId(), dto.getPlanId());
 
     Product product = productRepository.findById(dto.getProductId())
       .orElseThrow(() -> new EntityNotFoundException("상품 없음: " + dto.getProductId()));
@@ -136,8 +122,7 @@ public class OrderServiceImpl implements OrderService {
     OrderPlan plan = orderPlanRepository.findById(dto.getPlanId())
       .orElseThrow(() -> new EntityNotFoundException("요금제 없음: " + dto.getPlanId()));
 
-    // 배송지 생성
-    Address address = Address.builder()
+    Address address = addressRepository.save(Address.builder()
       .member(member)
       .name(dto.getReceiverName())
       .tel(dto.getReceiverTel())
@@ -145,10 +130,8 @@ public class OrderServiceImpl implements OrderService {
       .address(dto.getDetail())
       .memo(dto.getMemo())
       .isDefault(false)
-      .build();
-    addressRepository.save(address);
+      .build());
 
-    // 주문 생성
     Order order = Order.builder()
       .member(member)
       .address(address)
@@ -165,39 +148,10 @@ public class OrderServiceImpl implements OrderService {
     order.setOrderItems(List.of(orderItem));
     Order savedOrder = orderRepository.save(order);
 
-    // 이벤트 발행 (배송 자동 생성)
+    statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
     eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
 
-    // 상태 기록
-    statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
-
     return orderMapper.toResponseDTO(savedOrder);
-  }
-
-  @Override
-  public OrderResponseDTO markAsPaid(Long orderId) {
-    Order order = orderRepository.findById(orderId)
-      .orElseThrow(() -> new OrderNotFoundException(orderId));
-
-    if (order.getStatus() != OrderStatus.PENDING) {
-      throw new InvalidOrderStatusException("결제 대기 상태의 주문만 결제 완료로 변경 가능");
-    }
-
-    statusChanger.change(order, OrderStatus.PAID, ActorType.SYSTEM);
-    return orderMapper.toResponseDTO(orderRepository.save(order));
-  }
-
-  @Override
-  public OrderResponseDTO cancel(Long orderId, String reason) {
-    Order order = orderRepository.findById(orderId)
-      .orElseThrow(() -> new OrderNotFoundException(orderId));
-
-    if (order.getStatus() == OrderStatus.CANCELED) {
-      throw new OrderAlreadyCanceledException(orderId);
-    }
-
-    statusChanger.change(order, OrderStatus.CANCELED, ActorType.USER);
-    return orderMapper.toResponseDTO(orderRepository.save(order));
   }
 
   @Override
@@ -209,10 +163,29 @@ public class OrderServiceImpl implements OrderService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<OrderResponseDTO> getOrdersByMemberId(Long memberId) {
+  public List<OrderResponseDTO> getOrdersByMemberId() {
+    Long memberId = SecurityUtil.getMemberAuthDTO().getId();
     return orderRepository.findByMemberIdOrderByIdDesc(memberId)
       .stream()
       .map(orderMapper::toResponseDTO)
       .collect(Collectors.toList());
+  }
+
+  @Override
+  public OrderResponseDTO markAsPaid(Long orderId) {
+    Order order = orderRepository.findById(orderId)
+      .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+    statusChanger.change(order, OrderStatus.PAID, ActorType.SYSTEM);
+    return orderMapper.toResponseDTO(orderRepository.save(order));
+  }
+
+  @Override
+  public OrderResponseDTO cancel(Long orderId, String reason) {
+    Order order = orderRepository.findById(orderId)
+      .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+    statusChanger.change(order, OrderStatus.CANCELED, ActorType.USER);
+    return orderMapper.toResponseDTO(orderRepository.save(order));
   }
 }
