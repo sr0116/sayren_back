@@ -11,11 +11,11 @@ public interface CartService {
   void addItem(CartItemAddRequestDTO requestDTO);
 
   // 회원 장바구니 조회 (DTO 반환)
-  List<CartItemResponseDTO> getCartItems(Long memberId);
+  List<CartItemResponseDTO> getCartItems();
 
   // 장바구니 단일 아이템 삭제
   void removeItem(Long cartItemId);
 
   // 회원 장바구니 전체 비우기
-  void clearCart(Long memberId);
+  void clearCart();
 }

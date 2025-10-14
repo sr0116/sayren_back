@@ -4,15 +4,20 @@ import com.imchobo.sayren_back.domain.order.dto.OrderItemResponseDTO;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+  componentModel = "spring",
+  unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface OrderItemMapper {
 
-  @Mapping(source = "id", target = "orderItemId")              // 주문아이템 PK
-  @Mapping(source = "product.id", target = "productId")        // 상품 ID
-  @Mapping(source = "product.name", target = "productName")    // 상품 이름
-  @Mapping(source = "productPriceSnapshot", target = "priceSnapshot") // 가격 스냅샷
-  @Mapping(source = "orderPlan.id", target = "planId")         // 요금제 ID
-  @Mapping(source = "orderPlan.type", target = "planType")     // 요금제 타입
+  @Mapping(source = "id", target = "orderItemId")
+  @Mapping(source = "product.id", target = "productId")
+  @Mapping(source = "product.name", target = "productName")
+  @Mapping(source = "product.modelName", target = "modelName")
+  @Mapping(source = "productPriceSnapshot", target = "priceSnapshot")
+  @Mapping(source = "orderPlan.id", target = "planId")
+  @Mapping(source = "orderPlan.type", target = "planType")
   OrderItemResponseDTO toResponseDTO(OrderItem entity);
 }

@@ -15,6 +15,8 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.Subscribe
 import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 
+
+
 @Component
 public class MappingUtil {
   // 필수 fk  → 엔티티 매핑 매서드
@@ -140,6 +142,25 @@ public class MappingUtil {
     public String mapDeliveryStatusToString(DeliveryStatus status) {
       return status != null ? status.name() : null;
     }
+
+
+  // 상품 첨부파일 중 첫 번째 이미지 URL 매핑용
+//  @Named("mapFirstAttachUrl")
+//  public String mapFirstAttachUrl(List<?> attachList) {
+//    if (attachList == null || attachList.isEmpty()) return null;
+//
+//    Object first = attachList.get(0);
+//    try {
+//      // attach.getPath()와 getUuid() 리플렉션 접근 (ProductAttach 또는 Attach 구분 없이)
+//      var path = first.getClass().getMethod("getPath").invoke(first);
+//      var uuid = first.getClass().getMethod("getUuid").invoke(first);
+//
+//      return "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+//        + path + "/" + uuid;
+//    } catch (Exception e) {
+//      return null;
+//    }
+//  }
   }
 
 
