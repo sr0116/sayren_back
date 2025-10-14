@@ -3,12 +3,16 @@ package com.imchobo.sayren_back.domain.delivery.controller;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryRequestDTO;
 import com.imchobo.sayren_back.domain.delivery.dto.DeliveryResponseDTO;
 import com.imchobo.sayren_back.domain.delivery.service.DeliveryService;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
+@Log4j2
 @RestController
 @RequestMapping("/api/user/deliveries")
 @RequiredArgsConstructor
@@ -16,55 +20,68 @@ public class DeliveryController {
 
     private final DeliveryService deliveryService;
 
-    // ── 기본 CRUD ────────────────────────────────
-
-    // 생성
+    //배송 생성
     @PostMapping
-    public ResponseEntity<DeliveryResponseDTO> create(@RequestBody DeliveryRequestDTO dto) {
-        return ResponseEntity.ok(deliveryService.create(dto));
+    public ResponseEntity<?> create(@RequestBody DeliveryRequestDTO dto) {
+        log.info("[배송 생성 요청]");
+        DeliveryResponseDTO result = deliveryService.create(dto);
+        return ResponseEntity.ok(Map.of("message", "success", "data", result));
     }
 
-    // 단건 조회
+    // 단일 배송 조회
     @GetMapping("/{id}")
-    public ResponseEntity<DeliveryResponseDTO> get(@PathVariable Long id) {
-        return ResponseEntity.ok(deliveryService.get(id));
+    public ResponseEntity<?> get(@PathVariable Long id) {
+        log.info("[배송 단건 조회] id={}", id);
+        DeliveryResponseDTO result = deliveryService.get(id);
+        return ResponseEntity.ok(Map.of("message", "success", "data", result));
     }
 
-    // 회원별 조회
+    // 로그인 회원의 배송 내역 조회
     @GetMapping
-    public ResponseEntity<List<DeliveryResponseDTO>> list(@RequestParam Long memberId) {
-        return ResponseEntity.ok(deliveryService.getByMember(memberId));
+    public ResponseEntity<?> list() {
+        Long memberId = SecurityUtil.getMemberAuthDTO().getId();
+        log.info("[회원 배송 내역 조회] memberId={}", memberId);
+        List<DeliveryResponseDTO> list = deliveryService.getByMember(memberId);
+        return ResponseEntity.ok(Map.of("message", "success", "data", list));
     }
 
-    // ── 상태 전환 ────────────────────────────────
-
-    // 배송 시작 (READY → SHIPPING)
+    //READY → SHIPPING
     @PutMapping("/{id}/ship")
-    public ResponseEntity<DeliveryResponseDTO> ship(@PathVariable Long id) {
-        return ResponseEntity.ok(deliveryService.ship(id));
+    public ResponseEntity<?> ship(@PathVariable Long id) {
+        log.info("[배송 시작] id={}", id);
+        DeliveryResponseDTO result = deliveryService.ship(id);
+        return ResponseEntity.ok(Map.of("message", "success", "data", result));
     }
 
-    // 배송 완료 (SHIPPING → DELIVERED)
+    // SHIPPING → DELIVERED
     @PutMapping("/{id}/complete")
-    public ResponseEntity<DeliveryResponseDTO> complete(@PathVariable Long id) {
-        return ResponseEntity.ok(deliveryService.complete(id));
+    public ResponseEntity<?> complete(@PathVariable Long id) {
+        log.info("[배송 완료] id={}", id);
+        DeliveryResponseDTO result = deliveryService.complete(id);
+        return ResponseEntity.ok(Map.of("message", "success", "data", result));
     }
 
-    // 회수 준비 (DELIVERED → RETURN_READY)
+    // DELIVERED → RETURN_READY
     @PutMapping("/{id}/return-ready")
-    public ResponseEntity<DeliveryResponseDTO> returnReady(@PathVariable Long id) {
-        return ResponseEntity.ok(deliveryService.returnReady(id));
+    public ResponseEntity<?> returnReady(@PathVariable Long id) {
+        log.info("[회수 준비] id={}", id);
+        DeliveryResponseDTO result = deliveryService.returnReady(id);
+        return ResponseEntity.ok(Map.of("message", "success", "data", result));
     }
 
-    // 회수 중 (RETURN_READY → IN_RETURNING)
+    //RETURN_READY → IN_RETURNING
     @PutMapping("/{id}/in-returning")
-    public ResponseEntity<DeliveryResponseDTO> inReturning(@PathVariable Long id) {
-        return ResponseEntity.ok(deliveryService.inReturning(id));
+    public ResponseEntity<?> inReturning(@PathVariable Long id) {
+        log.info("[회수 중] id={}", id);
+        DeliveryResponseDTO result = deliveryService.inReturning(id);
+        return ResponseEntity.ok(Map.of("message", "success", "data", result));
     }
 
-    // 회수 완료 (IN_RETURNING → RETURNED)
+    //IN_RETURNING → RETURNED
     @PutMapping("/{id}/returned")
-    public ResponseEntity<DeliveryResponseDTO> returned(@PathVariable Long id) {
-        return ResponseEntity.ok(deliveryService.returned(id));
+    public ResponseEntity<?> returned(@PathVariable Long id) {
+        log.info("[회수 완료] id={}", id);
+        DeliveryResponseDTO result = deliveryService.returned(id);
+        return ResponseEntity.ok(Map.of("message", "success", "data", result));
     }
 }

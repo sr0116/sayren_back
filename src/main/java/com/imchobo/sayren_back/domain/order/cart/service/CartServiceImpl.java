@@ -26,8 +26,6 @@ import java.util.List;
 public class CartServiceImpl implements CartService {
 
   private final CartRepository cartRepository;
-  private final ProductRepository productRepository;
-  private final OrderPlanRepository orderPlanRepository;
   private final CartItemMapper cartItemMapper;
 
   @Override

@@ -4,15 +4,17 @@ import com.imchobo.sayren_back.domain.order.dto.DirectOrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderRequestDTO;
 import com.imchobo.sayren_back.domain.order.dto.OrderResponseDTO;
 import com.imchobo.sayren_back.domain.order.service.OrderService;
-import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
+import com.imchobo.sayren_back.security.util.SecurityUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
+@Log4j2
 @RestController
 @RequestMapping("/api/user/orders")
 @RequiredArgsConstructor
@@ -20,60 +22,68 @@ public class OrderController {
 
   private final OrderService orderService;
 
-
-    //장바구니 기반 주문 생성
-
+  /** 장바구니 기반 주문 생성 */
   @PostMapping("/create")
-  public ResponseEntity<OrderResponseDTO> createOrder(
-    @RequestBody OrderRequestDTO dto,
-    @AuthenticationPrincipal MemberAuthDTO authMember) {
-    Long memberId = authMember.getId();
-    return ResponseEntity.ok(orderService.createOrder(memberId, dto));
+  public ResponseEntity<?> createOrder(@RequestBody @Valid OrderRequestDTO dto) {
+    log.info("[주문 생성 요청] memberId={}", SecurityUtil.getMemberAuthDTO().getId());
+    OrderResponseDTO response = orderService.createOrder(dto);
+    return ResponseEntity.ok(Map.of(
+      "message", "success",
+      "data", response
+    ));
   }
 
-
-    //바로구매 주문 생성 (장바구니 생략)
-
+  /** 바로구매 주문 생성 (장바구니 생략) */
   @PostMapping("/direct-create")
-  public ResponseEntity<OrderResponseDTO> createDirectOrder(
-    @RequestBody DirectOrderRequestDTO dto,
-    @AuthenticationPrincipal MemberAuthDTO authMember) {
-    Long memberId = authMember.getId();
-    return ResponseEntity.ok(orderService.createDirectOrder(memberId, dto));
+  public ResponseEntity<?> createDirectOrder(@RequestBody @Valid DirectOrderRequestDTO dto) {
+    log.info("[바로구매 주문 요청] memberId={}, productId={}, planId={}",
+      SecurityUtil.getMemberAuthDTO().getId(),
+      dto.getProductId(), dto.getPlanId());
+
+    OrderResponseDTO response = orderService.createDirectOrder(dto);
+    return ResponseEntity.ok(Map.of(
+      "message", "success",
+      "orderId", response.getOrderId(),
+      "data", response
+    ));
   }
 
-
-    //내 주문 전체 조회
-
+  /** 내 주문 전체 조회 */
   @GetMapping("/my")
-  public ResponseEntity<List<OrderResponseDTO>> getMyOrders(Authentication authentication) {
-    Long memberId = Long.valueOf(authentication.getName());
-    return ResponseEntity.ok(orderService.getOrdersByMemberId(memberId));
+  public ResponseEntity<?> getMyOrders() {
+    log.info("[내 주문 전체 조회] memberId={}", SecurityUtil.getMemberAuthDTO().getId());
+    List<OrderResponseDTO> response = orderService.getOrdersByMemberId();
+    return ResponseEntity.ok(Map.of("message", "success", "data", response));
   }
 
-
-    //단일 주문 조회
-
+  /** 단일 주문 조회 */
   @GetMapping("/{id}")
-  public ResponseEntity<OrderResponseDTO> getOrder(@PathVariable Long id) {
-    return ResponseEntity.ok(orderService.getOrderById(id));
+  public ResponseEntity<?> getOrder(@PathVariable Long id) {
+    log.info("[단일 주문 조회] orderId={}", id);
+    return ResponseEntity.ok(Map.of(
+      "message", "success",
+      "data", orderService.getOrderById(id)
+    ));
   }
 
-
-   // 결제 완료 → 상태 PAID
-
+  /** 결제 완료 → 상태 PAID */
   @PostMapping("/{id}/paid")
-  public ResponseEntity<OrderResponseDTO> markAsPaid(@PathVariable Long id) {
-    return ResponseEntity.ok(orderService.markAsPaid(id));
+  public ResponseEntity<?> markAsPaid(@PathVariable Long id) {
+    log.info("[결제 완료 처리] orderId={}", id);
+    return ResponseEntity.ok(Map.of(
+      "message", "success",
+      "data", orderService.markAsPaid(id)
+    ));
   }
 
-
-   //결제 실패/취소 → 상태 CANCELED
-
+  /** 결제 실패/취소 → 상태 CANCELED */
   @PostMapping("/{id}/cancel")
-  public ResponseEntity<OrderResponseDTO> cancelOrder(
-    @PathVariable Long id,
-    @RequestParam(required = false) String reason) {
-    return ResponseEntity.ok(orderService.cancel(id, reason));
+  public ResponseEntity<?> cancelOrder(@PathVariable Long id,
+                                       @RequestParam(required = false) String reason) {
+    log.info("[결제 취소 처리] orderId={}, reason={}", id, reason);
+    return ResponseEntity.ok(Map.of(
+      "message", "success",
+      "data", orderService.cancel(id, reason)
+    ));
   }
 }
