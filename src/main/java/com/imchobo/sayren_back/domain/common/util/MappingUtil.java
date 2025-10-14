@@ -76,6 +76,26 @@ public class MappingUtil {
     return "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
             + attach.getPath() + "/" + attach.getUuid();
   }
+
+  // 상품 대표 이미지 URL 추출 (Product 엔티티에 attachList 없어도 Reflection으로 처리)
+  @Named("mapProductMainImageUrl")
+  public String mapProductMainImageUrl(Object product) {
+    if (product == null) return null;
+    try {
+      // product.attachList 존재할 때만 처리
+      var list = (java.util.List<?>) product.getClass().getMethod("getAttachList").invoke(product);
+      if (list == null || list.isEmpty()) return null;
+
+      Object first = list.get(0);
+      String path = first.getClass().getMethod("getPath").invoke(first).toString();
+      String uuid = first.getClass().getMethod("getUuid").invoke(first).toString();
+
+      return "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/" + path + "/" + uuid;
+    } catch (Exception e) {
+      return null; // attachList 없거나 reflection 실패 시 null 반환
+    }
+  }
+
   //  엔티티 → ID 변환 (DTO 응답용)
   @Named("mapPaymentId")
   public Long paymentEntityToId(Payment payment) {

@@ -27,6 +27,7 @@ public class PaymentResponseDTO {
   // 상품/ 주문 정보
   private Long orderItemId;
   private String productName;
+  private String productImageUrl;
   private Long priceSnapshot;
   private OrderPlanType orderPlanType; // 일반 결제/ 구독
 

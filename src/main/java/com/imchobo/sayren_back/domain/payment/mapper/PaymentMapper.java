@@ -40,6 +40,7 @@ public interface PaymentMapper {
 
   // 상품·주문
   @Mapping(source = "orderItem.product.name", target = "productName")
+  @Mapping(source = "orderItem.product", target = "productImageUrl", qualifiedByName = "mapProductMainImageUrl")
   @Mapping(source = "orderItem.productPriceSnapshot", target = "priceSnapshot")
   @Mapping(source = "orderItem.orderPlan.type", target = "orderPlanType")
 
