@@ -68,7 +68,6 @@ public class MemberServiceImpl implements MemberService {
       throw new SocialEmailAlreadyLinkedException();
     }
 
-
     entity.setPassword(passwordEncoder.encode(entity.getPassword()));
     entity.setStatus(MemberStatus.READY);
     entity.setEmailVerified(true);
@@ -195,6 +194,7 @@ public class MemberServiceImpl implements MemberService {
     if(member != null) {
       throw new EmailAlreadyExistsException();
     }
+    deletedMemberService.emailVaildate(emailVerifyRequestDTO.getEmail());
     mailService.emailVerification(emailVerifyRequestDTO);
   }
 
