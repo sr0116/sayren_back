@@ -9,6 +9,7 @@ import com.imchobo.sayren_back.domain.board.repository.BoardRepository;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.en.CommonStatus;
+import com.imchobo.sayren_back.domain.common.util.NextUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
@@ -22,6 +23,7 @@ import com.imchobo.sayren_back.domain.product.mapper.ProductMapper;
 import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductStockRepository;
 import com.imchobo.sayren_back.domain.product.repository.ProductTagRepository;
+import com.imchobo.sayren_back.domain.term.en.TermType;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
@@ -46,6 +48,7 @@ public class ProductServiceImpl implements ProductService {
   private final ProductAttachRepository productAttachRepository;
   private final ProductMapper productMapper;
   private final BoardRepository boardRepository;
+  private final NextUtil nextUtil;
 
   private Long calcDeposit(Long price) {
     // 보증금: 원가의 20%
@@ -84,7 +87,7 @@ public class ProductServiceImpl implements ProductService {
     List<ProductListResponseDTO> productList = new ArrayList<>();
 
     List<Board> boardList = boardRepository.findAll().stream().filter(board -> {
-      return (board.getProduct() != null && board.getCategory().getType().equals(CategoryType.PRODUCT));
+      return (board.getProduct() != null && board.getCategory().getType().equals(CategoryType.PRODUCT) && board.getCategory().getParentCategory() != null);
     }).toList();
 
     boardList.forEach(board -> {
@@ -342,5 +345,16 @@ public class ProductServiceImpl implements ProductService {
     Page<Product> products = productRepository.searchByFilter(keyword, category, sort, pageable);
 
     return products.map(productMapper::toListDTO);
+  }
+
+
+  @Override
+  public void revalidate(Long id) {
+    nextUtil.revalidatePaths(List.of("/api/product/" + id, "/product/" + id, "/rental/" + id));
+  }
+
+  @Override
+  public void revalidateAll() {
+    nextUtil.revalidatePaths(List.of("/api/product"));
   }
 }

@@ -41,7 +41,10 @@ public interface ProductService {
   // 상품 수정
   void modifyProduct(Long id, ProductModifyRequestDTO productModifyRequestDTO);
 
+  void revalidate(Long id);
+  void revalidateAll();
   // 상품 큐레이션
   Page<ProductListResponseDTO> getFilteredProducts(ProductListResponseDTO filter, Pageable pageable);
+
 }
 
