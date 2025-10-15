@@ -19,8 +19,6 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@SQLDelete(sql = "UPDATE tbl_subscribe SET deleted = true, deleted_at = NOW() WHERE subscribe_id = ?")
-@Where(clause = "deleted = false")
 public class Subscribe extends BaseEntity {
 
   @Id
@@ -53,11 +51,4 @@ public class Subscribe extends BaseEntity {
   @Column(name = "end_date")
   private LocalDate endDate;
 
-  // 논리 삭제 관리
-  @Column(nullable = false)
-  @Builder.Default
-  private boolean deleted = false;
-
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
 }

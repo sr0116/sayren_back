@@ -352,8 +352,9 @@ public class SubscribeEventHandler {
     return switch (transition) {
       case COMPLETE -> SubscribeRoundTransition.PAY_SUCCESS;
       case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM -> SubscribeRoundTransition.PAY_FAIL;
+
       case FAIL_TIMEOUT -> SubscribeRoundTransition.PAY_TIMEOUT;
-      case REFUND, PARTIAL_REFUND, CANCEL_FUTURE_ONLY -> null; // 환불 관련 이벤트 무시
+      case REFUND, PARTIAL_REFUND, CANCEL_FUTURE_ONLY -> SubscribeRoundTransition.CANCEL; // 환불 관련 이벤트 무시
       default -> null;
     };
   }
