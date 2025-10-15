@@ -3,10 +3,7 @@ package com.imchobo.sayren_back.domain.product.service;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.en.CommonStatus;
-import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductModifyRequestDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductPendingDTO;
+import com.imchobo.sayren_back.domain.product.dto.*;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import org.springframework.boot.context.metrics.buffering.StartupTimeline;
 import org.springframework.data.domain.Page;
@@ -45,6 +42,13 @@ public interface ProductService {
   void revalidateAll();
   // 상품 큐레이션
   Page<ProductListResponseDTO> getFilteredProducts(ProductListResponseDTO filter, Pageable pageable);
+
+//  Long registerProduct(ProductCreateRequestDTO dto, Long memberId);
+  // 상품을 게시글로 등록
+Long registerProduct(ProductCreateRequestDTO dto);
+
+
+
 
 }
 

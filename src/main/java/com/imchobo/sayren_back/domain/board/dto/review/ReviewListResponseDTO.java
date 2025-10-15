@@ -1,6 +1,5 @@
 package com.imchobo.sayren_back.domain.board.dto.review;
 
-import com.imchobo.sayren_back.domain.attach.dto.BoardAttachRequestDTO;
 import lombok.*;
 
 import java.time.LocalDateTime;
