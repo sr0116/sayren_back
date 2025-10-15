@@ -10,12 +10,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class OrderRequestDTO {
+  // 카트아이템 있을 때
+  private List<Long> cartItemIds;
 
+  // 카트 아이템 없을 때
+  private Long planId;
+  private Long productId;
+
+  // 배송지
   private Long addressId;    // 기존 배송지 ID (선택)
-  private String receiverName;   // 새 배송지일 경우 수령인
-  private String receiverTel;    // 새 배송지일 경우 연락처
-  private String zipcode;        // 새 배송지일 경우 우편번호
-  private String detail;         // 새 배송지일 경우 상세주소
-  private String memo;           // 배송 메모
-
 }
