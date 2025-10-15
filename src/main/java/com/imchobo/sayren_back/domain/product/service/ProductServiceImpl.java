@@ -354,7 +354,7 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public void revalidateAll() {
-    nextUtil.revalidatePaths(List.of("/api/product"));
+    nextUtil.revalidatePaths(List.of("/api/product", "/product",  "/rental"));
   }
 
 

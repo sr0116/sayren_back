@@ -22,7 +22,7 @@ public class OrderController {
 
   private final OrderService orderService;
 
-  /** 장바구니 기반 주문 생성 */
+  // 장바구니 기반 주문 생성
   @PostMapping("/create")
   public ResponseEntity<?> createOrder(@RequestBody @Valid OrderRequestDTO dto) {
     log.info("[주문 생성 요청] memberId={}", SecurityUtil.getMemberAuthDTO().getId());
@@ -33,7 +33,7 @@ public class OrderController {
     ));
   }
 
-  /** 바로구매 주문 생성 (장바구니 생략) */
+  //바로구매 주문 생성 (장바구니 생략)
   @PostMapping("/direct-create")
   public ResponseEntity<?> createDirectOrder(@RequestBody @Valid DirectOrderRequestDTO dto) {
     log.info("[바로구매 주문 요청] memberId={}, productId={}, planId={}",
@@ -48,7 +48,7 @@ public class OrderController {
     ));
   }
 
-  /** 내 주문 전체 조회 */
+  //내 주문 전체 조회
   @GetMapping("/my")
   public ResponseEntity<?> getMyOrders() {
     log.info("[내 주문 전체 조회] memberId={}", SecurityUtil.getMemberAuthDTO().getId());
@@ -56,7 +56,7 @@ public class OrderController {
     return ResponseEntity.ok(Map.of("message", "success", "data", response));
   }
 
-  /** 단일 주문 조회 */
+  //단일 주문 조회
   @GetMapping("/{id}")
   public ResponseEntity<?> getOrder(@PathVariable Long id) {
     log.info("[단일 주문 조회] orderId={}", id);
@@ -66,7 +66,7 @@ public class OrderController {
     ));
   }
 
-  /** 결제 완료 → 상태 PAID */
+  //결제 완료 → 상태 PAID
   @PostMapping("/{id}/paid")
   public ResponseEntity<?> markAsPaid(@PathVariable Long id) {
     log.info("[결제 완료 처리] orderId={}", id);
@@ -76,7 +76,7 @@ public class OrderController {
     ));
   }
 
-  /** 결제 실패/취소 → 상태 CANCELED */
+  //결제 실패/취소 → 상태 CANCELED
   @PostMapping("/{id}/cancel")
   public ResponseEntity<?> cancelOrder(@PathVariable Long id,
                                        @RequestParam(required = false) String reason) {

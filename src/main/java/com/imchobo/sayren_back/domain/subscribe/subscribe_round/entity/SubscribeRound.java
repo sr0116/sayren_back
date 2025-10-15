@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubscribeRound extends CreatedEntity {
+public class
+SubscribeRound extends CreatedEntity {
 
   // 구독 결제 PK
   @Id
@@ -32,6 +33,7 @@ public class SubscribeRound extends CreatedEntity {
 
   // 회차 번호 (1, 2, 3 …)
   // NOT NULL
+
   @Column(nullable = false)
   private int roundNo;
 

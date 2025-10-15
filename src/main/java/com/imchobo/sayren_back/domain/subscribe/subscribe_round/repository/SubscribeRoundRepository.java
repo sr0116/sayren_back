@@ -36,8 +36,16 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   Subscribe subscribe(Subscribe subscribe);
   //이벤트 핸들러에서 사용
   List<SubscribeRound> findBySubscribeId(Long subscribeId);
+
   // 스케줄 처리
-  List<SubscribeRound> findByDueDateAndPayStatus(LocalDate dueDate, PaymentStatus payStatus);
+  List<SubscribeRound> findByDueDateAndPayStatus(
+          LocalDate dueDate,
+          PaymentStatus payStatus
+  );
+
+  // 상태 기반 조회 (유예기간 처리용)
+  List<SubscribeRound> findByPayStatusIn(List<PaymentStatus> statuses);
+
 
   // 관리자용 전체 조회
   @Query("SELECT sr FROM SubscribeRound sr " +
