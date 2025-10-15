@@ -33,6 +33,7 @@ import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundRequestService;
 import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
+import com.imchobo.sayren_back.domain.payment.repository.PaymentHistoryRepository;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
@@ -83,6 +84,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final MemberRepository memberRepository;
   private final RefundRequestRepository refundRequestRepository;
   private final DeliveryItemRepository deliveryItemRepository;
+  private final PaymentHistoryRepository paymentHistoryRepository;
 
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
@@ -157,30 +159,25 @@ public class PaymentServiceImpl implements PaymentService {
   @Transactional
   @Override
   public void deletePayment(Long paymentId) {
-    Member currentMember = SecurityUtil.getMemberEntity();
-
     Payment payment = paymentRepository.findById(paymentId)
             .orElseThrow(() -> new PaymentNotFoundException(paymentId));
 
-    // 본인 결제 여부 검증
-    if (!payment.getMember().getId().equals(currentMember.getId())) {
-      throw new PaymentVerificationFailedException("본인 결제 내역만 삭제할 수 있습니다.");
-    }
-
     OrderItem orderItem = payment.getOrderItem();
 
-    //  배송 상태 확인 (OrderItem → DeliveryItem → Delivery)
+    // 1. 배송 중, 회수 중이면 삭제 불가
     List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
-    for (DeliveryItem item : deliveryItems) {
-      DeliveryStatus status = item.getDelivery().getStatus();
-      if (status == DeliveryStatus.SHIPPING ||
-              status == DeliveryStatus.IN_RETURNING ||
-              status == DeliveryStatus.RETURN_READY) {
+    if (!deliveryItems.isEmpty()) {
+      Delivery delivery = deliveryItems.get(0).getDelivery();
+      if (delivery != null && (
+              delivery.getStatus() == DeliveryStatus.SHIPPING ||
+                      delivery.getStatus() == DeliveryStatus.IN_RETURNING ||
+                      delivery.getStatus() == DeliveryStatus.RETURN_READY
+      )) {
         throw new PaymentVerificationFailedException("배송 또는 회수 중인 결제는 삭제할 수 없습니다.");
       }
     }
 
-    //  환불 요청 확인 (APPROVED는 허용)
+    // 2. 환불 요청 진행 중이면 삭제 불가
     boolean refundInProgress = refundRequestRepository.existsByOrderItemAndStatusIn(
             orderItem,
             List.of(
@@ -192,43 +189,38 @@ public class PaymentServiceImpl implements PaymentService {
       throw new PaymentVerificationFailedException("환불 처리 중인 결제는 삭제할 수 없습니다.");
     }
 
-    //  연결된 구독 확인 및 삭제 처리
-    subscribeRepository.findByOrderItem(orderItem).ifPresent(subscribe -> {
-      if (List.of(
-              SubscribeStatus.PREPARING,
-              SubscribeStatus.ACTIVE,
-              SubscribeStatus.OVERDUE
-      ).contains(subscribe.getStatus())) {
+    // 3. 관련 구독 삭제 (진행 중인 상태 제외)
+    Subscribe subscribe = subscribeRepository.findByOrderItem(orderItem).orElse(null);
+    if (subscribe != null) {
+      if (List.of(SubscribeStatus.PREPARING, SubscribeStatus.ACTIVE, SubscribeStatus.OVERDUE)
+              .contains(subscribe.getStatus())) {
         throw new PaymentVerificationFailedException("진행 중인 구독과 연결된 결제는 삭제할 수 없습니다.");
-      }
-
-      boolean subscribeRefundInProgress = refundRequestRepository.existsByOrderItemAndStatusIn(
-              subscribe.getOrderItem(),
-              List.of(
-                      RefundRequestStatus.PENDING,
-                      RefundRequestStatus.APPROVED_WAITING_RETURN
-              )
-      );
-      if (subscribeRefundInProgress) {
-        throw new PaymentVerificationFailedException("환불 처리 중인 구독은 삭제할 수 없습니다.");
       }
 
       // 회차 먼저 삭제
       List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
       if (!rounds.isEmpty()) {
         subscribeRoundRepository.deleteAll(rounds);
-        log.info("[DELETE] 회차 {}건 삭제 (subscribeId={})", rounds.size(), subscribe.getId());
+        log.info("[DELETE] 구독 회차 {}건 삭제 완료 (subscribeId={})", rounds.size(), subscribe.getId());
       }
 
-      // 구독 삭제
       subscribeRepository.delete(subscribe);
       log.info("[DELETE] 구독 삭제 완료 (subscribeId={})", subscribe.getId());
-    });
+    }
 
-    //  결제 삭제
+    // 4. 환불 내역 선삭제
+    refundRepository.deleteAllByPayment(payment);
+    log.info("[DELETE] 환불 내역 삭제 완료 (paymentId={})", paymentId);
+
+    // 5. 결제 이력 선삭제 (FK 제약 방지)
+    paymentHistoryRepository.deleteAllByPayment(payment);
+    log.info("[DELETE] 결제 이력 삭제 완료 (paymentId={})", paymentId);
+
+    // 6. 결제 삭제
     paymentRepository.delete(payment);
     log.info("[DELETE] 결제 삭제 완료 (paymentId={})", paymentId);
   }
+
 
 
   // 결제 응답

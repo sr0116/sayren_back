@@ -40,7 +40,7 @@ public class SubscribeRoundScheduler {
    * - 매 1분마다 실행 (테스트용)
    * - 배포 시 cron: 0 0 5 * * * (매일 새벽 5시)
    */
-  @Scheduled(fixedRate = 60000)
+//  @Scheduled(fixedRate = 60000)
   @Transactional
   public void processDueRounds() {
     LocalDate today = LocalDate.now();
