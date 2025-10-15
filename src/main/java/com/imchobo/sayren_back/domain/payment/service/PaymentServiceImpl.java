@@ -1,6 +1,10 @@
 package com.imchobo.sayren_back.domain.payment.service;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
+import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
+import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
+import com.imchobo.sayren_back.domain.delivery.entity.DeliveryItem;
+import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
@@ -22,6 +26,7 @@ import com.imchobo.sayren_back.domain.payment.mapper.PaymentHistoryMapper;
 import com.imchobo.sayren_back.domain.payment.mapper.PaymentMapper;
 import com.imchobo.sayren_back.domain.payment.portone.client.PortOnePaymentClient;
 import com.imchobo.sayren_back.domain.payment.portone.dto.payment.PaymentInfoResponse;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.Refund;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
@@ -31,6 +36,7 @@ import com.imchobo.sayren_back.domain.payment.refund.service.RefundService;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
+import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.SubscribeRoundNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
@@ -75,6 +81,8 @@ public class PaymentServiceImpl implements PaymentService {
   private final PaymentHistoryRecorder paymentHistoryRecorder;
   private final RefundRepository refundRepository;
   private final MemberRepository memberRepository;
+  private final RefundRequestRepository refundRequestRepository;
+  private final DeliveryItemRepository deliveryItemRepository;
 
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
@@ -145,6 +153,84 @@ public class PaymentServiceImpl implements PaymentService {
     return null;
   }
 
+  // 결제 삭제
+  @Transactional
+  @Override
+  public void deletePayment(Long paymentId) {
+    Member currentMember = SecurityUtil.getMemberEntity();
+
+    Payment payment = paymentRepository.findById(paymentId)
+            .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+
+    // 본인 결제 여부 검증
+    if (!payment.getMember().getId().equals(currentMember.getId())) {
+      throw new PaymentVerificationFailedException("본인 결제 내역만 삭제할 수 있습니다.");
+    }
+
+    OrderItem orderItem = payment.getOrderItem();
+
+    //  배송 상태 확인 (OrderItem → DeliveryItem → Delivery)
+    List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
+    for (DeliveryItem item : deliveryItems) {
+      DeliveryStatus status = item.getDelivery().getStatus();
+      if (status == DeliveryStatus.SHIPPING ||
+              status == DeliveryStatus.IN_RETURNING ||
+              status == DeliveryStatus.RETURN_READY) {
+        throw new PaymentVerificationFailedException("배송 또는 회수 중인 결제는 삭제할 수 없습니다.");
+      }
+    }
+
+    //  환불 요청 확인 (APPROVED는 허용)
+    boolean refundInProgress = refundRequestRepository.existsByOrderItemAndStatusIn(
+            orderItem,
+            List.of(
+                    RefundRequestStatus.PENDING,
+                    RefundRequestStatus.APPROVED_WAITING_RETURN
+            )
+    );
+    if (refundInProgress) {
+      throw new PaymentVerificationFailedException("환불 처리 중인 결제는 삭제할 수 없습니다.");
+    }
+
+    //  연결된 구독 확인 및 삭제 처리
+    subscribeRepository.findByOrderItem(orderItem).ifPresent(subscribe -> {
+      if (List.of(
+              SubscribeStatus.PREPARING,
+              SubscribeStatus.ACTIVE,
+              SubscribeStatus.OVERDUE
+      ).contains(subscribe.getStatus())) {
+        throw new PaymentVerificationFailedException("진행 중인 구독과 연결된 결제는 삭제할 수 없습니다.");
+      }
+
+      boolean subscribeRefundInProgress = refundRequestRepository.existsByOrderItemAndStatusIn(
+              subscribe.getOrderItem(),
+              List.of(
+                      RefundRequestStatus.PENDING,
+                      RefundRequestStatus.APPROVED_WAITING_RETURN
+              )
+      );
+      if (subscribeRefundInProgress) {
+        throw new PaymentVerificationFailedException("환불 처리 중인 구독은 삭제할 수 없습니다.");
+      }
+
+      // 회차 먼저 삭제
+      List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
+      if (!rounds.isEmpty()) {
+        subscribeRoundRepository.deleteAll(rounds);
+        log.info("[DELETE] 회차 {}건 삭제 (subscribeId={})", rounds.size(), subscribe.getId());
+      }
+
+      // 구독 삭제
+      subscribeRepository.delete(subscribe);
+      log.info("[DELETE] 구독 삭제 완료 (subscribeId={})", subscribe.getId());
+    });
+
+    //  결제 삭제
+    paymentRepository.delete(payment);
+    log.info("[DELETE] 결제 삭제 완료 (paymentId={})", paymentId);
+  }
+
+
   // 결제 응답
   @Override
   @Transactional
@@ -194,7 +280,6 @@ public class PaymentServiceImpl implements PaymentService {
     }
     return paymentMapper.toResponseDTO(payment);
   }
-
 
   // 회차 결제 준비용
   @Override

@@ -31,5 +31,8 @@ public interface PaymentService {
 
   PaymentResponseDTO prepareForRound(SubscribeRound round);
 
+  // 결제 내역 삭제
+  void deletePayment(Long paymentId);
+
 
 }

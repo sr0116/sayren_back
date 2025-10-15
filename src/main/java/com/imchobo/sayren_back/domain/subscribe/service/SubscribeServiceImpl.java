@@ -342,6 +342,55 @@ public class SubscribeServiceImpl implements SubscribeService {
     subscribeRepository.save(entity);
   }
 
+  // 구독 삭제
+  @Transactional
+  @Override
+  public void deleteSubscribe(Long subscribeId) {
+    Member currentMember = SecurityUtil.getMemberEntity();
+
+    Subscribe subscribe = subscribeRepository.findById(subscribeId)
+            .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
+
+    // 본인 구독 여부 검증
+    if (!subscribe.getMember().getId().equals(currentMember.getId())) {
+      throw new SubscribeStatusInvalidException("본인 구독만 삭제할 수 있습니다.");
+    }
+
+    //  구독 상태 검증
+    if (List.of(
+            SubscribeStatus.PREPARING,
+            SubscribeStatus.ACTIVE,
+            SubscribeStatus.PENDING_PAYMENT,
+            SubscribeStatus.OVERDUE
+    ).contains(subscribe.getStatus())) {
+      throw new SubscribeStatusInvalidException("진행 중인 구독은 삭제할 수 없습니다.");
+    }
+
+    //  환불 요청 검증 (APPROVED는 허용)
+    boolean hasRefundInProgress = refundRequestRepository.existsByOrderItemAndStatusIn(
+            subscribe.getOrderItem(),
+            List.of(
+                    RefundRequestStatus.PENDING,
+                    RefundRequestStatus.APPROVED_WAITING_RETURN
+            )
+    );
+    if (hasRefundInProgress) {
+      throw new SubscribeStatusInvalidException("환불 진행 중인 구독은 삭제할 수 없습니다.");
+    }
+
+    //  회차 삭제
+    List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribeId);
+    if (!rounds.isEmpty()) {
+      subscribeRoundRepository.deleteAll(rounds);
+      log.info("[DELETE] 회차 {}건 삭제 완료 (subscribeId={})", rounds.size(), subscribeId);
+    }
+
+    // 구독 삭제
+    subscribeRepository.delete(subscribe);
+    log.info("[DELETE] 구독 삭제 완료 (subscribeId={})", subscribeId);
+  }
+
+
   // 구독 중인 상품 존재 여부 확인 (관리자 같은 경우에는 멤버 아이디로)
   @Transactional(readOnly = true)
   @Override
