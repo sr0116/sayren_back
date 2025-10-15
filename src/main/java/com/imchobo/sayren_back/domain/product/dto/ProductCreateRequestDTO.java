@@ -1,9 +1,14 @@
 package com.imchobo.sayren_back.domain.product.dto;
 
+import com.imchobo.sayren_back.domain.attach.dto.BoardAttachRequestDTO;
+import com.imchobo.sayren_back.domain.attach.entity.Attach;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.*;
+
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -24,7 +29,7 @@ public class ProductCreateRequestDTO {
   @Positive(message = "가격은 0보다 커야 합니다.")
   private Integer price;
 
-  // 판매 가능 여부
+  // 게시글 생성 여부
   private Boolean isUse;
 
   // 상품 카테고리 (크롤링 데이터 활용)
@@ -34,4 +39,13 @@ public class ProductCreateRequestDTO {
   // 모델명 (시리얼 넘버 역할)
   @NotBlank(message = "모델명은 필수입니다.")
   private String modelName;
+
+  // 수량
+  private int stock;
+  // 태그
+  private Map<String, String> tags;
+  // 첨부파일(썸네일)
+  private BoardAttachRequestDTO attach;
+  // 첨부파일 리스트(데스크립션에 들어가는)
+  private List<BoardAttachRequestDTO> attachList;
 }
