@@ -9,4 +9,8 @@ import java.util.Optional;
 public interface CategoryRepository extends JpaRepository<Category, Long> {
   // 카테고리 타입으로 조회
   Optional<Category> findByType(CategoryType type);
+
+
+  // parentCategory의 type이 PRODUCT이고, name이 일치하는 카테고리 찾기
+  Optional<Category> findByNameAndParentCategory_Type(String name, CategoryType type);
 }

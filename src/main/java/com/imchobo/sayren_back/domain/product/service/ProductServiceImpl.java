@@ -6,16 +6,14 @@ import com.imchobo.sayren_back.domain.attach.repository.ProductAttachRepository;
 import com.imchobo.sayren_back.domain.board.en.CategoryType;
 import com.imchobo.sayren_back.domain.board.entity.Board;
 import com.imchobo.sayren_back.domain.board.repository.BoardRepository;
+import com.imchobo.sayren_back.domain.board.repository.CategoryRepository;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.en.CommonStatus;
 import com.imchobo.sayren_back.domain.common.util.NextUtil;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
-import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductModifyRequestDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductPendingDTO;
+import com.imchobo.sayren_back.domain.product.dto.*;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.product.entity.ProductStock;
 import com.imchobo.sayren_back.domain.product.entity.ProductTag;
@@ -49,6 +47,8 @@ public class ProductServiceImpl implements ProductService {
   private final ProductMapper productMapper;
   private final BoardRepository boardRepository;
   private final NextUtil nextUtil;
+  private final CategoryRepository categoryRepository;
+
 
   private Long calcDeposit(Long price) {
     // 보증금: 원가의 20%
@@ -347,7 +347,6 @@ public class ProductServiceImpl implements ProductService {
     return products.map(productMapper::toListDTO);
   }
 
-
   @Override
   public void revalidate(Long id) {
     nextUtil.revalidatePaths(List.of("/api/product/" + id, "/product/" + id, "/rental/" + id));
@@ -357,4 +356,84 @@ public class ProductServiceImpl implements ProductService {
   public void revalidateAll() {
     nextUtil.revalidatePaths(List.of("/api/product"));
   }
+
+
+  @Override
+  @Transactional
+  public Long registerProduct(ProductCreateRequestDTO dto) {
+
+    // 상품 저장
+    Product product = Product.builder()
+            .name(dto.getProductName())
+            .description(dto.getDescription())
+            .price(dto.getPrice().longValue())
+            .isUse(false)
+            .productCategory(dto.getProductCategory())
+            .modelName(dto.getModelName())
+            .build();
+
+    productRepository.save(product);
+
+    // 게시글 자동 생성
+    Board board = Board.builder()
+            .product(product)
+            .title(dto.getProductName())
+            .content(dto.getDescription())
+            .isSecret(false)
+            .status(CommonStatus.ACTIVE)
+            .build();
+
+    // 카테고리 연결
+    board.setCategory(
+            categoryRepository.findByNameAndParentCategory_Type(dto.getProductCategory(), CategoryType.PRODUCT)
+                    .orElseThrow(() -> new EntityNotFoundException("상품 카테고리를 찾을 수 없습니다."))
+    );
+
+    boardRepository.save(board);
+
+    // 재고
+    ProductStock stock = ProductStock.builder()
+            .product(product)
+            .stock(dto.getStock())
+            .build();
+    productStockRepository.save(stock);
+
+    // 태그
+    if (dto.getTags() != null && !dto.getTags().isEmpty()) {
+      dto.getTags().forEach((tagName, tagValue) -> {
+        ProductTag tag = ProductTag.builder()
+                .product(product)
+                .tagName(tagName)
+                .tagValue(tagValue)
+                .build();
+        productTagRepository.save(tag);
+      });
+    }
+
+    // 첨부파일 연결 (Mapper가 없으면 직접 처리)
+    if (dto.getAttach() != null) {
+      Attach thumb = Attach.builder()
+              .uuid(dto.getAttach().getUuid())
+              .path(dto.getAttach().getPath())
+              .isThumbnail(true)
+              .product(product)
+              .build();
+      productAttachRepository.save(thumb);
+    }
+
+    if (dto.getAttachList() != null && !dto.getAttachList().isEmpty()) {
+      dto.getAttachList().forEach(a -> {
+        Attach attach = Attach.builder()
+                .uuid(a.getUuid())
+                .path(a.getPath())
+                .isThumbnail(false)
+                .product(product)
+                .build();
+        productAttachRepository.save(attach);
+      });
+    }
+
+    return product.getId();
+  }
+
 }

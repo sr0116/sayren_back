@@ -2,10 +2,7 @@ package com.imchobo.sayren_back.domain.product.controller;
 
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductDetailsResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductModifyRequestDTO;
-import com.imchobo.sayren_back.domain.product.dto.ProductPendingDTO;
+import com.imchobo.sayren_back.domain.product.dto.*;
 import com.imchobo.sayren_back.domain.product.entity.Product;
 import com.imchobo.sayren_back.domain.product.service.ProductService;
 import jakarta.validation.Valid;
@@ -25,6 +22,13 @@ public class AdminProductController {
     public List<ProductListResponseDTO> list(@RequestParam(required = false) String type, String category) {
         return productService.getAllProducts();
     }
+
+    // 상품 등록
+    @PostMapping
+    public ResponseEntity<?> registerProduct(@Valid @RequestBody ProductCreateRequestDTO dto) {
+        return ResponseEntity.ok(productService.registerProduct(dto));
+    }
+
 
     // 승인처리
     @PostMapping("/use/{id}")
@@ -59,14 +63,14 @@ public class AdminProductController {
         return ResponseEntity.ok(productService.getProductDetailForAdmin(id));
     }
 
-    // 수정
-    @PutMapping("/{id}")
-    public ResponseEntity<Void> modifyProduct(
-            @PathVariable Long id,
-            @Valid @RequestBody ProductModifyRequestDTO dto
-    ) {
-        productService.modifyProduct(id, dto);
-        return ResponseEntity.noContent().build();
-    }
+//    // 수정
+//    @PutMapping("/{id}")
+//    public ResponseEntity<Void> modifyProduct(
+//            @PathVariable Long id,
+//            @Valid @RequestBody ProductModifyRequestDTO dto
+//    ) {
+//        productService.modifyProduct(id, dto);
+//        return ResponseEntity.noContent().build();
+//    }
 
 }
