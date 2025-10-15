@@ -90,10 +90,10 @@ public class DeliveryServiceImpl implements DeliveryService {
     public void createFromOrderItemId(Long orderItemId) {
         OrderItem orderItem = orderItemRepository.findById(orderItemId)
           .orElseThrow(() -> new DeliveryNotFoundException(orderItemId));
-
-        if (deliveryRepository.existsByDeliveryItems_OrderItem_Id(orderItemId)) {
-            throw new DeliveryAlreadyExistsException(orderItem.getOrder().getId());
-        }
+//
+//        if (deliveryRepository.existsByDeliveryItems_OrderItem_Id(orderItemId)) {
+//            throw new DeliveryAlreadyExistsException(orderItem.getOrder().getId());
+//        }
 
         Order order = orderItem.getOrder();
 
