@@ -175,24 +175,19 @@ public class MappingUtil {
       return status != null ? status.name() : null;
     }
 
+  // 문자열 → DeliveryType (요청 DTO → 엔티티 변환용)
+  @Named("mapStringToDeliveryType")
+  public DeliveryType mapStringToDeliveryType(String type) {
+    if (type == null) return null;
+    try {
+      return DeliveryType.valueOf(type.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      log.warn("[MappingUtil] DeliveryType 변환 실패: {}", type);
+      return null;
+    }
+  }
 
-  // 상품 첨부파일 중 첫 번째 이미지 URL 매핑용
-//  @Named("mapFirstAttachUrl")
-//  public String mapFirstAttachUrl(List<?> attachList) {
-//    if (attachList == null || attachList.isEmpty()) return null;
-//
-//    Object first = attachList.get(0);
-//    try {
-//      // attach.getPath()와 getUuid() 리플렉션 접근 (ProductAttach 또는 Attach 구분 없이)
-//      var path = first.getClass().getMethod("getPath").invoke(first);
-//      var uuid = first.getClass().getMethod("getUuid").invoke(first);
-//
-//      return "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
-//        + path + "/" + uuid;
-//    } catch (Exception e) {
-//      return null;
-//    }
-//  }
+
   }
 
 

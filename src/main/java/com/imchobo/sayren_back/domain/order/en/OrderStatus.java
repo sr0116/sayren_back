@@ -1,7 +1,6 @@
 package com.imchobo.sayren_back.domain.order.en;
 
 public enum OrderStatus {
-//  PENDING, PAID, SHIPPED, DELIVERED, CANCELED
 
   PENDING,   // 결제 대기
   PAID,      // 주문 완료 (→ 이후 배송, 구독은 개별 모듈에서 상태 관리)
