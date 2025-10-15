@@ -43,6 +43,7 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
           PaymentStatus payStatus
   );
 
+
   // 상태 기반 조회 (유예기간 처리용)
   List<SubscribeRound> findByPayStatusIn(List<PaymentStatus> statuses);
 
@@ -65,4 +66,16 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   @Modifying
   @Query("update SubscribeRound  r set r.payStatus = :status where r.subscribe = :subscribe and r.dueDate > :today")
   void cancelFutureRounds(@Param("subscribe") Subscribe subscribe, PaymentStatus status, @Param("today") LocalDate today);
+
+  @Query("""
+    SELECT r
+    FROM SubscribeRound r
+    JOIN FETCH r.subscribe s
+    JOIN FETCH s.orderItem oi
+    JOIN FETCH oi.product
+    WHERE r.id = :id
+""")
+  Optional<SubscribeRound> findWithSubscribeAndProduct(@Param("id") Long id);
+
+
 }
