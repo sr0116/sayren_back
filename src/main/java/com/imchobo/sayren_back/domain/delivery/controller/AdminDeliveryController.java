@@ -13,19 +13,16 @@ import java.util.Map;
 @RequestMapping("/api/admin/deliveries")
 @RequiredArgsConstructor
 public class AdminDeliveryController {
+
   private final DeliveryService deliveryService;
 
-  @GetMapping("get-list")
+  //  배송 전체 목록 조회 (관리자용)
+  @GetMapping("/get-list")
   public ResponseEntity<?> getDeliveryList(PageRequestDTO pageRequestDTO) {
     return ResponseEntity.ok(deliveryService.getAllList(pageRequestDTO));
   }
 
-  @PostMapping("change-status")
-  public ResponseEntity<?> changeDeliveryStatus(@RequestBody DeliveryStatusChangeDTO deliveryStatusChangeDTO){
-    deliveryService.changeStatus(deliveryStatusChangeDTO);
-    return ResponseEntity.ok(Map.of("message", "success"));
-  }
-
+  // 상태 변경 요청 (READY → SHIPPING → DELIVERED → RETURNED)
   @PostMapping("/changed-status")
   public ResponseEntity<?> changedDeliveryStatus(@RequestBody DeliveryStatusChangeDTO dto) {
     deliveryService.changedStatus(dto);

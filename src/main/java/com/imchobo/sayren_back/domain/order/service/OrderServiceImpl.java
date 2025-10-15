@@ -32,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
 @Log4j2
 @Service
 @RequiredArgsConstructor
@@ -48,17 +47,63 @@ public class OrderServiceImpl implements OrderService {
   private final ApplicationEventPublisher eventPublisher;
   private final StatusChanger statusChanger;
 
-  //장바구니 기반 주문 생성
+  //  장바구니 기반 주문 생성
   @Override
   public OrderResponseDTO createOrder(OrderRequestDTO dto) {
     Member member = SecurityUtil.getMemberEntity();
     Long memberId = member.getId();
 
-    log.info("[장바구니 주문 생성 요청] memberId={}", memberId);
+    log.info("[장바구니 주문 생성 요청] memberId={}, addressId={}", memberId, dto.getAddressId());
 
-    return null;
-    // 장바구니 기반 주문 생성 호출
-//    return createOrderFromCart(addressId);
+    if (dto.getAddressId() == null) {
+      throw new IllegalArgumentException("배송지 정보가 존재하지 않습니다.");
+    }
+
+    //  장바구니 확인
+    List<CartItem> cartItems = cartRepository.findByMemberId(memberId);
+
+    //  장바구니가 비어 있으면 바로 단일 상품 주문 생성
+    if (cartItems == null || cartItems.isEmpty()) {
+      log.info("[장바구니 비어 있음 → 단일 상품 주문으로 전환] memberId={}, productId={}, planId={}",
+        memberId, dto.getProductId(), dto.getPlanId());
+
+      // 바로 구매 로직처럼 처리
+      Product product = productRepository.findById(dto.getProductId())
+        .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + dto.getProductId()));
+
+      OrderPlan plan = orderPlanRepository.findById(dto.getPlanId())
+        .orElseThrow(() -> new EntityNotFoundException("요금제를 찾을 수 없습니다. id=" + dto.getPlanId()));
+
+      Address address = addressRepository.findById(dto.getAddressId())
+        .orElseThrow(() -> new OrderNotFoundException(dto.getAddressId()));
+
+      // 주문 생성
+      Order order = Order.builder()
+        .member(member)
+        .address(address)
+        .status(OrderStatus.PENDING)
+        .build();
+
+      OrderItem orderItem = OrderItem.builder()
+        .order(order)
+        .product(product)
+        .orderPlan(plan)
+        .productPriceSnapshot(product.getPrice())
+        .build();
+
+      order.setOrderItems(List.of(orderItem));
+      Order savedOrder = orderRepository.save(order);
+
+      // 상태 변경 및 이벤트 발행
+      statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
+      eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
+
+      log.info("[단일 상품 주문 완료] orderId={}, memberId={}", savedOrder.getId(), memberId);
+      return orderMapper.toResponseDTO(savedOrder);
+    }
+
+    //  장바구니 주문 정상 처리
+    return createOrderFromCart(dto.getAddressId());
   }
 
   // 장바구니 기반 주문 처리
@@ -167,7 +212,7 @@ public class OrderServiceImpl implements OrderService {
       .orElseThrow(() -> new OrderNotFoundException(orderId)));
   }
 
-  //회원별 주문 목록 조회
+  // 회원별 주문 목록 조회
   @Override
   @Transactional(readOnly = true)
   public List<OrderResponseDTO> getOrdersByMemberId() {
@@ -180,7 +225,7 @@ public class OrderServiceImpl implements OrderService {
       .collect(Collectors.toList());
   }
 
-  //결제 완료 처리
+  // 결제 완료 처리
   @Override
   public OrderResponseDTO markAsPaid(Long orderId) {
     log.info("[결제 완료 처리] orderId={}", orderId);

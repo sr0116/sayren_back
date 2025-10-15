@@ -16,7 +16,6 @@ import com.imchobo.sayren_back.domain.delivery.exception.*;
 import com.imchobo.sayren_back.domain.delivery.mapper.DeliveryMapper;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryRepository;
-import com.imchobo.sayren_back.domain.delivery.service.processor.DeliveryFlowOrchestrator;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
@@ -30,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 
 @Log4j2
 @Service
@@ -43,16 +41,15 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final OrderItemRepository orderItemRepository;
     private final AddressRepository addressRepository;
     private final DeliveryMapper deliveryMapper;
-    private final DeliveryFlowOrchestrator flow;
     private final DeliveryStatusChanger deliveryStatusChanger;
 
-
     // 배송 생성 (사용자 직접)
-
     @Override
     public DeliveryResponseDTO create(DeliveryRequestDTO dto) {
         Member member = SecurityUtil.getMemberEntity();
-        log.info(" 배송 생성 요청 → memberId={}, addressId={}", member.getId(), dto.getAddressId());
+        log.info("[배송 생성 요청] memberId={}, addressId={}", member.getId(), dto.getAddressId());
+
+        // 전체조회(어드민)
 
         Address address = addressRepository.findById(dto.getAddressId())
           .orElseThrow(() -> new EntityNotFoundException("주소 없음: id=" + dto.getAddressId()));
@@ -69,31 +66,16 @@ public class DeliveryServiceImpl implements DeliveryService {
           .build();
 
         Delivery saved = deliveryRepository.save(delivery);
-        log.info("배송 생성 완료 → deliveryId={}, memberId={}", saved.getId(), member.getId());
+        log.info("[배송 생성 완료] deliveryId={}, memberId={}", saved.getId(), member.getId());
 
         return deliveryMapper.toResponseDTO(saved);
     }
 
-
-    // 전체 목록 (어드민)
-
-    @Override
-    public PageResponseDTO<DeliveryResponseDTO, Delivery> getAllList(PageRequestDTO pageRequestDTO) {
-        Page<Delivery> result = deliveryRepository.findAll(pageRequestDTO.getPageable());
-        return PageResponseDTO.of(result, deliveryMapper::toResponseDTO);
-    }
-
-
-    // 주문아이템 기반 배송 생성 (결제 성공 시 자동)
-
+    //  결제 성공 시 주문아이템 기반 배송 생성 (자동)
     @Override
     public void createFromOrderItemId(Long orderItemId) {
         OrderItem orderItem = orderItemRepository.findById(orderItemId)
           .orElseThrow(() -> new DeliveryNotFoundException(orderItemId));
-//
-//        if (deliveryRepository.existsByDeliveryItems_OrderItem_Id(orderItemId)) {
-//            throw new DeliveryAlreadyExistsException(orderItem.getOrder().getId());
-//        }
 
         Order order = orderItem.getOrder();
 
@@ -112,18 +94,33 @@ public class DeliveryServiceImpl implements DeliveryService {
           .build();
         deliveryItemRepository.save(deliveryItem);
 
-        log.info(" 주문아이템 기반 배송 생성 완료 → orderItemId={}, deliveryId={}", orderItemId, saved.getId());
+        log.info("[자동 배송 생성 완료] orderItemId={}, deliveryId={}", orderItemId, saved.getId());
     }
 
+    //  상태 변경 (READY → SHIPPING → DELIVERED → RETURNED)
+    @Override
+    public void changedStatus(DeliveryStatusChangeDTO dto) {
+        Delivery delivery = mustFind(dto.getDeliveryId());
+        OrderItem orderItem = delivery.getDeliveryItems().get(0).getOrderItem();
 
-    // 조회
+        deliveryStatusChanger.changeDeliveryStatus(
+          delivery,
+          delivery.getType(),
+          dto.getStatus(),
+          orderItem
+        );
 
+        log.info("[배송 상태 변경 완료] deliveryId={}, next={}", dto.getDeliveryId(), dto.getStatus());
+    }
+
+    //  단건 조회
     @Override
     @Transactional(readOnly = true)
     public DeliveryResponseDTO get(Long id) {
         return deliveryMapper.toResponseDTO(mustFind(id));
     }
 
+    //  회원별 조회
     @Override
     @Transactional(readOnly = true)
     public List<DeliveryResponseDTO> getByMember(Long memberId) {
@@ -131,6 +128,7 @@ public class DeliveryServiceImpl implements DeliveryService {
           .stream().map(deliveryMapper::toResponseDTO).toList();
     }
 
+    //  주문 기준 조회
     @Override
     @Transactional(readOnly = true)
     public List<DeliveryResponseDTO> getByOrder(Long orderId) {
@@ -138,96 +136,16 @@ public class DeliveryServiceImpl implements DeliveryService {
           .stream().map(deliveryMapper::toResponseDTO).toList();
     }
 
-
-    //  상태 전환
-
+    //  전체 조회 (어드민)
     @Override
-    public void changeStatus(DeliveryStatusChangeDTO dto) {
-        Long deliveryId = dto.getDeliveryId();
-        switch (dto.getStatus()) {
-            case READY -> ship(deliveryId);
-            case SHIPPING -> complete(deliveryId);
-            case DELIVERED -> returnReady(deliveryId);
-            case RETURN_READY -> inReturning(deliveryId);
-            case IN_RETURNING -> returned(deliveryId);
-            default -> throw new DeliveryStatusInvalidException("잘못된 배송 상태 요청: " + dto.getStatus());
-        }
+    public PageResponseDTO<DeliveryResponseDTO, Delivery> getAllList(PageRequestDTO pageRequestDTO) {
+        Page<Delivery> result = deliveryRepository.findAll(pageRequestDTO.getPageable());
+        return PageResponseDTO.of(result, deliveryMapper::toResponseDTO);
     }
 
-    @Override
-    public void changedStatus(DeliveryStatusChangeDTO dto) {
-        Delivery delivery = mustFind(dto.getDeliveryId());
-        OrderItem orderItem = delivery.getDeliveryItems().get(0).getOrderItem();
-
-        switch (dto.getStatus()) {
-            case SHIPPING -> deliveryStatusChanger.changeDeliveryStatus(delivery, delivery.getType(), DeliveryStatus.SHIPPING, orderItem);
-            case DELIVERED -> deliveryStatusChanger.changeDeliveryStatus(delivery, delivery.getType(), DeliveryStatus.DELIVERED, orderItem);
-            case RETURNED -> deliveryStatusChanger.changeDeliveryStatus(delivery, DeliveryType.RETURN, DeliveryStatus.RETURNED, orderItem);
-            default -> throw new DeliveryStatusInvalidException("잘못된 상태 전환 요청: " + dto.getStatus());
-        }
-    }
-
-    @Override
-    public DeliveryResponseDTO ship(Long id) {
-        Delivery d = mustFind(id);
-        ensure(d.getStatus() == DeliveryStatus.READY, "READY → SHIPPING만 가능");
-        log.info(" 배송 시작 → deliveryId={}", id);
-
-        flow.changeStatus(d, DeliveryStatus.READY, DeliveryStatus.SHIPPING, Map.of("source", "DeliveryService#ship"));
-        return deliveryMapper.toResponseDTO(d);
-    }
-
-    @Override
-    public DeliveryResponseDTO complete(Long id) {
-        Delivery d = mustFind(id);
-        ensure(d.getStatus() == DeliveryStatus.SHIPPING, "SHIPPING → DELIVERED만 가능");
-        log.info(" 배송 완료 → deliveryId={}", id);
-
-        flow.changeStatus(d, DeliveryStatus.SHIPPING, DeliveryStatus.DELIVERED, Map.of("source", "DeliveryService#complete"));
-        return deliveryMapper.toResponseDTO(d);
-    }
-
-    @Override
-    @Transactional
-    public DeliveryResponseDTO returnReady(Long id) {
-        Delivery d = mustFind(id);
-        d.setType(DeliveryType.RETURN);
-        ensure(d.getStatus() == DeliveryStatus.DELIVERED, "DELIVERED → RETURN_READY만 가능");
-        log.info(" 회수 준비 → deliveryId={}", id);
-
-        flow.changeStatus(d, DeliveryStatus.DELIVERED, DeliveryStatus.RETURN_READY, Map.of("source", "DeliveryService#returnReady"));
-        return deliveryMapper.toResponseDTO(d);
-    }
-
-    @Override
-    public DeliveryResponseDTO inReturning(Long id) {
-        Delivery d = mustFind(id);
-        ensure(d.getStatus() == DeliveryStatus.RETURN_READY, "RETURN_READY → IN_RETURNING만 가능");
-        log.info("♻ 회수 중 → deliveryId={}", id);
-
-        flow.changeStatus(d, DeliveryStatus.RETURN_READY, DeliveryStatus.IN_RETURNING, Map.of("source", "DeliveryService#inReturning"));
-        return deliveryMapper.toResponseDTO(d);
-    }
-
-    @Override
-    public DeliveryResponseDTO returned(Long id) {
-        Delivery d = mustFind(id);
-        ensure(d.getStatus() == DeliveryStatus.IN_RETURNING, "IN_RETURNING → RETURNED만 가능");
-        log.info(" 회수 완료 → deliveryId={}", id);
-
-        flow.changeStatus(d, DeliveryStatus.IN_RETURNING, DeliveryStatus.RETURNED, Map.of("source", "DeliveryService#returned"));
-        return deliveryMapper.toResponseDTO(d);
-    }
-
-
-    //  Helper Methods
-
+    // Helper
     private Delivery mustFind(Long id) {
         return deliveryRepository.findById(id)
           .orElseThrow(() -> new DeliveryNotFoundException(id));
-    }
-
-    private void ensure(boolean cond, String msg) {
-        if (!cond) throw new DeliveryStatusInvalidException(msg);
     }
 }
