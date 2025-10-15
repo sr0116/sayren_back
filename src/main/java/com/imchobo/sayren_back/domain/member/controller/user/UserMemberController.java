@@ -108,4 +108,9 @@ public class UserMemberController {
     return ResponseEntity.ok(Map.of("result", memberService.hasPassword()));
   }
 
+  @DeleteMapping("delete-member")
+  public ResponseEntity<?> deleteMember() {
+    memberService.deleteMember();
+    return ResponseEntity.ok(Map.of("message", "success"));
+  }
 }
