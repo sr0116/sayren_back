@@ -57,6 +57,5 @@ public interface SubscribeService {
   void validateNoActiveSubscription(Long memberId);
 
   // 일반 회원
-  void validateNoActiveSubscriptionForCurrentUser();
-
+  void validateNoActiveSubscription();
 }

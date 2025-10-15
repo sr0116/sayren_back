@@ -358,21 +358,11 @@ public class SubscribeServiceImpl implements SubscribeService {
     }
   }
 
-
-  // 사용자 같은 경우 시큐리티 쪽에서 멤버 가져오기
   @Transactional(readOnly = true)
-  public void validateNoActiveSubscriptionForCurrentUser() {
-    Member currentMember = SecurityUtil.getMemberEntity();
-
-    List<SubscribeStatus> activeStatuses = List.of(
-            SubscribeStatus.ACTIVE,
-            SubscribeStatus.PREPARING,
-            SubscribeStatus.PENDING_PAYMENT
-    );
-
-    boolean exists = subscribeRepository.existsByMember_IdAndStatusIn(currentMember.getId(), activeStatuses);
-    if (exists) {
-      throw new ActiveSubscriptionException();
-    }
+  @Override
+  public void validateNoActiveSubscription() {
+    validateNoActiveSubscription(SecurityUtil.getMemberAuthDTO().getId());
   }
+
+
 }
