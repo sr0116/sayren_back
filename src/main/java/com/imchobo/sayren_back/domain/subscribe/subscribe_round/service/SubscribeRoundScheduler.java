@@ -37,7 +37,7 @@ public class SubscribeRoundScheduler {
 
   // 테스트: 1분마다 실행
   // 실제 배포 시: 매일 새벽 5시 (0 0 5 * * *)
-//  @Scheduled(fixedRate = 60000)
+  @Scheduled(fixedRate = 60000)
   @Transactional
   public void processDueRounds() {
 
