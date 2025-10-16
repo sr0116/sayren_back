@@ -58,4 +58,7 @@ public interface SubscribeService {
 
   // 일반 회원
   void validateNoActiveSubscription();
+
+  // 구독 삭제
+  void deleteSubscribe(Long subscribeId);
 }

@@ -22,14 +22,23 @@ public class OrderController {
 
   private final OrderService orderService;
 
-  // 장바구니 기반 주문 생성
+  //  장바구니 및 단일 주문 생성
   @PostMapping("/create")
   public ResponseEntity<?> createOrder(@RequestBody @Valid OrderRequestDTO dto) {
     log.info("[주문 생성 요청] memberId={}", SecurityUtil.getMemberAuthDTO().getId());
     OrderResponseDTO response = orderService.createOrder(dto);
+
+    // 첫 번째 orderItemId 추출
+    Long orderItemId = null;
+    if (response.getOrderItems() != null && !response.getOrderItems().isEmpty()) {
+      orderItemId = response.getOrderItems().get(0).getOrderItemId();
+    }
+
     return ResponseEntity.ok(Map.of(
-      "message", "success",
-      "data", response
+            "message", "success",
+            "orderId", response.getOrderId(),
+            "orderItemId", orderItemId, //  프론트에서 바로 접근 가능
+            "data", response
     ));
   }
 
