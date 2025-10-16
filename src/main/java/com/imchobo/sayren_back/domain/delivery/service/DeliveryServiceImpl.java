@@ -20,6 +20,9 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.Order;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.SubscribeRoundRepository;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +45,9 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final AddressRepository addressRepository;
     private final DeliveryMapper deliveryMapper;
     private final DeliveryStatusChanger deliveryStatusChanger;
+    private final SubscribeRepository subscribeRepository;
+    private final SubscribeRoundRepository subscribeRoundRepository;
+
 
     // 배송 생성 (사용자 직접)
     @Override
@@ -78,7 +84,36 @@ public class DeliveryServiceImpl implements DeliveryService {
           .orElseThrow(() -> new DeliveryNotFoundException(orderItemId));
 
         Order order = orderItem.getOrder();
+        String planType = orderItem.getOrderPlan().getType().name();
 
+        // 렌탈 상품만 구독 기반으로 체크
+        if ("RENTAL".equalsIgnoreCase(planType)) {
+
+            if (!subscribeRepository.existsByOrderItem_Id(orderItemId)) {
+                log.info("[배송 생성 차단] 구독 없음. orderItemId={}", orderItemId);
+                return;
+            }
+
+            Long subscribeId = subscribeRepository.findByOrderItem_Id(orderItemId)
+              .map(sub -> sub.getId())
+              .orElseThrow(() -> new RuntimeException("구독 ID를 찾을 수 없습니다. orderItemId=" + orderItemId));
+
+            List<com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound> rounds =
+              subscribeRoundRepository.findBySubscribeId(subscribeId);
+
+            if (rounds == null || rounds.isEmpty()) {
+                log.info("[배송 생성 차단] 회차 없음. orderItemId={}", orderItemId);
+                return;
+            }
+
+            boolean existingDelivery = deliveryItemRepository.existsByOrderItem(orderItem);
+            if (existingDelivery) {
+                log.info("[배송 생성 차단] 이미 배송 생성됨. orderItemId={}", orderItemId);
+                return;
+            }
+        }
+
+        //  실제 배송 생성 로직
         Delivery delivery = Delivery.builder()
           .member(order.getMember())
           .address(order.getAddress())
@@ -97,7 +132,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         log.info("[자동 배송 생성 완료] orderItemId={}, deliveryId={}", orderItemId, saved.getId());
     }
 
-    //  상태 변경 (READY → SHIPPING → DELIVERED → RETURNED)
+    //  상태 변경 (READY > SHIPPING > DELIVERED > RETURNED)
     @Override
     public void changedStatus(DeliveryStatusChangeDTO dto) {
         Delivery delivery = mustFind(dto.getDeliveryId());

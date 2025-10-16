@@ -16,21 +16,18 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional
-//    - 요금제 등록/수정/삭제/조회 비즈니스 로직 처리
+//  요금제 등록/수정/삭제/조회 로직 처리
 public class OrderPlanServiceImpl implements OrderPlanService {
 
   private final OrderPlanRepository orderPlanRepository;
   private final OrderPlanMapper orderPlanMapper;
   private final OrderItemRepository orderItemRepository;
 
-  /**
-   * 요금제 등록
-   * - 같은 type + month 조합이 이미 존재하면 예외 발생
-   * - 없을 경우 새로 저장
-   */
+  // 요금제 등록
+
   @Override
   public OrderPlanResponseDTO create(OrderPlanRequestDTO dto) {
-    // DTO → Entity 변환
+    // DTO >Entity 변환
     OrderPlan entity = orderPlanMapper.toEntity(dto);
 
     // 중복 체크 (type + month)
@@ -45,10 +42,9 @@ public class OrderPlanServiceImpl implements OrderPlanService {
     return orderPlanMapper.toResponseDTO(orderPlanRepository.save(entity));
   }
 
-  /**
-   * 요금제 수정
-   * - id 기준으로 기존 요금제 조회 후 type, month 변경
-   */
+
+    //요금제 수정
+
   @Override
   public OrderPlanResponseDTO update(Long id, OrderPlanRequestDTO dto) {
     OrderPlan plan = orderPlanRepository.findById(id)
@@ -69,10 +65,9 @@ public class OrderPlanServiceImpl implements OrderPlanService {
     return orderPlanMapper.toResponseDTO(orderPlanRepository.save(plan));
   }
 
-  /**
-   * 요금제 삭제
-   * 존재 여부 확인 후 삭제 바로삭제하는게아님
-   */
+
+   //요금제 삭제
+
   @Override
   public void delete(Long id) {
     // 요금제 존재 여부 확인
@@ -90,9 +85,9 @@ public class OrderPlanServiceImpl implements OrderPlanService {
     orderPlanRepository.deleteById(id);
   }
 
-  /**
-   * 단일 요금제 조회
-   */
+
+   //단일 요금제 조회
+
   @Override
   public OrderPlanResponseDTO getById(Long id) {
     return orderPlanRepository.findById(id)
@@ -100,9 +95,9 @@ public class OrderPlanServiceImpl implements OrderPlanService {
       .orElseThrow(() -> new EntityNotFoundException("요금제 없음: id=" + id));
   }
 
-  /**
-   * 전체 요금제 목록 조회
-   */
+
+   //전체 요금제 목록 조회
+
   @Override
   public List<OrderPlanResponseDTO> getAll() {
     return orderPlanMapper.toResponseDTOs(orderPlanRepository.findAll());

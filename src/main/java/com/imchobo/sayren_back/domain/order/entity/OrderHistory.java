@@ -9,7 +9,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "tbl_order_history") // DB 테이블 매핑
+@Table(name = "tbl_order_history")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,8 +32,6 @@ public class OrderHistory extends CreatedEntity {
   @Column(nullable = false)
   private OrderStatus status; // 변경시점 상태
 
-//  @Column(nullable = false)
-//  private String address; // 변경시점 배송지
 
     @Column(name = "address", nullable = false)
     private String address; // 변경시점 배송지

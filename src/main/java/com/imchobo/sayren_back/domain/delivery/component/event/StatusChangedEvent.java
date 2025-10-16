@@ -10,7 +10,6 @@ import lombok.Getter;
 //  deliveryId : 어떤 배송인지
 // orderItemId : 구독 연결용 (OrderItem 단위로 구독이 매핑되기 때문)
 // status : 변경된 배송 상태
-//
 @Getter
 @AllArgsConstructor
 public class StatusChangedEvent {

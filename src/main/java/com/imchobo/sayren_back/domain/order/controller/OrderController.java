@@ -66,7 +66,7 @@ public class OrderController {
     ));
   }
 
-  //결제 완료 → 상태 PAID
+  //결제 완료 > 상태 PAID
   @PostMapping("/{id}/paid")
   public ResponseEntity<?> markAsPaid(@PathVariable Long id) {
     log.info("[결제 완료 처리] orderId={}", id);
@@ -76,7 +76,7 @@ public class OrderController {
     ));
   }
 
-  //결제 실패/취소 → 상태 CANCELED
+  //결제 실패/취소 > 상태 CANCELED
   @PostMapping("/{id}/cancel")
   public ResponseEntity<?> cancelOrder(@PathVariable Long id,
                                        @RequestParam(required = false) String reason) {

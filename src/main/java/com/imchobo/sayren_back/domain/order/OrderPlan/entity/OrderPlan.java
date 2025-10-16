@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "tbl_order_plan") // DB 테이블 매핑
+@Table(name = "tbl_order_plan")
 @Getter
 @Setter
 @NoArgsConstructor

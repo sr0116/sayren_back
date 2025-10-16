@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "tbl_delivery_item")      // 스키마: tbl_delivery_item
+@Table(name = "tbl_delivery_item")
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 @Builder
