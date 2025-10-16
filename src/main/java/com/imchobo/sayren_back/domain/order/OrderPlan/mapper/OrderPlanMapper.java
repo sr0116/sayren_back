@@ -12,13 +12,13 @@ import java.util.List;
 @Mapper(componentModel = "spring", uses = MappingUtil.class)
 public interface OrderPlanMapper {
 
-  // RequestDTO → Entity 변환 (등록/수정 시 사용)
-  @Mapping(target = "id", ignore = true) // 생성 시 PK는 무시
+
+  @Mapping(target = "id", ignore = true)
   OrderPlan toEntity(OrderPlanRequestDTO dto);
 
-  // Entity → ResponseDTO 변환 (조회 응답 시 사용)
+  // Entity > ResponseDTO 변환 (조회 응답 시 사용)
   @Mapping(source = "id", target = "planId")
   OrderPlanResponseDTO toResponseDTO(OrderPlan entity);
-  // Entity List → ResponseDTO List 변환 (목록 조회 시 사용)
+  // Entity List > ResponseDTO List 변환 (목록 조회 시 사용)
   List<OrderPlanResponseDTO> toResponseDTOs(List<OrderPlan> entities);
 }
