@@ -376,7 +376,7 @@ public class SubscribeEventHandler {
         dto.setTitle("구독 결제일 안내");
         dto.setMessage(String.format("[%s] %d회차 결제일이 도래했습니다. 결제를 진행해주세요.",
                 subscribe.getOrderItem().getProduct().getName(), round.getRoundNo()));
-        dto.setLinkUrl(String.format("/mypage/subscribe/round/%d?autoPay=true", round.getId()));
+        dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
       }
       case "WARNING" -> {
         dto.setTitle("결제 유예기간 만료 예정");
