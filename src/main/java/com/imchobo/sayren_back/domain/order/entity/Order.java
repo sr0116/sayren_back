@@ -12,7 +12,7 @@ import java.util.List;
 
 
 @Entity
-@Table(name = "tbl_order") // DB의 tbl_order 테이블과 매핑
+@Table(name = "tbl_order")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,19 +21,19 @@ import java.util.List;
 public class Order extends BaseEntity {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO_INCREMENT
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "order_id")
   private Long id;
 
   //  주문자 (Member)
   @ManyToOne(fetch = FetchType.LAZY) // 여러 주문이 하나의 회원에 속함
-  @JoinColumn(name = "member_id", nullable = false) // FK: tbl_member.member_id
-  private Member member;  // FK → tbl_member.member_id (NOT NULL)
+  @JoinColumn(name = "member_id", nullable = false)
+  private Member member;
 
   //  배송지 (Address)
   @ManyToOne(fetch = FetchType.LAZY) // 여러 주문이 하나의 주소를 가질 수 있음
-  @JoinColumn(name = "address_id", nullable = false) // FK: tbl_address.addr_id
-  private Address address;  // FK → tbl_address.addr_id (NOT NULL)
+  @JoinColumn(name = "address_id", nullable = false)
+  private Address address;
 
   // 주문 상태 (PENDING, PAID, SHIPPED, DELIVERED, CANCELED)
   @Column(nullable = false, length = 20)

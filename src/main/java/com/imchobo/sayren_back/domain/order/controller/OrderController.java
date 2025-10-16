@@ -22,14 +22,23 @@ public class OrderController {
 
   private final OrderService orderService;
 
-  // 장바구니 기반 주문 생성
+  //  장바구니 및 단일 주문 생성
   @PostMapping("/create")
   public ResponseEntity<?> createOrder(@RequestBody @Valid OrderRequestDTO dto) {
     log.info("[주문 생성 요청] memberId={}", SecurityUtil.getMemberAuthDTO().getId());
     OrderResponseDTO response = orderService.createOrder(dto);
+
+    // 첫 번째 orderItemId 추출
+    Long orderItemId = null;
+    if (response.getOrderItems() != null && !response.getOrderItems().isEmpty()) {
+      orderItemId = response.getOrderItems().get(0).getOrderItemId();
+    }
+
     return ResponseEntity.ok(Map.of(
-      "message", "success",
-      "data", response
+            "message", "success",
+            "orderId", response.getOrderId(),
+            "orderItemId", orderItemId, //  프론트에서 바로 접근 가능
+            "data", response
     ));
   }
 
@@ -66,7 +75,7 @@ public class OrderController {
     ));
   }
 
-  //결제 완료 → 상태 PAID
+  //결제 완료 > 상태 PAID
   @PostMapping("/{id}/paid")
   public ResponseEntity<?> markAsPaid(@PathVariable Long id) {
     log.info("[결제 완료 처리] orderId={}", id);
@@ -76,7 +85,7 @@ public class OrderController {
     ));
   }
 
-  //결제 실패/취소 → 상태 CANCELED
+  //결제 실패/취소 > 상태 CANCELED
   @PostMapping("/{id}/cancel")
   public ResponseEntity<?> cancelOrder(@PathVariable Long id,
                                        @RequestParam(required = false) String reason) {

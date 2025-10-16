@@ -16,5 +16,5 @@ public class OrderItemResponseDTO {
   private String modelName;     // 모델명
   private Long priceSnapshot;   // 주문 시점 가격
   private Long planId;          // 요금제 ID
-  private OrderPlanType planType; // 요금제 타입 (Enum 그대로)
+  private OrderPlanType planType; // 요금제 타입
 }

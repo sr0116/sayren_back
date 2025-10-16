@@ -26,7 +26,7 @@ public class AdminProductController {
 
     @GetMapping
     public List<ProductListResponseDTO> list(@RequestParam(required = false) String type, String category) {
-        return productService.getAllProducts();
+        return productService.getAllProductsForAdmin();
     }
 
     // 상품 등록

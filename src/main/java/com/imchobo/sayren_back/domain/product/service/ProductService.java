@@ -18,8 +18,6 @@ public interface ProductService {
   List<ProductListResponseDTO> getAllProducts();
   ProductDetailsResponseDTO getProductById(Long id);
 
-
-
   // 승인 완료(활성화)페이지네이션
   PageResponseDTO<ProductPendingDTO, Product> getPendingProducts(PageRequestDTO pageRequestDTO);
   // 삭제(비활성화) 페이지네이션
@@ -41,6 +39,7 @@ public interface ProductService {
 
   void revalidate(Long id);
   void revalidateAll();
+
   // 상품 큐레이션
   Page<ProductListResponseDTO> getFilteredProducts(ProductListResponseDTO filter, Pageable pageable);
 
@@ -52,6 +51,7 @@ public interface ProductService {
 
   Object getProductCategories();
 
-//  List<Category> findCategories();
+  // 관리자 상품 관리 페이지
+  List<ProductListResponseDTO> getAllProductsForAdmin();
 }
 

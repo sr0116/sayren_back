@@ -34,14 +34,14 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   Optional<SubscribeRound> findBySubscribeIdAndRoundNo(Long subscribeId, int roundNo);
 
   Subscribe subscribe(Subscribe subscribe);
-  //이벤트 핸들러에서 사용
-  List<SubscribeRound> findBySubscribeId(Long subscribeId);
+
 
   // 스케줄 처리
   List<SubscribeRound> findByDueDateAndPayStatus(
           LocalDate dueDate,
           PaymentStatus payStatus
   );
+
 
   // 상태 기반 조회 (유예기간 처리용)
   List<SubscribeRound> findByPayStatusIn(List<PaymentStatus> statuses);
@@ -61,8 +61,27 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   @Query("SELECT sr FROM SubscribeRound sr JOIN FETCH sr.subscribe s WHERE s.id = :subscribeId")
   List<SubscribeRound> findBySubscribeIdWithLock(@Param("subscribeId") Long subscribeId);
 
-  // 취고 승인 시, 해당 회차 이후만 canceled 처리
+  // 취소 승인 시, 해당 회차 이후만 canceled 처리
   @Modifying
   @Query("update SubscribeRound  r set r.payStatus = :status where r.subscribe = :subscribe and r.dueDate > :today")
   void cancelFutureRounds(@Param("subscribe") Subscribe subscribe, PaymentStatus status, @Param("today") LocalDate today);
+
+  @Query("""
+    SELECT r
+    FROM SubscribeRound r
+    JOIN FETCH r.subscribe s
+    JOIN FETCH s.orderItem oi
+    JOIN FETCH oi.product
+    WHERE r.id = :id
+""")
+  Optional<SubscribeRound> findWithSubscribeAndProduct(@Param("id") Long id);
+  // 구독 ID 기준 회차 목록 조회
+  @Query("SELECT r FROM SubscribeRound r WHERE r.subscribe.id = :subscribeId")
+  List<SubscribeRound> findBySubscribeId(@Param("subscribeId") Long subscribeId);
+
+  // 구독 기반 회차 전체 삭제
+  @Modifying
+  @Query("DELETE FROM SubscribeRound r WHERE r.subscribe.id = :subscribeId")
+  void deleteAllBySubscribeId(@Param("subscribeId") Long subscribeId);
+
 }

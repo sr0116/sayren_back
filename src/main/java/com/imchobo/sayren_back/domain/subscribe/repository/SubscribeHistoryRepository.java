@@ -5,6 +5,9 @@ import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,5 +22,9 @@ public interface SubscribeHistoryRepository  extends JpaRepository<SubscribeHist
   boolean existsBySubscribeAndReasonCode(Subscribe subscribe, ReasonCode reasonCode);
 
   Optional<SubscribeHistory> findFirstBySubscribeOrderByRegDateDesc(Subscribe subscribe);
+
+  @Modifying
+  @Query("DELETE FROM SubscribeHistory h WHERE h.subscribe = :subscribe")
+  void deleteAllBySubscribe(@Param("subscribe") Subscribe subscribe);
 
 }

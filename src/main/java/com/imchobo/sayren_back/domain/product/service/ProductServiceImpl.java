@@ -28,6 +28,8 @@ import com.imchobo.sayren_back.domain.product.repository.ProductTagRepository;
 import com.imchobo.sayren_back.domain.term.en.TermType;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -41,6 +43,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Log4j2
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
@@ -368,14 +372,23 @@ public class ProductServiceImpl implements ProductService {
   @Override
   @Transactional
   public void registerProductBoard(ProductCreateRequestDTO dto) {
+    log.info("dto값" + dto);
 
     Product product = productRepository.findById(dto.getProductId())
             .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
 
-    Category category = categoryRepository
-            .findByNameAndParentCategory_Type(dto.getProductCategory(), CategoryType.PRODUCT)
+    log.info("상품 조회성공" + product.getId());
+
+    // 상품 노출 상태 업데이트
+    product.setIsUse(true);
+
+    // 카테고리 조회
+    Category category = categoryRepository.findById(dto.getCategoryId())
             .orElseThrow(() -> new EntityNotFoundException("카테고리를 찾을 수 없습니다."));
 
+    log.info("카테고리 조회성공" + category.getId());
+
+    // 게시글 등록
     Board board = Board.builder()
             .product(product)
             .title(product.getName())
@@ -459,4 +472,35 @@ public class ProductServiceImpl implements ProductService {
             .collect(Collectors.toList());
   }
 
+  // 관리자 상품리스트 페이지
+  @Override
+  @Transactional(readOnly = true)
+  public List<ProductListResponseDTO> getAllProductsForAdmin() {
+    List<Product> products = productRepository.findAll();
+
+    return products.stream().map(p -> {
+      // 썸네일 URL
+      String thumbnailUrl = productAttachRepository.findByProductIdAndIsThumbnailTrue(p.getId())
+              .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
+                      + a.getPath() + "/" + a.getUuid())
+              .orElse(null);
+
+      // 태그
+      List<String> tags = productTagRepository.findByProductId(p.getId())
+              .stream()
+              .map(tag -> tag.getTagName() + "#" + tag.getTagValue())
+              .toList();
+
+      return ProductListResponseDTO.builder()
+              .productId(p.getId())
+              .thumbnailUrl(thumbnailUrl)
+              .tags(tags)
+              .status(p.getIsUse() ? CommonStatus.ACTIVE : CommonStatus.DISABLED)// 상태표시 추가
+              .productName(p.getName())
+              .category(p.getProductCategory())              // 카테고리명 그대로 표시
+              .modelName(p.getModelName())
+              .price(p.getPrice())
+              .build();
+    }).toList();
+  }
 }
