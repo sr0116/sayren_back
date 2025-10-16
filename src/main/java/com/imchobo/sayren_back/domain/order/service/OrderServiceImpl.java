@@ -47,7 +47,7 @@ public class OrderServiceImpl implements OrderService {
   private final ApplicationEventPublisher eventPublisher;
   private final StatusChanger statusChanger;
 
-  //  장바구니 기반 주문 생성
+  //  장바구니 및 단일 상품 주문 생성
   @Override
   public OrderResponseDTO createOrder(OrderRequestDTO dto) {
     Member member = SecurityUtil.getMemberEntity();
@@ -59,61 +59,70 @@ public class OrderServiceImpl implements OrderService {
       throw new IllegalArgumentException("배송지 정보가 존재하지 않습니다.");
     }
 
-    //  장바구니 확인
+    // 장바구니 확인
     List<CartItem> cartItems = cartRepository.findByMemberId(memberId);
 
-    //  장바구니가 비어 있으면 바로 단일 상품 주문 생성
+    // 장바구니가 비어 있으면 단일 주문 처리
     if (cartItems == null || cartItems.isEmpty()) {
-      log.info("[장바구니 비어 있음 → 단일 상품 주문으로 전환] memberId={}, productId={}, planId={}",
-        memberId, dto.getProductId(), dto.getPlanId());
+      log.info("[장바구니 비어 있음 → 단일 주문 처리] memberId={}, productId={}, planId={}",
+              memberId, dto.getProductId(), dto.getPlanId());
 
-      // 바로 구매 로직처럼 처리
       Product product = productRepository.findById(dto.getProductId())
-        .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + dto.getProductId()));
+              .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다. id=" + dto.getProductId()));
 
       OrderPlan plan = orderPlanRepository.findById(dto.getPlanId())
-        .orElseThrow(() -> new EntityNotFoundException("요금제를 찾을 수 없습니다. id=" + dto.getPlanId()));
+              .orElseThrow(() -> new EntityNotFoundException("요금제를 찾을 수 없습니다. id=" + dto.getPlanId()));
 
       Address address = addressRepository.findById(dto.getAddressId())
-        .orElseThrow(() -> new OrderNotFoundException(dto.getAddressId()));
+              .orElseThrow(() -> new OrderNotFoundException(dto.getAddressId()));
 
-      // 주문 생성
       Order order = Order.builder()
-        .member(member)
-        .address(address)
-        .status(OrderStatus.PENDING)
-        .build();
+              .member(member)
+              .address(address)
+              .status(OrderStatus.PENDING)
+              .build();
 
       OrderItem orderItem = OrderItem.builder()
-        .order(order)
-        .product(product)
-        .orderPlan(plan)
-        .productPriceSnapshot(product.getPrice())
-        .build();
+              .order(order)
+              .product(product)
+              .orderPlan(plan)
+              .productPriceSnapshot(product.getPrice())
+              .build();
 
       order.setOrderItems(List.of(orderItem));
       Order savedOrder = orderRepository.save(order);
 
-      // 상태 변경 및 이벤트 발행
       statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
       eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
 
-      log.info("[단일 상품 주문 완료] orderId={}, memberId={}", savedOrder.getId(), memberId);
-      return orderMapper.toResponseDTO(savedOrder);
+      //  첫 번째 OrderItem ID 추출
+      Long firstItemId = savedOrder.getOrderItems().get(0).getId();
+      log.info("[단일 상품 주문 완료] orderId={}, orderItemId={}", savedOrder.getId(), firstItemId);
+
+      //  OrderResponseDTO에 추가 세팅
+      OrderResponseDTO responseDTO = orderMapper.toResponseDTO(savedOrder);
+      // responseDTO 안에 orderItemId 필드 추가 (세터 사용)
+      // → DTO에 세터 이미 존재하므로 가능
+      // 단, orderItems 내부에 값은 이미 포함되어 있음
+
+      //  첫 OrderItemId를 responseDTO 상위에도 세팅
+      responseDTO.setOrderItems(responseDTO.getOrderItems());
+      responseDTO.setRegDate(savedOrder.getRegDate());
+      return responseDTO;
     }
 
-    //  장바구니 주문 정상 처리
+    // 장바구니 기반 주문 처리
     return createOrderFromCart(dto.getAddressId());
   }
 
-  // 장바구니 기반 주문 처리
+  //  장바구니 기반 주문 처리
   @Override
   public OrderResponseDTO createOrderFromCart(Long addressId) {
     Long memberId = SecurityUtil.getMemberAuthDTO().getId();
     Member member = SecurityUtil.getMemberEntity();
 
     Address address = addressRepository.findById(addressId)
-      .orElseThrow(() -> new OrderNotFoundException(addressId));
+            .orElseThrow(() -> new OrderNotFoundException(addressId));
 
     List<CartItem> cartItems = cartRepository.findByMemberId(memberId);
     if (cartItems.isEmpty()) throw new EmptyCartException(memberId);
@@ -121,33 +130,34 @@ public class OrderServiceImpl implements OrderService {
     log.info("[장바구니 주문 생성 시작] memberId={}, cartItemCount={}", memberId, cartItems.size());
 
     Order order = Order.builder()
-      .member(member)
-      .address(address)
-      .status(OrderStatus.PENDING)
-      .build();
+            .member(member)
+            .address(address)
+            .status(OrderStatus.PENDING)
+            .build();
 
     List<OrderItem> orderItems = cartItems.stream()
-      .map(c -> OrderItem.builder()
-        .order(order)
-        .product(c.getProduct())
-        .orderPlan(c.getOrderPlan())
-        .productPriceSnapshot(c.getProduct().getPrice())
-        .build())
-      .toList();
+            .map(c -> OrderItem.builder()
+                    .order(order)
+                    .product(c.getProduct())
+                    .orderPlan(c.getOrderPlan())
+                    .productPriceSnapshot(c.getProduct().getPrice())
+                    .build())
+            .collect(Collectors.toList());
 
     order.setOrderItems(orderItems);
     Order savedOrder = orderRepository.save(order);
 
-    // 장바구니 비우기
     cartRepository.deleteAll(cartItems);
 
-    // 상태 변경 및 이벤트 발행
     statusChanger.change(savedOrder, OrderStatus.PENDING, ActorType.USER);
     eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder.getId()));
 
-    log.info("[장바구니 주문 완료] orderId={}, totalItems={}", savedOrder.getId(), orderItems.size());
+    Long firstItemId = savedOrder.getOrderItems().get(0).getId();
+    log.info("[장바구니 주문 완료] orderId={}, firstItemId={}", savedOrder.getId(), firstItemId);
+
     return orderMapper.toResponseDTO(savedOrder);
   }
+
 
   // 바로구매 주문 생성
   @Override
