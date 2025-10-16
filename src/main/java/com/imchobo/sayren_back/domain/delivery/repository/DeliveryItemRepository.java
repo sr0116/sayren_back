@@ -22,4 +22,8 @@ public interface DeliveryItemRepository extends JpaRepository<DeliveryItem, Long
   List<DeliveryItem> findByDelivery(Delivery delivery);
 
   List<DeliveryItem> findByDelivery_Status(DeliveryStatus status);
+
+  boolean existsByOrderItem(OrderItem orderItem);
+
+
 }

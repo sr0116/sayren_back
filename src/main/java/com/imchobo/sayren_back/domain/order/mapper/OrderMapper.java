@@ -13,7 +13,7 @@ import org.mapstruct.ReportingPolicy;
 )
 public interface OrderMapper {
 
-  // Order → OrderResponseDTO
+
   @Mapping(source = "id", target = "orderId")                         // 주문 PK
   @Mapping(source = "status", target = "status")                      // 주문 상태
 

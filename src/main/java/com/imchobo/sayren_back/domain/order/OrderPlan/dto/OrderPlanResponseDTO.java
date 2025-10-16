@@ -3,8 +3,7 @@ package com.imchobo.sayren_back.domain.order.OrderPlan.dto;
 import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import lombok.*;
 
-//  요금제 정보를 조회할 때 클라이언트에게 응답으로 전달하는 DTO
-//    Entity → ResponseDTO 로 변환해서 사용
+
 @Getter
 @Setter
 @NoArgsConstructor

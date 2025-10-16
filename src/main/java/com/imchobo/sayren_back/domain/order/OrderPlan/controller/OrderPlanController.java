@@ -9,27 +9,25 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-//  OrderPlanController
-// - 요금제 등록, 수정, 삭제, 조회 API 제공
+
+
 @RestController
 @RequestMapping("/api/order-plans")
 @RequiredArgsConstructor
 public class OrderPlanController {
 
   private final OrderPlanService orderPlanService;
-  /**
-   *  요금제 등록
-   * POST /api/order-plans
-   */
+
+     //요금제 등록
+
   @PostMapping
   public ResponseEntity<OrderPlanResponseDTO> create(@RequestBody OrderPlanRequestDTO dto) {
     return ResponseEntity.ok(orderPlanService.create(dto));
   }
 
-  /**
-   * 요금제 수정
-   * PUT /api/order-plans/{id}
-   */
+
+   //요금제 수정
+
   @PutMapping("/{id}")
   public ResponseEntity<OrderPlanResponseDTO> update(
     @PathVariable Long id,
@@ -38,29 +36,26 @@ public class OrderPlanController {
     return ResponseEntity.ok(orderPlanService.update(id, dto));
   }
 
-  /**
-   *  요금제 삭제
-   * DELETE /api/order-plans/{id}
-   */
+
+   //요금제 삭제
+
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(@PathVariable Long id) {
     orderPlanService.delete(id);
     return ResponseEntity.noContent().build();
   }
 
-  /**
-   *  단일 요금제 조회
-   * GET /api/order-plans/{id}
-   */
+
+   //단일 요금제 조회
+
   @GetMapping("/{id}")
   public ResponseEntity<OrderPlanResponseDTO> getById(@PathVariable Long id) {
     return ResponseEntity.ok(orderPlanService.getById(id));
   }
 
-  /**
-   *  전체 요금제 목록 조회
-   * GET /api/order-plans
-   */
+
+    //전체 요금제 목록 조회
+
   @GetMapping
   public ResponseEntity<List<OrderPlanResponseDTO>> getAll() {
     return ResponseEntity.ok(orderPlanService.getAll());
