@@ -16,6 +16,9 @@ import java.util.Map;
 @AllArgsConstructor
 @Builder
 public class ProductCreateRequestDTO {
+  // pk
+  private Long productId;
+
   // 상품 이름
   @NotBlank(message = "상품명은 필수입니다.")
   private String productName;

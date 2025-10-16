@@ -2,11 +2,15 @@ package com.imchobo.sayren_back.domain.product.service;
 
 import com.imchobo.sayren_back.domain.attach.dto.ProductAttachResponseDTO;
 import com.imchobo.sayren_back.domain.attach.entity.Attach;
+import com.imchobo.sayren_back.domain.attach.repository.BoardAttachRepository;
 import com.imchobo.sayren_back.domain.attach.repository.ProductAttachRepository;
+import com.imchobo.sayren_back.domain.board.dto.CategoryResponseDTO;
 import com.imchobo.sayren_back.domain.board.en.CategoryType;
 import com.imchobo.sayren_back.domain.board.entity.Board;
+import com.imchobo.sayren_back.domain.board.entity.Category;
 import com.imchobo.sayren_back.domain.board.repository.BoardRepository;
 import com.imchobo.sayren_back.domain.board.repository.CategoryRepository;
+import com.imchobo.sayren_back.domain.board.service.CategoryService;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.en.CommonStatus;
@@ -35,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +53,8 @@ public class ProductServiceImpl implements ProductService {
   private final BoardRepository boardRepository;
   private final NextUtil nextUtil;
   private final CategoryRepository categoryRepository;
+  private final BoardAttachRepository boardAttachRepository;
+  private final CategoryService categoryService;
 
 
   private Long calcDeposit(Long price) {
@@ -360,6 +367,29 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   @Transactional
+  public void registerProductBoard(ProductCreateRequestDTO dto) {
+
+    Product product = productRepository.findById(dto.getProductId())
+            .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+    Category category = categoryRepository
+            .findByNameAndParentCategory_Type(dto.getProductCategory(), CategoryType.PRODUCT)
+            .orElseThrow(() -> new EntityNotFoundException("카테고리를 찾을 수 없습니다."));
+
+    Board board = Board.builder()
+            .product(product)
+            .title(product.getName())
+            .content(product.getDescription())
+            .category(category)
+            .isSecret(false)
+            .status(CommonStatus.ACTIVE)
+            .build();
+
+    boardRepository.save(board);
+  }
+
+  @Override
+  @Transactional
   public Long registerProduct(ProductCreateRequestDTO dto) {
 
     // 상품 저장
@@ -367,38 +397,21 @@ public class ProductServiceImpl implements ProductService {
             .name(dto.getProductName())
             .description(dto.getDescription())
             .price(dto.getPrice().longValue())
-            .isUse(false)
+            .isUse(false) // 기본 비노출 상태
             .productCategory(dto.getProductCategory())
             .modelName(dto.getModelName())
             .build();
 
     productRepository.save(product);
 
-    // 게시글 자동 생성
-    Board board = Board.builder()
-            .product(product)
-            .title(dto.getProductName())
-            .content(dto.getDescription())
-            .isSecret(false)
-            .status(CommonStatus.ACTIVE)
-            .build();
-
-    // 카테고리 연결
-    board.setCategory(
-            categoryRepository.findByNameAndParentCategory_Type(dto.getProductCategory(), CategoryType.PRODUCT)
-                    .orElseThrow(() -> new EntityNotFoundException("상품 카테고리를 찾을 수 없습니다."))
-    );
-
-    boardRepository.save(board);
-
-    // 재고
+    // 재고 기본값 (9999로 고정)
     ProductStock stock = ProductStock.builder()
             .product(product)
-            .stock(dto.getStock())
+            .stock(dto.getStock()) // ← 이건 지유쨩 버전 유지
             .build();
     productStockRepository.save(stock);
 
-    // 태그
+    // 태그 등록
     if (dto.getTags() != null && !dto.getTags().isEmpty()) {
       dto.getTags().forEach((tagName, tagValue) -> {
         ProductTag tag = ProductTag.builder()
@@ -410,13 +423,12 @@ public class ProductServiceImpl implements ProductService {
       });
     }
 
-    // 첨부파일 연결 (Mapper가 없으면 직접 처리)
+    // 첨부파일 등록 (썸네일 + 일반)
     if (dto.getAttach() != null) {
       Attach thumb = Attach.builder()
               .uuid(dto.getAttach().getUuid())
               .path(dto.getAttach().getPath())
               .isThumbnail(true)
-              .product(product)
               .build();
       productAttachRepository.save(thumb);
     }
@@ -427,13 +439,24 @@ public class ProductServiceImpl implements ProductService {
                 .uuid(a.getUuid())
                 .path(a.getPath())
                 .isThumbnail(false)
-                .product(product)
                 .build();
         productAttachRepository.save(attach);
       });
     }
 
     return product.getId();
+  }
+
+  @Override
+  public List<CategoryResponseDTO> getProductCategories() {
+    List<Category> categories = categoryService.findProductCategories();
+    return categories.stream()
+            .map(c -> new CategoryResponseDTO(
+                    c.getId(),
+                    c.getParentCategory() != null ? c.getParentCategory().getId() : null,
+                    c.getName(),
+                    c.getType()))
+            .collect(Collectors.toList());
   }
 
 }

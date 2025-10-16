@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.product.service;
 
+import com.imchobo.sayren_back.domain.board.entity.Category;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.en.CommonStatus;
@@ -45,10 +46,12 @@ public interface ProductService {
 
 //  Long registerProduct(ProductCreateRequestDTO dto, Long memberId);
   // 상품을 게시글로 등록
-Long registerProduct(ProductCreateRequestDTO dto);
+  Long registerProduct(ProductCreateRequestDTO dto);
 
+  void registerProductBoard(ProductCreateRequestDTO dto);
 
+  Object getProductCategories();
 
-
+//  List<Category> findCategories();
 }
 

@@ -1,5 +1,8 @@
 package com.imchobo.sayren_back.domain.product.controller;
 
+import com.imchobo.sayren_back.domain.board.en.CategoryType;
+import com.imchobo.sayren_back.domain.board.repository.CategoryRepository;
+import com.imchobo.sayren_back.domain.board.service.BoardService;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.product.dto.*;
@@ -8,6 +11,7 @@ import com.imchobo.sayren_back.domain.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +21,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminProductController {
     private final ProductService productService;
+    private final BoardService boardService;
+    private final CategoryRepository categoryRepository;
 
     @GetMapping
     public List<ProductListResponseDTO> list(@RequestParam(required = false) String type, String category) {
@@ -29,6 +35,19 @@ public class AdminProductController {
         return ResponseEntity.ok(productService.registerProduct(dto));
     }
 
+    // 상품 게시글 등록용 카테고리 목록 조회
+    @GetMapping("/category")
+    public ResponseEntity<?> getProductCategories() {
+        return ResponseEntity.ok(productService.getProductCategories());
+    }
+
+
+    // 게시글 등록
+    @PostMapping("/register")
+    public ResponseEntity<?> registerProductBoard(@RequestBody ProductCreateRequestDTO dto) {
+        boardService.registerProductBoard(dto);
+        return ResponseEntity.ok("상품이 게시글로 등록되었습니다.");
+    }
 
     // 승인처리
     @PostMapping("/use/{id}")
