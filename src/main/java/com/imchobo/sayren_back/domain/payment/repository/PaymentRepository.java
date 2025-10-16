@@ -5,8 +5,10 @@ import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,6 +25,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
           "JOIN FETCH oi.product pr " +
           "WHERE p.id = :paymentId")
   Optional<Payment> findWithOrderAndPlan(Long paymentId);
+
+  // 회차 기준 결제 조회
+  List<Payment> findBySubscribeRound(SubscribeRound round);
+
+  // 회차 기준 결제 전체 삭제 (필요 시 cascade 전용)
+  @Modifying
+  @Query("DELETE FROM Payment p WHERE p.subscribeRound = :round")
+  void deleteAllBySubscribeRound(@Param("round") SubscribeRound round);
 
   // 결제 상세 (Order + Items + Plan까지 ) -> 나중에 서비스 코드 findWithOrderAndPlan 대신에 이걸로 수정
   @EntityGraph(attributePaths = {
@@ -58,6 +68,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 // 최신 결제
   @Query("SELECT p FROM Payment p WHERE p.orderItem = :orderItem ORDER BY p.regDate DESC")
   List<Payment> findAllByOrderItemOrderByRegDateDesc(@Param("orderItem") OrderItem orderItem);
+
+  // 결제 삭제
 
   // 기본 CRUD, 결제 상태로 조회
   List<Payment> findByPaymentStatus(PaymentStatus status);

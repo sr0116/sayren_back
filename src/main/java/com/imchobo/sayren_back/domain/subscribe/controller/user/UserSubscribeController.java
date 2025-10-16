@@ -53,4 +53,12 @@ public class UserSubscribeController {
   public SubscribeRoundResponseDTO getRoundDetail(@PathVariable Long subscribeId, @PathVariable Integer roundNo) {
    return subscribeService.getRoundDetail(subscribeId, roundNo);
   }
+
+  // 구독 삭제 (사용자 본인만 가능)
+  @DeleteMapping("/{id}")
+  public ResponseEntity<String> deleteSubscribe(@PathVariable Long id) {
+    subscribeService.deleteSubscribe(id);
+    return ResponseEntity.ok("구독 내역이 삭제되었습니다.");
+  }
+
 }

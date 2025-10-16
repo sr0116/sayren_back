@@ -23,6 +23,7 @@ import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.entity.SubscribeHistory;
 import com.imchobo.sayren_back.domain.subscribe.exception.SubscribeNotFoundException;
+import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.SubscribeRoundNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
@@ -351,25 +352,25 @@ public class SubscribeEventHandler {
     return switch (transition) {
       case COMPLETE -> SubscribeRoundTransition.PAY_SUCCESS;
       case FAIL_USER, FAIL_PAYMENT, FAIL_SYSTEM -> SubscribeRoundTransition.PAY_FAIL;
+
       case FAIL_TIMEOUT -> SubscribeRoundTransition.PAY_TIMEOUT;
-      case REFUND, PARTIAL_REFUND, CANCEL_FUTURE_ONLY -> null; // 환불 관련 이벤트 무시
+      case REFUND, PARTIAL_REFUND, CANCEL_FUTURE_ONLY -> SubscribeRoundTransition.CANCEL; // 환불 관련 이벤트 무시
       default -> null;
     };
   }
 
   // 회차 알림 이벤트 처리
-  @Async
+  @Transactional
   @EventListener
   public void onSubscribeRoundDue(SubscribeRoundDueEvent event) {
     SubscribeRound round = event.getRound();
     Subscribe subscribe = round.getSubscribe();
-    Member member = subscribe.getMember(); // 알림 쪽만 멤버 아이디 따로 받음
+    Member member = subscribe.getMember();
 
     NotificationCreateDTO dto = new NotificationCreateDTO();
     dto.setMemberId(member.getId());
     dto.setType(NotificationType.SUBSCRIBE);
 
-    // 분기 처리
     switch (event.getPhase()) {
       case "DUE" -> {
         dto.setTitle("구독 결제일 안내");
@@ -392,9 +393,10 @@ public class SubscribeEventHandler {
     }
 
     notificationService.send(dto);
-    log.info("[EVENT]  phase={}  결제 예정 알림 생성 완료 → memberId={}, subscribeId={}, roundNo={}",
+    log.info("[EVENT] phase={} 결제 예정 알림 생성 완료 → memberId={}, subscribeId={}, roundNo={}",
             event.getPhase(), member.getId(), subscribe.getId(), round.getRoundNo());
   }
+
 
   // 배송 완료시 이벤트 처리
   @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)

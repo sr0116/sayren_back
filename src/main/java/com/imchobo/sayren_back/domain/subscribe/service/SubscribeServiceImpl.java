@@ -12,10 +12,14 @@ import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import com.imchobo.sayren_back.domain.order.entity.OrderItem;
 import com.imchobo.sayren_back.domain.payment.calculator.RentalPriceCalculator;
+import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.refund.entity.RefundRequest;
+import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
+import com.imchobo.sayren_back.domain.payment.repository.PaymentHistoryRepository;
+import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeCancelHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeEventHandler;
 import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger;
@@ -71,6 +75,9 @@ public class SubscribeServiceImpl implements SubscribeService {
   private final SubscribeCancelHandler subscribeCancelHandler;
   private final RefundRequestRepository refundRequestRepository;
   private final RentalPriceCalculator rentalPriceCalculator;
+  private final PaymentRepository paymentRepository;
+  private final PaymentHistoryRepository paymentHistoryRepository;
+  private final RefundRepository refundRepository;
 
 
   // 구독 테이블 생성
@@ -341,6 +348,72 @@ public class SubscribeServiceImpl implements SubscribeService {
     entity.setStatus(status);
     subscribeRepository.save(entity);
   }
+
+  // 구독 삭제
+    @Transactional
+    @Override
+    public void deleteSubscribe (Long subscribeId){
+      Subscribe subscribe = subscribeRepository.findById(subscribeId)
+              .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
+
+      // 1. 구독 상태 검증
+      if (List.of(
+              SubscribeStatus.PREPARING,
+              SubscribeStatus.ACTIVE,
+              SubscribeStatus.PENDING_PAYMENT,
+              SubscribeStatus.OVERDUE
+      ).contains(subscribe.getStatus())) {
+        throw new SubscribeStatusInvalidException("진행 중인 구독은 삭제할 수 없습니다.");
+      }
+
+      // 2. 환불 요청 진행 중인 경우 삭제 불가
+      boolean hasRefundInProgress = refundRequestRepository.existsByOrderItemAndStatusIn(
+              subscribe.getOrderItem(),
+              List.of(
+                      RefundRequestStatus.PENDING,
+                      RefundRequestStatus.APPROVED_WAITING_RETURN
+              )
+      );
+      if (hasRefundInProgress) {
+        throw new SubscribeStatusInvalidException("환불이 진행 중인 구독은 삭제할 수 없습니다.");
+      }
+
+      // 3. 구독 회차 조회
+      List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribeId);
+
+      // 3-1. 각 회차에 연결된 결제 및 결제 관련 데이터 삭제
+      for (SubscribeRound round : rounds) {
+        List<Payment> payments = paymentRepository.findBySubscribeRound(round);
+
+        for (Payment payment : payments) {
+          // 결제 이력 삭제
+          paymentHistoryRepository.deleteAllByPayment(payment);
+
+          // 환불 내역 삭제
+          refundRepository.deleteAllByPayment(payment);
+
+          // 결제 삭제
+          paymentRepository.delete(payment);
+          log.info("[DELETE] 결제 삭제 완료 (paymentId={})", payment.getId());
+        }
+      }
+
+      // 4. 구독 회차 삭제
+      if (!rounds.isEmpty()) {
+        subscribeRoundRepository.deleteAll(rounds);
+        log.info("[DELETE] 구독 회차 {}건 삭제 완료 (subscribeId={})", rounds.size(), subscribeId);
+      }
+
+      // 5. 구독 상태 이력 삭제
+      subscribeHistoryRepository.deleteAllBySubscribe(subscribe);
+      log.info("[DELETE] 구독 이력 삭제 완료 (subscribeId={})", subscribeId);
+
+      // 6. 구독 삭제
+      subscribeRepository.delete(subscribe);
+      log.info("[DELETE] 구독 삭제 완료 (subscribeId={})", subscribeId);
+    }
+
+
 
   // 구독 중인 상품 존재 여부 확인 (관리자 같은 경우에는 멤버 아이디로)
   @Transactional(readOnly = true)

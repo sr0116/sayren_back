@@ -46,55 +46,63 @@ public class DeliveryServiceImpl implements DeliveryService {
     // 배송 생성 (사용자 직접)
     @Override
     public DeliveryResponseDTO create(DeliveryRequestDTO dto) {
-        Member member = SecurityUtil.getMemberEntity();
-        log.info("[배송 생성 요청] memberId={}, addressId={}", member.getId(), dto.getAddressId());
 
-        // 전체조회(어드민)
+//        Member member = SecurityUtil.getMemberEntity();
+//        log.info(" 배송 생성 요청 → memberId={}, addressId={}", member.getId(), dto.getAddressId());
+//
+//        Address address = addressRepository.findById(dto.getAddressId())
+//          .orElseThrow(() -> new EntityNotFoundException("주소 없음: id=" + dto.getAddressId()));
+//
+//        if (!address.getMember().getId().equals(member.getId())) {
+//            throw new DeliveryUnauthorizedException();
+//        }
+//
+//        Delivery delivery = Delivery.builder()
+//          .member(member)
+//          .address(address)
+//          .type(DeliveryType.DELIVERY)
+//          .status(DeliveryStatus.READY)
+//          .build();
+//
+//        Delivery saved = deliveryRepository.save(delivery);
+//        log.info("배송 생성 완료 → deliveryId={}, memberId={}", saved.getId(), member.getId());
+//
+//        return deliveryMapper.toResponseDTO(saved);
+    return null;
 
-        Address address = addressRepository.findById(dto.getAddressId())
-          .orElseThrow(() -> new EntityNotFoundException("주소 없음: id=" + dto.getAddressId()));
 
-        if (!address.getMember().getId().equals(member.getId())) {
-            throw new DeliveryUnauthorizedException();
-        }
-
-        Delivery delivery = Delivery.builder()
-          .member(member)
-          .address(address)
-          .type(DeliveryType.DELIVERY)
-          .status(DeliveryStatus.READY)
-          .build();
-
-        Delivery saved = deliveryRepository.save(delivery);
-        log.info("[배송 생성 완료] deliveryId={}, memberId={}", saved.getId(), member.getId());
-
-        return deliveryMapper.toResponseDTO(saved);
     }
 
     //  결제 성공 시 주문아이템 기반 배송 생성 (자동)
     @Override
     public void createFromOrderItemId(Long orderItemId) {
-        OrderItem orderItem = orderItemRepository.findById(orderItemId)
-          .orElseThrow(() -> new DeliveryNotFoundException(orderItemId));
 
-        Order order = orderItem.getOrder();
+//        OrderItem orderItem = orderItemRepository.findById(orderItemId)
+//          .orElseThrow(() -> new DeliveryNotFoundException(orderItemId));
+////
+//        if (deliveryRepository.existsByDeliveryItems_OrderItem_Id(orderItemId)) {
+//            throw new DeliveryAlreadyExistsException(orderItem.getOrder().getId());
+//        }
+//
+//        Order order = orderItem.getOrder();
+//
+//        Delivery delivery = Delivery.builder()
+//          .member(order.getMember())
+//          .address(order.getAddress())
+//          .type(DeliveryType.DELIVERY)
+//          .status(DeliveryStatus.READY)
+//          .build();
+//
+//        Delivery saved = deliveryRepository.save(delivery);
+//
+//        DeliveryItem deliveryItem = DeliveryItem.builder()
+//          .delivery(saved)
+//          .orderItem(orderItem)
+//          .build();
+//        deliveryItemRepository.save(deliveryItem);
+//
+//        log.info(" 주문아이템 기반 배송 생성 완료 → orderItemId={}, deliveryId={}", orderItemId, saved.getId());
 
-        Delivery delivery = Delivery.builder()
-          .member(order.getMember())
-          .address(order.getAddress())
-          .type(DeliveryType.DELIVERY)
-          .status(DeliveryStatus.READY)
-          .build();
-
-        Delivery saved = deliveryRepository.save(delivery);
-
-        DeliveryItem deliveryItem = DeliveryItem.builder()
-          .delivery(saved)
-          .orderItem(orderItem)
-          .build();
-        deliveryItemRepository.save(deliveryItem);
-
-        log.info("[자동 배송 생성 완료] orderItemId={}, deliveryId={}", orderItemId, saved.getId());
     }
 
     //  상태 변경 (READY → SHIPPING → DELIVERED → RETURNED)

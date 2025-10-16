@@ -52,6 +52,14 @@ public class UserPaymentController {
     return ResponseEntity.ok(paymentService.getAll());
   }
 
+  // 결제 내역 삭제 (사용자 본인만 가능)
+  @DeleteMapping("/{paymentId}")
+  public ResponseEntity<String> deletePayment(@PathVariable Long paymentId) {
+    paymentService.deletePayment(paymentId);
+    return ResponseEntity.ok("결제 내역이 삭제되었습니다.");
+  }
+
+
   @GetMapping("/{paymentId}")
   public ResponseEntity<PaymentResponseDTO> getOne(@PathVariable Long paymentId) {
     return ResponseEntity.ok(paymentService.getOne(paymentId));

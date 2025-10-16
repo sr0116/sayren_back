@@ -35,26 +35,29 @@ public class SubscribeRoundScheduler {
   // 이미 알림 보낸 회차 방지용 캐시
   private final Set<Long> notifiedRoundIds = ConcurrentHashMap.newKeySet();
 
-  // 테스트: 1분마다 실행
-  // 실제 배포 시: 매일 새벽 5시 (0 0 5 * * *)
+  /**
+   * 회차 결제 스케줄러
+   * - 매 1분마다 실행 (테스트용)
+   * - 배포 시 cron: 0 0 5 * * * (매일 새벽 5시)
+   */
   @Scheduled(fixedRate = 60000)
   @Transactional
   public void processDueRounds() {
-
     LocalDate today = LocalDate.now();
     log.info("[Scheduler] 실행 시간: {}", LocalDateTime.now());
 
-    // 오늘 결제 예정 회차 조회 (DATE 기준)
+    // 1. 오늘 결제 예정 회차 조회
     List<SubscribeRound> dueRounds =
             subscribeRoundRepository.findByDueDateAndPayStatus(today, PaymentStatus.PENDING);
 
     if (dueRounds.isEmpty()) {
       log.info("오늘 결제 예정 회차가 없습니다. (날짜={})", today);
-    } else {
-      log.info("오늘 결제 예정 회차 {}건 발견 (날짜={})", dueRounds.size(), today);
+      return;
     }
 
-    // 결제 예정 알림 발송
+    log.info("오늘 결제 예정 회차 {}건 발견 (날짜={})", dueRounds.size(), today);
+
+    // 2. 결제 예정 알림 발행 (동기 이벤트)
     for (SubscribeRound round : dueRounds) {
       try {
         if (notifiedRoundIds.contains(round.getId())) {
@@ -67,23 +70,26 @@ public class SubscribeRoundScheduler {
                 round.getSubscribe().getMember().getId(),
                 round.getDueDate());
 
-        // 이벤트 발행 (알림)
+        // 동기 이벤트 발행 (세션 내에서 즉시 실행)
         eventPublisher.publishEvent(new SubscribeRoundDueEvent(round, "DUE"));
 
         notifiedRoundIds.add(round.getId());
         log.info("[INFO] 결제 예정 알림 완료 → roundId={} (cacheSize={})",
                 round.getId(), notifiedRoundIds.size());
+
       } catch (Exception e) {
         log.error("[ERROR] 결제 예정 회차 처리 중 오류: roundId={}, message={}",
                 round.getId(), e.getMessage());
       }
     }
 
-    // 유예 기간 관련 처리
+    // 3. 유예기간 관련 처리
     handleGracePeriodRounds();
   }
 
-  // 유예기간 하루 전 / 만료 처리
+  /**
+   * 유예기간 만료 및 연체 처리
+   */
   private void handleGracePeriodRounds() {
     LocalDateTime now = LocalDateTime.now();
 
@@ -94,8 +100,9 @@ public class SubscribeRoundScheduler {
       try {
         if (round.getGracePeriodEndAt() == null) continue;
 
-        // 하루 전 경고 구간
         LocalDateTime warningTime = round.getGracePeriodEndAt().minusDays(1);
+
+        // 하루 전 경고
         if (now.isAfter(warningTime) && now.isBefore(round.getGracePeriodEndAt())) {
           log.info("[유예 만료 하루 전] 구독={}, 회차={}, gracePeriodEndAt={}",
                   round.getSubscribe().getId(), round.getRoundNo(), round.getGracePeriodEndAt());
@@ -103,12 +110,12 @@ public class SubscribeRoundScheduler {
           eventPublisher.publishEvent(new SubscribeRoundDueEvent(round, "WARNING"));
         }
 
-        // 유예기간 종료 시점
+        // 유예기간 만료 시점
         if (round.getGracePeriodEndAt().isBefore(now)) {
           log.info("[유예기간 종료] 구독={}, 회차={}, gracePeriodEndAt={}",
                   round.getSubscribe().getId(), round.getRoundNo(), round.getGracePeriodEndAt());
 
-          // 회차 연체 상태 전환
+          // 회차 상태 변경
           subscribeStatusChanger.changeSubscribeRound(round, SubscribeRoundTransition.PAY_FAIL);
 
           // 구독 전체 연체 상태로 변경
@@ -118,7 +125,6 @@ public class SubscribeRoundScheduler {
                   ActorType.SYSTEM
           );
 
-          // 이벤트 발행
           eventPublisher.publishEvent(new SubscribeRoundDueEvent(round, "OVERDUE"));
           log.info("[알림 발행] 연체 확정 알림 완료 → subscribeId={}, roundNo={}",
                   round.getSubscribe().getId(), round.getRoundNo());
@@ -130,28 +136,3 @@ public class SubscribeRoundScheduler {
     }
   }
 }
-
-// 실제 빌링키 연결한다고 했을 때 기준 (지금은 사용 안함)
-//    for (SubscribeRound round : dueRounds) {
-//      try {
-//        log.info("회차 결제 준비: subscribeId={}, roundNo={}, amount={}",
-//                round.getSubscribe().getId(), round.getRoundNo(), round.getAmount());
-//
-//        //  회차 기준 Payment 생성 (PENDING 상태)
-//        PaymentResponseDTO paymentDto = paymentService.prepareForRound(round);
-//
-//        //  로그만 남기고, 결제 완료는 프론트에서 impUid 전달 후 처리
-//        log.info("결제 준비 완료: paymentId={}, merchantUid={}, amount={}",
-//                paymentDto.getPaymentId(), paymentDto.getMerchantUid(), paymentDto.getAmount());
-//
-//      } catch (Exception e) {
-//        log.error("회차 결제 준비 실패: roundId={}, 이유={}", round.getId(), e.getMessage());
-//        // 유예 기간 설정 (3일로 일단 고정)
-//        round.setPayStatus(PaymentStatus.PENDING); // 바로 결제 실패 하지 말고 유예기간 3일정도
-//        round.setFailedAt(LocalDateTime.now()); // 실패 시각 기록
-//        round.setGracePeriodEndAt(LocalDateTime.now().plusDays(3)); // 3일 유예기간 계산
-//        subscribeRoundRepository.save(round);
-//
-//        log.warn("스케쥴러 결제 실패 유예 기간 3일 - roundId={}" , round.getId());
-//      }
-//    }
