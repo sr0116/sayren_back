@@ -92,4 +92,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   Optional<Payment> findTopByOrderItemOrderByIdDesc(OrderItem orderItem);
 
   List<Payment> findByOrderItemId(Long orderItemId);
+
+
 }
