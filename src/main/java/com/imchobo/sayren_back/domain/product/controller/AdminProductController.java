@@ -25,15 +25,15 @@ public class AdminProductController {
     private final CategoryRepository categoryRepository;
 
     @GetMapping
-    public List<ProductListResponseDTO> list(@RequestParam(required = false) String type, String category) {
-        return productService.getAllProductsForAdmin();
+    public ResponseEntity<?> list() {
+        return ResponseEntity.ok(productService.getAllProductsForAdmin());
     }
 
     // 상품 등록
-    @PostMapping
-    public ResponseEntity<?> registerProduct(@Valid @RequestBody ProductCreateRequestDTO dto) {
-        return ResponseEntity.ok(productService.registerProduct(dto));
-    }
+//    @PostMapping
+//    public ResponseEntity<?> registerProduct(@Valid @RequestBody ProductCreateRequestDTO dto) {
+//        return ResponseEntity.ok(productService.registerProduct(dto));
+//    }
 
     // 상품 게시글 등록용 카테고리 목록 조회
     @GetMapping("/category")
@@ -48,6 +48,13 @@ public class AdminProductController {
         boardService.registerProductBoard(dto);
         return ResponseEntity.ok("상품이 게시글로 등록되었습니다.");
     }
+
+//    // 게시글 삭제
+//    @DeleteMapping("/delete/{id}")
+//    public ResponseEntity<?> deleteProductBoard(@PathVariable Long productId) {
+//        boardService.deleteProductBoard(productId); // 게시글/상품 상태 변경
+//        return ResponseEntity.ok("상품이 삭제되었습니다.");
+//    }
 
     // 승인처리
     @PostMapping("/use/{id}")

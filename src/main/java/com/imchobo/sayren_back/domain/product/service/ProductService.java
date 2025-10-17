@@ -45,13 +45,13 @@ public interface ProductService {
 
 //  Long registerProduct(ProductCreateRequestDTO dto, Long memberId);
   // 상품을 게시글로 등록
-  Long registerProduct(ProductCreateRequestDTO dto);
+//  Long registerProduct(ProductCreateRequestDTO dto);
 
   void registerProductBoard(ProductCreateRequestDTO dto);
 
   Object getProductCategories();
 
   // 관리자 상품 관리 페이지
-  List<ProductListResponseDTO> getAllProductsForAdmin();
+  List<AdminProductListDTO> getAllProductsForAdmin();
 }
 

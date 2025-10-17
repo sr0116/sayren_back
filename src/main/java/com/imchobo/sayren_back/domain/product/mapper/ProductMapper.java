@@ -11,9 +11,6 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring", uses = {MappingUtil.class})
 public interface ProductMapper {
-  // 상품 등록 (DTO -> Entity)
-  @Mapping(source = "productName", target = "name")
-  Product toEntity(ProductCreateRequestDTO dto);
 
   // 상품 수정
   @Mapping(source = "productId", target = "id")
