@@ -218,9 +218,31 @@ public class OrderServiceImpl implements OrderService {
   @Transactional(readOnly = true)
   public OrderResponseDTO getOrderById(Long orderId) {
     log.info("[주문 상세 조회] orderId={}", orderId);
-    return orderMapper.toResponseDTO(orderRepository.findById(orderId)
-      .orElseThrow(() -> new OrderNotFoundException(orderId)));
+
+    // 주문 엔티티 조회
+    Order order = orderRepository.findById(orderId)
+      .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+    // Lazy 로딩된 컬렉션 및 연관 엔티티 강제 초기화
+    // - orderItems: 주문에 포함된 상품들
+    // - histories: 주문 상태 이력
+    // - product, orderPlan: 각 주문상품이 참조하는 상품/요금제 정보
+    order.getOrderItems().forEach(item -> {
+      if (item.getProduct() != null) {
+        item.getProduct().getName(); // 상품 엔티티 로딩
+      }
+      if (item.getOrderPlan() != null) {
+        item.getOrderPlan().getType(); // 요금제 엔티티 로딩
+      }
+    });
+    order.getHistories().size(); // 주문 이력 강제 로드
+
+    // DTO 변환 (Mapper 정상 작동)
+    return orderMapper.toResponseDTO(order);
   }
+
+
+
 
   // 회원별 주문 목록 조회
   @Override
