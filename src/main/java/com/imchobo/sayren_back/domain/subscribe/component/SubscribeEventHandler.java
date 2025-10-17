@@ -360,6 +360,7 @@ public class SubscribeEventHandler {
   }
 
   // 회차 알림 이벤트 처리
+  // 회차 알림 이벤트 처리
   @Transactional
   @EventListener
   public void onSubscribeRoundDue(SubscribeRoundDueEvent event) {
@@ -371,31 +372,50 @@ public class SubscribeEventHandler {
     dto.setMemberId(member.getId());
     dto.setType(NotificationType.SUBSCRIBE);
 
+    String productName = subscribe.getOrderItem().getProduct().getName();
+    Long roundId = round.getId(); //  실제 subscribe_round PK 사용
+
     switch (event.getPhase()) {
       case "DUE" -> {
         dto.setTitle("구독 결제일 안내");
         dto.setMessage(String.format("[%s] %d회차 결제일이 도래했습니다. 결제를 진행해주세요.",
-                subscribe.getOrderItem().getProduct().getName(), round.getRoundNo()));
-        dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
+                productName, round.getRoundNo()));
+
+        //  프론트에서 prepareRoundPayment(roundId) 호출할 수 있도록 수정
+        dto.setLinkUrl(String.format("/mypage/subscribe/round/%d", roundId));
       }
+
       case "WARNING" -> {
         dto.setTitle("결제 유예기간 만료 예정");
         dto.setMessage(String.format("[%s] %d회차 결제 유예기간이 내일 만료됩니다. 결제를 완료해주세요.",
-                subscribe.getOrderItem().getProduct().getName(), round.getRoundNo()));
-        dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
+                productName, round.getRoundNo()));
+
+        //  회차 상세 이동 링크 유지
+        dto.setLinkUrl(String.format("/mypage/subscribe/round/%d", roundId));
       }
+
       case "OVERDUE" -> {
         dto.setTitle("연체 확정 - 서비스 중단");
         dto.setMessage(String.format("[%s] %d회차 결제가 유예기간을 초과했습니다. 구독이 중단되었습니다.",
-                subscribe.getOrderItem().getProduct().getName(), round.getRoundNo()));
-        dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
+                productName, round.getRoundNo()));
+
+        //  동일하게 회차 링크로 유지
+        dto.setLinkUrl(String.format("/mypage/subscribe/round/%d", roundId));
       }
     }
 
     notificationService.send(dto);
-    log.info("[EVENT] phase={} 결제 예정 알림 생성 완료 → memberId={}, subscribeId={}, roundNo={}",
-            event.getPhase(), member.getId(), subscribe.getId(), round.getRoundNo());
+
+    log.info(
+            "[EVENT] phase={} 결제 예정 알림 생성 완료 → memberId={}, subscribeId={}, roundId={}, roundNo={}",
+            event.getPhase(),
+            member.getId(),
+            subscribe.getId(),
+            round.getId(),
+            round.getRoundNo()
+    );
   }
+
 
 
   // 배송 완료시 이벤트 처리

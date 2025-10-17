@@ -9,8 +9,8 @@ import com.imchobo.sayren_back.domain.order.en.OrderPlanType;
 import com.imchobo.sayren_back.domain.order.repository.OrderItemRepository;
 import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
-import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundCompletedEvent;
+import com.imchobo.sayren_back.domain.payment.refund.component.event.RefundRequestEvent;
 import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
@@ -35,7 +35,7 @@ public class NotificationEventHandler {
   private final SubscribeRepository subscribeRepository;
   private final OrderItemRepository orderItemRepository;
 
-  //  결제 완료 알림
+  // 결제 완료 알림
   @EventListener
   public void onPaymentStatusChanged(PaymentStatusChangedEvent event) {
     if (event.getTransition().getStatus() != PaymentStatus.PAID) return;
@@ -49,12 +49,12 @@ public class NotificationEventHandler {
       dto.setType(NotificationType.PAYMENT);
 
       if (planType == OrderPlanType.RENTAL && payment.getSubscribeRound() != null) {
-        // 구독 결제 완료
+        // 구독 회차 결제 완료
         subscribeRoundRepository.findById(payment.getSubscribeRound().getId()).ifPresent(round -> {
           dto.setTitle("구독 결제 완료");
           dto.setMessage(round.getRoundNo() + "회차 결제가 완료되었습니다.");
           dto.setTargetId(round.getId());
-          dto.setLinkUrl(String.format("/mypage/subscribes/%d/rounds/%d",
+          dto.setLinkUrl(String.format("/mypage/subscribe/%d/rounds/%d",
                   round.getSubscribe().getId(), round.getRoundNo()));
           notificationService.send(dto);
         });
@@ -63,13 +63,13 @@ public class NotificationEventHandler {
         dto.setTitle("결제 완료");
         dto.setMessage("상품 [" + payment.getOrderItem().getProduct().getName() + "] 결제가 완료되었습니다.");
         dto.setTargetId(payment.getOrderItem().getId());
-        dto.setLinkUrl(String.format("/mypage/payments/%d", payment.getId()));
+        dto.setLinkUrl(String.format("/mypage/payment/%d", payment.getId()));
         notificationService.send(dto);
       }
     });
   }
 
-  //  환불 요청 알림
+  // 환불 요청 알림
   @EventListener
   public void onRefundApproved(RefundRequestEvent event) {
     Long orderItemId = event.getOrderItemId();
@@ -86,7 +86,8 @@ public class NotificationEventHandler {
 
         dto.setMemberId(memberId);
         dto.setTargetId(orderItem.getId());
-        dto.setLinkUrl(String.format("/mypage/payments/%d", orderItem.getId()));
+        dto.setLinkUrl(String.format("/mypage/payment/%d", orderItem.getId()));
+
         switch (status) {
           case PENDING -> dto.setTitle("환불 요청 접수");
           case APPROVED, APPROVED_WAITING_RETURN -> dto.setTitle("환불 승인");
@@ -94,6 +95,7 @@ public class NotificationEventHandler {
           case CANCELED -> dto.setTitle("환불 요청 취소");
           default -> { return; }
         }
+
         dto.setMessage("상품 [" + productName + "]의 환불 상태가 변경되었습니다.");
         notificationService.send(dto);
       });
@@ -102,7 +104,8 @@ public class NotificationEventHandler {
         Long memberId = subscribe.getMember().getId();
         dto.setMemberId(memberId);
         dto.setTargetId(subscribe.getId());
-        dto.setLinkUrl(String.format("/mypage/subscribes/%d", subscribe.getId()));
+        dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
+
         switch (status) {
           case PENDING -> dto.setTitle("구독 환불 요청");
           case APPROVED, APPROVED_WAITING_RETURN -> dto.setTitle("구독 환불 승인");
@@ -110,13 +113,14 @@ public class NotificationEventHandler {
           case CANCELED -> dto.setTitle("구독 환불 요청 취소");
           default -> { return; }
         }
+
         dto.setMessage("구독 환불 상태가 변경되었습니다.");
         notificationService.send(dto);
       });
     }
   }
 
-  //  환불 완료 알림
+  // 환불 완료 알림
   @EventListener
   public void onRefundCompleted(RefundCompletedEvent event) {
     orderItemRepository.findById(event.getOrderItemId()).ifPresent(orderItem -> {
@@ -131,19 +135,19 @@ public class NotificationEventHandler {
         dto.setTitle("구독 환불 완료");
         dto.setMessage("구독 #" + event.getSubscribeId() + " 환불이 완료되었습니다.");
         dto.setTargetId(event.getSubscribeId());
-        dto.setLinkUrl(String.format("/mypage/subscribes/%d", event.getSubscribeId()));
+        dto.setLinkUrl(String.format("/mypage/subscribe/%d", event.getSubscribeId()));
       } else {
         dto.setTitle("결제 환불 완료");
         dto.setMessage("상품 [" + orderItem.getProduct().getName() + "]의 환불이 완료되었습니다.");
         dto.setTargetId(orderItem.getId());
-        dto.setLinkUrl(String.format("/mypage/payments/%d", orderItem.getId()));
+        dto.setLinkUrl(String.format("/mypage/payment/%d", orderItem.getId()));
       }
 
       notificationService.send(dto);
     });
   }
 
-  //  구독 상태 변경 알림
+  // 구독 상태 변경 알림
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @EventListener
   public void onSubscribeStatusChanged(SubscribeStatusChangedEvent event) {
@@ -158,12 +162,12 @@ public class NotificationEventHandler {
       dto.setTitle("구독 상태 변경");
       dto.setMessage("구독이 " + newStatus.name() + " 상태로 변경되었습니다.");
       dto.setTargetId(subscribe.getId());
-      dto.setLinkUrl(String.format("/mypage/subscribes/%d", subscribe.getId()));
+      dto.setLinkUrl(String.format("/mypage/subscribe/%d", subscribe.getId()));
       notificationService.send(dto);
     });
   }
 
-  //  배송 상태 변경 → 결제 내역 링크로 통일
+  // 배송 상태 변경 알림
   @EventListener
   public void onDeliveryStatusChanged(DeliveryStatusChangedEvent event) {
     DeliveryStatus status = event.getStatus();
@@ -176,7 +180,7 @@ public class NotificationEventHandler {
       dto.setMemberId(memberId);
       dto.setType(NotificationType.DELIVERY);
       dto.setTargetId(orderItem.getId());
-      dto.setLinkUrl(String.format("/mypage/payments/%d", orderItem.getId()));
+      dto.setLinkUrl("/mypage/payment"); // 결제 내역 전체로 이동
 
       if (status == DeliveryStatus.DELIVERED) {
         dto.setTitle("배송 완료");
