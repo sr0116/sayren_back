@@ -1,5 +1,6 @@
 package com.imchobo.sayren_back.domain.product.service;
 
+import com.imchobo.sayren_back.domain.board.entity.Category;
 import com.imchobo.sayren_back.domain.common.dto.PageRequestDTO;
 import com.imchobo.sayren_back.domain.common.dto.PageResponseDTO;
 import com.imchobo.sayren_back.domain.common.en.CommonStatus;
@@ -16,8 +17,6 @@ public interface ProductService {
 
   List<ProductListResponseDTO> getAllProducts();
   ProductDetailsResponseDTO getProductById(Long id);
-
-
 
   // 승인 완료(활성화)페이지네이션
   PageResponseDTO<ProductPendingDTO, Product> getPendingProducts(PageRequestDTO pageRequestDTO);
@@ -40,15 +39,19 @@ public interface ProductService {
 
   void revalidate(Long id);
   void revalidateAll();
+
   // 상품 큐레이션
   Page<ProductListResponseDTO> getFilteredProducts(ProductListResponseDTO filter, Pageable pageable);
 
 //  Long registerProduct(ProductCreateRequestDTO dto, Long memberId);
   // 상품을 게시글로 등록
-Long registerProduct(ProductCreateRequestDTO dto);
+  Long registerProduct(ProductCreateRequestDTO dto);
 
+  void registerProductBoard(ProductCreateRequestDTO dto);
 
+  Object getProductCategories();
 
-
+  // 관리자 상품 관리 페이지
+  List<ProductListResponseDTO> getAllProductsForAdmin();
 }
 

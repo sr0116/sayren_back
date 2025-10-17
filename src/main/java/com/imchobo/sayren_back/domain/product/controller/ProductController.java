@@ -29,8 +29,8 @@ import java.util.List;
         @GetMapping
         public ResponseEntity<List<ProductListResponseDTO>> getAllProducts(
                 @RequestParam(required = false) String type,
-                @RequestParam(required = false) String category) {
-
+                @RequestParam(required = false) String category
+        ) {
             return ResponseEntity.ok(productService.getAllProducts());
         }
 
