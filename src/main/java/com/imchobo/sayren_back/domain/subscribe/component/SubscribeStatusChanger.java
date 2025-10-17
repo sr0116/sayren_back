@@ -32,7 +32,7 @@ public class SubscribeStatusChanger {
   private final ApplicationEventPublisher eventPublisher;
 
   // 구독 상태 변경
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRED)
   public void changeSubscribe(Subscribe subscribe, SubscribeTransition transition, ActorType actor) {
     subscribe.setStatus(transition.getStatus());
     subscribeRepository.saveAndFlush(subscribe);
