@@ -49,12 +49,12 @@ public class AdminProductController {
         return ResponseEntity.ok("상품이 게시글로 등록되었습니다.");
     }
 
-//    // 게시글 삭제
-//    @DeleteMapping("/delete/{id}")
-//    public ResponseEntity<?> deleteProductBoard(@PathVariable Long productId) {
-//        boardService.deleteProductBoard(productId); // 게시글/상품 상태 변경
-//        return ResponseEntity.ok("상품이 삭제되었습니다.");
-//    }
+    // 게시글 삭제
+    @DeleteMapping("/delete/{productId}")
+    public ResponseEntity<?> deleteProductBoard(@PathVariable Long productId) {
+        boardService.deleteProductBoard(productId); // 게시글/상품 상태 변경
+        return ResponseEntity.ok("상품이 삭제되었습니다.");
+    }
 
     // 승인처리
     @PostMapping("/use/{id}")
