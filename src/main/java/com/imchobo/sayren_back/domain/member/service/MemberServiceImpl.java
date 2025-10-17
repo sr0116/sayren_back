@@ -21,6 +21,7 @@ import com.imchobo.sayren_back.domain.member.recode.MemberDetail;
 import com.imchobo.sayren_back.domain.member.recode.MemberInfo;
 import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
 import com.imchobo.sayren_back.domain.member.repository.MemberRepository;
+import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -54,6 +55,7 @@ public class MemberServiceImpl implements MemberService {
   private final Member2FAService member2FAService;
   private final MemberTermMapper memberTermMapper;
   private final MemberProviderMapper memberProviderMapper;
+  private final SubscribeService subscribeService;
 
 
   @Override
@@ -255,6 +257,7 @@ public class MemberServiceImpl implements MemberService {
   // 구현
   @Transactional
   public void deletedMember(Long memberId) {
+    subscribeService.validateNoActiveSubscription(memberId);
     Member member = memberRepository.findById(memberId).orElseThrow(IllegalArgumentException::new);
     memberTokenService.deleteMemberToken(memberId);
     memberProviderService.deleteMemberProvider(memberId);

@@ -123,7 +123,6 @@ public class PaymentServiceImpl implements PaymentService {
     payment.setOrderItem(orderItem);
 //    payment.setPaymentType(PaymentType.CARD); // 포트원에서 세팅
 
-
     // 1회차 결제 고정
     if (planType == OrderPlanType.RENTAL) {
       SubscribeRound firstRound = subscribeRoundRepository
@@ -132,7 +131,8 @@ public class PaymentServiceImpl implements PaymentService {
       // 상품 가격 + 1회차(렌탈료+ 보증금) -> payment.getAmount()+firstRound.getAmount() 나중에 금액 조회시 필요
       payment.setSubscribeRound(firstRound);
       payment.setAmount(firstRound.getAmount());
-    } else {
+    }
+    else {
       // 일반 결제는 OrderItem 금액 사용
       payment.setAmount(orderItem.getProductPriceSnapshot());
     }
