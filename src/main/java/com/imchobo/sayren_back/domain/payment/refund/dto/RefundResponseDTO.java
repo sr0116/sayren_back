@@ -21,4 +21,5 @@ public class RefundResponseDTO {
   private LocalDateTime regDate;
   private String impUid;           // PortOne 환불 식별자 (있으면)
   private String status;           // PG 환불 상태
+
 }
