@@ -11,6 +11,7 @@ import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -45,7 +46,10 @@ public interface SubscribeMapper {
   @Mapping(source = "member.email", target = "memberEmail")
   @Mapping(source = "orderItem.product.name", target = "productName")
   @Mapping(source = "orderItem.product.productCategory", target = "productCategory")
+  @Mapping(source = "orderItem.product", target = "productThumbnail",
+          qualifiedByName = "mapProductThumbnailUrl")
   SubscribeResponseDTO toResponseDTO(Subscribe entity);
+
 
   List<SubscribeResponseDTO> toResponseDTOList(List<Subscribe> entity);
 
@@ -53,6 +57,8 @@ public interface SubscribeMapper {
   @Mapping(source = "id", target = "subscribeId")
   @Mapping(source = "monthlyFeeSnapshot", target = "monthlyFeeSnapshot")
   @Mapping(source = "orderItem.product.name", target = "productName")
+  @Mapping(source = "orderItem.product", target = "productThumbnail",
+          qualifiedByName = "mapProductThumbnailUrl")
   SubscribeSummaryDTO toSummaryDTO(Subscribe entity);
 
  // 조회 리스트(요약)
