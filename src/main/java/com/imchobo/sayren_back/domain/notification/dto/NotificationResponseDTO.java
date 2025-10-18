@@ -17,4 +17,5 @@ public class NotificationResponseDTO {
   private Long targetId;
   private NotificationStatus status;
   private LocalDateTime createdAt;
+
 }
