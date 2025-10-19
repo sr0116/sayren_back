@@ -32,4 +32,7 @@ public class RefundRequestResponseDTO {
 
   // 썸네일 추가
   private String productThumbnail;
+
+  // 실제 환불 금액
+  private RefundResponseDTO refund;
 }

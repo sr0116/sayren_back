@@ -1,20 +1,25 @@
 package com.imchobo.sayren_back.domain.subscribe.controller.user;
 
 
+import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeHistoryResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeSummaryDTO;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.dto.SubscribeRoundResponseDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user/subscribes")
 @RequiredArgsConstructor
+@Log4j2
+
 public class UserSubscribeController {
   private final SubscribeService subscribeService;
 
@@ -30,12 +35,15 @@ public class UserSubscribeController {
     return ResponseEntity.ok(subscribeService.getSubscribe(id));
   }
 
-  // 구독 취소 요청(사용자)
   @PostMapping("/{id}/cancel")
-  public ResponseEntity<String> cancel(@PathVariable Long id) {
-    subscribeService.cancelSubscribe(id);
+  public ResponseEntity<String> cancel(@PathVariable Long id,
+                                       @RequestParam(required = false) ReasonCode reasonCode) {
+    log.info("[CANCEL REQUEST] id={}, reasonCode={}", id, reasonCode);
+    subscribeService.cancelSubscribe(id, reasonCode);
     return ResponseEntity.ok("구독 취소 요청 완료");
   }
+
+
 
   // 구독 상태 변경 이력 조회
   @GetMapping("/{id}/histories")

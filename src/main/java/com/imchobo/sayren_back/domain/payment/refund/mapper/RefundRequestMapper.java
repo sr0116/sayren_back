@@ -27,6 +27,7 @@ public interface RefundRequestMapper {
   @Mapping(source = "member.email", target = "memberEmail")
   @Mapping(source = "orderItem.product", target = "productThumbnail",
           qualifiedByName = "mapProductThumbnailUrl")
+  @Mapping(target = "refund", ignore = true)
   RefundRequestResponseDTO toResponseDTO(RefundRequest entity);
 
   List<RefundRequestResponseDTO> toResponseDTOs(List<RefundRequest> entities);

@@ -39,6 +39,7 @@ import com.imchobo.sayren_back.domain.subscribe.component.SubscribeStatusChanger
 import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeRequestDTO;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
+import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.AlreadyPaidSubscribeRoundException;
 import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.SubscribeRoundNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
@@ -49,8 +50,10 @@ import com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository.Subsc
 import com.imchobo.sayren_back.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -289,7 +292,12 @@ public class PaymentServiceImpl implements PaymentService {
   @Transactional
   public PaymentResponseDTO prepareForRound(Long subscribeRoundId) {
     SubscribeRound round = subscribeRoundRepository.findById(subscribeRoundId)
-            .orElseThrow(() -> new RuntimeException("회차를 찾을 수 없습니다."));
+            .orElseThrow(() -> new SubscribeRoundNotFoundException(subscribeRoundId.intValue()));
+
+    if (round.getPayStatus() == PaymentStatus.PAID) {
+      throw new AlreadyPaidSubscribeRoundException(subscribeRoundId);
+    }
+
     return prepareForRound(round);
   }
 

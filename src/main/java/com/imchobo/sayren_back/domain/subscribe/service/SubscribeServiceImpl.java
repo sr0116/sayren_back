@@ -52,7 +52,11 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -112,12 +116,6 @@ public class SubscribeServiceImpl implements SubscribeService {
     return savedSubscribe;
   }
 
-  // 보증금 계산(일단 20% 고정 임시로 나중에 % 수정 가능성)
-  private Long calculateDeposit(Long monthlyFee) {
-    if (monthlyFee == null) return 0L;
-    return Math.round(monthlyFee * 0.2);
-  }
-
   // 구독 단건 조회
   @Override
   @Transactional(readOnly = true)
@@ -143,17 +141,46 @@ public class SubscribeServiceImpl implements SubscribeService {
 
   // 구독 마이페이지 목록 조회(로그인 회원 기준)
   @Override
-  @Transactional
+  @Transactional(readOnly = true)
   public List<SubscribeSummaryDTO> getSummaryList() {
     Member currentMember = SecurityUtil.getMemberEntity();
     log.info("구독 내역 조회 - memberId={}", currentMember.getId());
 
-    // 기존: findByMemberId(member.getId())
-    List<Subscribe> subscribes = subscribeRepository.findByMember(currentMember);
-
+    List<Subscribe> subscribes = subscribeRepository.findAllWithRefundByMember(currentMember.getId());
     log.info("조회된 구독 건수={}", subscribes.size());
-    return subscribeMapper.toSummaryDTOList(subscribes);
+
+    List<SubscribeSummaryDTO> dtos = subscribeMapper.toSummaryDTOList(subscribes);
+
+    for (int i = 0; i < subscribes.size(); i++) {
+      Subscribe s = subscribes.get(i);
+      SubscribeSummaryDTO dto = dtos.get(i);
+
+      //  (1) 최신 구독 이력 조회 (단방향)
+      subscribeHistoryRepository.findLatestBySubscribeId(s.getId())
+              .ifPresent(history -> {
+                if (history.getReasonCode() != null)
+                  dto.setReasonCode(history.getReasonCode());
+                if (history.getStatus() != null)
+                  dto.setStatus(history.getStatus());
+              });
+
+      //  (2) 환불 요청 상태/사유 반영
+      refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(s.getOrderItem())
+              .ifPresent(req -> {
+                if (req.getStatus() != null)
+                  dto.setRefundRequestStatus(req.getStatus());
+                if (req.getReasonCode() != null && dto.getReasonCode() == null)
+                  dto.setReasonCode(req.getReasonCode());
+              });
+
+      //  (3) 상태 보정
+      if (dto.getStatus() == null && s.getStatus() != null)
+        dto.setStatus(s.getStatus());
+    }
+
+    return dtos;
   }
+
   // 구독 회차 정보 리스트 조회
   @Transactional
   @Override
@@ -175,20 +202,60 @@ public class SubscribeServiceImpl implements SubscribeService {
   @Override
   @Transactional(readOnly = true)
   public List<SubscribeResponseDTO> getAllForAdmin() {
-    List<Subscribe> subscribes = subscribeRepository.findAllWithMemberAndOrder();
-    List<SubscribeResponseDTO> dtos = subscribeMapper.toResponseDTOList(subscribes);
+    //  기본 구독 목록 조회
+    List<Subscribe> subscribes = subscribeRepository.findAllWithMemberOrderAndRefund();
+    log.info("[ADMIN] 구독 엔티티 수: {}", subscribes.size());
 
-    for (int i = 0; i < subscribes.size(); i++) {
-      Subscribe s = subscribes.get(i);
-      SubscribeResponseDTO dto = dtos.get(i);
+    if (subscribes.isEmpty()) return List.of();
 
-      subscribeHistoryRepository.findFirstBySubscribeOrderByRegDateDesc(s)
-              .ifPresent(history -> dto.setReasonCode(history.getReasonCode()));
-      refundRequestRepository.findFirstByOrderItemOrderByRegDateDesc(s.getOrderItem())
-              .ifPresent(req -> dto.setRefundRequestStatus(req.getStatus()));
-    }
+    // 구독 ID 리스트 추출
+    List<Long> subscribeIds = subscribes.stream()
+            .map(Subscribe::getId)
+            .toList();
+
+    //  구독별 모든 이력 조회
+    List<SubscribeHistory> allHistories =
+            subscribeHistoryRepository.findAllBySubscribeIds(subscribeIds);
+
+    // 구독별로 이력 그룹핑
+    Map<Long, List<SubscribeHistory>> historyMap = allHistories.stream()
+            .collect(Collectors.groupingBy(h -> h.getSubscribe().getId()));
+
+    //  DTO 변환 및 이력 병합
+    List<SubscribeResponseDTO> dtos = subscribes.stream()
+            .map(subscribe -> {
+              SubscribeResponseDTO dto = subscribeMapper.toResponseDTO(subscribe);
+
+              // 이력 매핑
+              List<SubscribeHistory> histories = historyMap.get(subscribe.getId());
+              if (histories != null && !histories.isEmpty()) {
+                log.debug(" [HISTORY] subscribeId={}, count={}", subscribe.getId(), histories.size());
+                histories.forEach(h ->
+                        log.trace("   ↳ reason={}, status={}, regDate={}",
+                                h.getReasonCode(),
+                                h.getStatus(),
+                                h.getRegDate())
+                );
+
+                // 프론트 기본값용 최신 이력 1건 반영
+                SubscribeHistory latest = histories.get(0);
+                dto.setStatus(latest.getStatus());
+                dto.setReasonCode(latest.getReasonCode());
+              }
+
+              // 최신 환불 요청 상태 추가
+              refundRequestRepository.findFirstByOrderItemIdOrderByRegDateDesc(subscribe.getOrderItem().getId())
+                      .ifPresent(refund -> dto.setRefundRequestStatus(refund.getStatus()));
+
+              return dto;
+            })
+            .collect(Collectors.toList());
+
+    log.info(" [ADMIN] 최종 DTO 수: {}", dtos.size());
     return dtos;
   }
+
+
 
   // 배송 완료 후 상태 변경 (ACTIVE)
   @Transactional
@@ -263,23 +330,33 @@ public class SubscribeServiceImpl implements SubscribeService {
   }
 
   // 사용자 구독 취소 요청
+  // SubscribeServiceImpl.java
+
   @Override
   @Transactional
-  public void cancelSubscribe(Long subscribeId) {
+  public void cancelSubscribe(Long subscribeId, ReasonCode userReason) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
-    // 이미 종료 되었거나 취소 상태시 예외 처리
-    if (subscribe.getStatus() == SubscribeStatus.ACTIVE
-            && subscribeHistoryRepository.existsBySubscribeAndReasonCode(subscribe, ReasonCode.USER_REQUEST)) {
-      throw new SubscribeStatusInvalidException("이미 취소 요청 중인 구독입니다.");
-    }
-    if (subscribe.getStatus() == SubscribeStatus.CANCELED
-            || subscribe.getStatus() == SubscribeStatus.ENDED ){
-      throw new SubscribeStatusInvalidException("이미 취소 요청된 구독입니다.");
-    }
-    // 회원 취소 요청
-    subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.REQUEST_CANCEL, ActorType.USER);
 
+    if (subscribe.getStatus() == SubscribeStatus.CANCELED
+            || subscribe.getStatus() == SubscribeStatus.ENDED) {
+      throw new SubscribeStatusInvalidException("이미 취소된 구독입니다.");
+    }
+
+    //  사유가 비어 있으면 USER_REQUEST 기본값
+    if (userReason == null) {
+      userReason = ReasonCode.USER_REQUEST;
+    }
+
+    //  구독 상태를 REQUEST_CANCEL 로 변경
+    subscribeStatusChanger.changeSubscribe(
+            subscribe,
+            SubscribeTransition.REQUEST_CANCEL,
+            userReason,
+            ActorType.USER
+    );
+
+    log.info("[USER ACTION] 구독 취소 요청 → subscribeId={}, reason={}", subscribeId, userReason);
   }
 
   //취소 승인/거절 (관리자)
@@ -430,12 +507,11 @@ public class SubscribeServiceImpl implements SubscribeService {
       throw new ActiveSubscriptionException(memberId);
     }
   }
-
+// 멤버
   @Transactional(readOnly = true)
   @Override
   public void validateNoActiveSubscription() {
     validateNoActiveSubscription(SecurityUtil.getMemberAuthDTO().getId());
   }
-
 
 }
