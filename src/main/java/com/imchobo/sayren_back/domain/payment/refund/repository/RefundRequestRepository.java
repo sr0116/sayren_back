@@ -39,7 +39,6 @@ public interface RefundRequestRepository extends JpaRepository<RefundRequest, Lo
   List<RefundRequest> findAllWithMemberAndOrder();
 
   Optional<RefundRequest> findFirstByOrderItemIdOrderByRegDateDesc(Long orderItemId);
-  Optional<RefundRequest> findTopByOrderItemIdOrderByRegDateDesc(Long orderItemId);
 
 
 

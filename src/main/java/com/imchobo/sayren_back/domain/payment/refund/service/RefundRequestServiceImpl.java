@@ -19,6 +19,7 @@ import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestAlre
 import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestNotFoundException;
 import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestStatusInvalidException;
 import com.imchobo.sayren_back.domain.payment.refund.exception.RefundRequestUnauthorizedException;
+import com.imchobo.sayren_back.domain.payment.refund.mapper.RefundMapper;
 import com.imchobo.sayren_back.domain.payment.refund.mapper.RefundRequestMapper;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRepository;
 import com.imchobo.sayren_back.domain.payment.refund.repository.RefundRequestRepository;
@@ -52,6 +53,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   private final RefundService refundService;
   private final SubscribeRepository subscribeRepository;
   private final ApplicationEventPublisher eventPublisher;
+  private final RefundMapper refundMapper;
 
   // 환불 요청 생성(멤버 정보는 시큐리티 유틸에서 멤버 아이디 가져오기)
   @Transactional
@@ -173,7 +175,7 @@ public class RefundRequestServiceImpl implements RefundRequestService {
             .map(Subscribe::getId)
             .orElse(null);
 
-    // AFTER_COMMIT에서 이벤트 발행 (핸들러가 후속 처리)
+    // AFTER_COMMIT에서 이벤트 발행
     TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
       @Override
       public void afterCommit() {
@@ -191,54 +193,77 @@ public class RefundRequestServiceImpl implements RefundRequestService {
     return refundRequestMapper.toResponseDTO(request);
   }
 
-  /// // 밑에 3개 조회 /// 나중에 처리
-// 단건 조회 (본인 것만)
-  @Override
-  @Transactional(readOnly = true)
-  public RefundRequestResponseDTO getRefundRequest(Long refundRequestId) {
-    RefundRequest request = refundRequestRepository.findById(refundRequestId)
-            .orElseThrow(() -> new RefundRequestNotFoundException(refundRequestId));
+    // 단건 조회 (본인 것만)
+    @Override
+    @Transactional(readOnly = true)
+    public RefundRequestResponseDTO getRefundRequest(Long refundRequestId) {
+      RefundRequest request = refundRequestRepository.findById(refundRequestId)
+              .orElseThrow(() -> new RefundRequestNotFoundException(refundRequestId));
 
-    Member currentMember = SecurityUtil.getMemberEntity();
+      Member currentMember = SecurityUtil.getMemberEntity();
 
-    if (!Objects.equals(request.getMember().getId(), currentMember.getId())) {
-      throw new RefundRequestUnauthorizedException();
-    }
-
-    return refundRequestMapper.toResponseDTO(request);
-  }
-
-  // 내 환불 요청 전체 조회
-  @Override
-  @Transactional(readOnly = true)
-  public List<RefundRequestResponseDTO> getMyRefundRequests() {
-    Member currentMember = SecurityUtil.getMemberEntity();
-
-    List<RefundRequest> requests = refundRequestRepository
-            .findByMemberOrderByRegDateDesc(currentMember);
-
-    return refundRequestMapper.toResponseDTOs(requests);
-  }
-
-  // 관리자: 특정 회원 환불 요청 조회
-  @Override
-  @Transactional(readOnly = true)
-  public List<RefundRequestResponseDTO> getAllRefundRequests() {
-    List<RefundRequest> requests = refundRequestRepository.findAllWithMemberAndOrder(); // 관리자 전용
-    List<RefundRequestResponseDTO> dtos = refundRequestMapper.toResponseDTOs(requests);
-
-    for (int i = 0; i < requests.size(); i++) {
-      RefundRequest req = requests.get(i);
-      RefundRequestResponseDTO dto = dtos.get(i);
-
-      List<Payment> payments = paymentRepository.findByOrderItem(req.getOrderItem());
-      if (!payments.isEmpty()) {
-        Payment latestPayment = payments.get(payments.size() - 1); // 최근 결제
-        dto.setPaymentId(latestPayment.getId());
+      if (!Objects.equals(request.getMember().getId(), currentMember.getId())) {
+        throw new RefundRequestUnauthorizedException();
       }
+
+      RefundRequestResponseDTO dto = refundRequestMapper.toResponseDTO(request);
+
+      //  환불 완료된 경우 RefundResponseDTO 포함해서 금액까지
+      refundRepository.findTopByRefundRequestOrderByRegDateDesc(request)
+              .ifPresent(refund -> dto.setRefund(refundMapper.toDto(refund)));
+
+      return dto;
     }
-    return dtos;
-  }
+
+    // 내 환불 요청 전체 조회
+    @Override
+    @Transactional(readOnly = true)
+    public List<RefundRequestResponseDTO> getMyRefundRequests() {
+      Member currentMember = SecurityUtil.getMemberEntity();
+
+      List<RefundRequest> requests = refundRequestRepository
+              .findByMemberOrderByRegDateDesc(currentMember);
+
+      List<RefundRequestResponseDTO> dtos = refundRequestMapper.toResponseDTOs(requests);
+
+      //  각 요청에 refund 결과 주입
+      for (int i = 0; i < requests.size(); i++) {
+        RefundRequest req = requests.get(i);
+        RefundRequestResponseDTO dto = dtos.get(i);
+
+        refundRepository.findTopByRefundRequestOrderByRegDateDesc(req)
+                .ifPresent(refund -> dto.setRefund(refundMapper.toDto(refund)));
+      }
+
+      return dtos;
+    }
+
+    // 관리자: 전체 환불 요청 조회
+    @Override
+    @Transactional(readOnly = true)
+    public List<RefundRequestResponseDTO> getAllRefundRequests() {
+      List<RefundRequest> requests = refundRequestRepository.findAllWithMemberAndOrder();
+      List<RefundRequestResponseDTO> dtos = refundRequestMapper.toResponseDTOs(requests);
+
+      for (int i = 0; i < requests.size(); i++) {
+        RefundRequest req = requests.get(i);
+        RefundRequestResponseDTO dto = dtos.get(i);
+
+        //  환불 데이터 포함
+        refundRepository.findTopByRefundRequestOrderByRegDateDesc(req)
+                .ifPresent(refund -> dto.setRefund(refundMapper.toDto(refund)));
+
+        //  결제 정보 포함 (기존 로직 유지)
+        List<Payment> payments = paymentRepository.findByOrderItem(req.getOrderItem());
+        if (!payments.isEmpty()) {
+          Payment latestPayment = payments.get(payments.size() - 1);
+          dto.setPaymentId(latestPayment.getId());
+        }
+      }
+
+      return dtos;
+    }
+
 
   @Override
   @Transactional(readOnly = true)

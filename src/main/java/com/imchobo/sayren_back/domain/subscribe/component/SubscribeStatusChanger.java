@@ -43,6 +43,7 @@ public class SubscribeStatusChanger {
 
   }
 
+  //
   @Transactional(propagation = Propagation.REQUIRED)
   public void changeSubscribe(Subscribe subscribe, SubscribeTransition transition, ReasonCode userReason, ActorType actor) {
     subscribe.setStatus(transition.getStatus());
