@@ -401,64 +401,64 @@ public class ProductServiceImpl implements ProductService {
     boardRepository.save(board);
   }
 
-  @Override
-  @Transactional
-  public Long registerProduct(ProductCreateRequestDTO dto) {
-
-    // 상품 저장
-    Product product = Product.builder()
-            .name(dto.getProductName())
-            .description(dto.getDescription())
-            .price(dto.getPrice().longValue())
-            .isUse(false) // 기본 비노출 상태
-            .productCategory(dto.getProductCategory())
-            .modelName(dto.getModelName())
-            .build();
-
-    productRepository.save(product);
-
-    // 재고 기본값 (9999로 고정)
-    ProductStock stock = ProductStock.builder()
-            .product(product)
-            .stock(dto.getStock()) // ← 이건 지유쨩 버전 유지
-            .build();
-    productStockRepository.save(stock);
-
-    // 태그 등록
-    if (dto.getTags() != null && !dto.getTags().isEmpty()) {
-      dto.getTags().forEach((tagName, tagValue) -> {
-        ProductTag tag = ProductTag.builder()
-                .product(product)
-                .tagName(tagName)
-                .tagValue(tagValue)
-                .build();
-        productTagRepository.save(tag);
-      });
-    }
-
-    // 첨부파일 등록 (썸네일 + 일반)
-    if (dto.getAttach() != null) {
-      Attach thumb = Attach.builder()
-              .uuid(dto.getAttach().getUuid())
-              .path(dto.getAttach().getPath())
-              .isThumbnail(true)
-              .build();
-      productAttachRepository.save(thumb);
-    }
-
-    if (dto.getAttachList() != null && !dto.getAttachList().isEmpty()) {
-      dto.getAttachList().forEach(a -> {
-        Attach attach = Attach.builder()
-                .uuid(a.getUuid())
-                .path(a.getPath())
-                .isThumbnail(false)
-                .build();
-        productAttachRepository.save(attach);
-      });
-    }
-
-    return product.getId();
-  }
+//  @Override
+//  @Transactional
+//  public Long registerProduct(ProductCreateRequestDTO dto) {
+//
+//    // 상품 저장
+//    Product product = Product.builder()
+//            .name(dto.getProductName())
+//            .description(dto.getDescription())
+//            .price(dto.getPrice().longValue())
+//            .isUse(false) // 기본 비노출 상태
+//            .productCategory(dto.getProductCategory())
+//            .modelName(dto.getModelName())
+//            .build();
+//
+//    productRepository.save(product);
+//
+//    // 재고 기본값 (9999로 고정)
+//    ProductStock stock = ProductStock.builder()
+//            .product(product)
+//            .stock(dto.getStock()) // ← 이건 지유쨩 버전 유지
+//            .build();
+//    productStockRepository.save(stock);
+//
+//    // 태그 등록
+//    if (dto.getTags() != null && !dto.getTags().isEmpty()) {
+//      dto.getTags().forEach((tagName, tagValue) -> {
+//        ProductTag tag = ProductTag.builder()
+//                .product(product)
+//                .tagName(tagName)
+//                .tagValue(tagValue)
+//                .build();
+//        productTagRepository.save(tag);
+//      });
+//    }
+//
+//    // 첨부파일 등록 (썸네일 + 일반)
+//    if (dto.getAttach() != null) {
+//      Attach thumb = Attach.builder()
+//              .uuid(dto.getAttach().getUuid())
+//              .path(dto.getAttach().getPath())
+//              .isThumbnail(true)
+//              .build();
+//      productAttachRepository.save(thumb);
+//    }
+//
+//    if (dto.getAttachList() != null && !dto.getAttachList().isEmpty()) {
+//      dto.getAttachList().forEach(a -> {
+//        Attach attach = Attach.builder()
+//                .uuid(a.getUuid())
+//                .path(a.getPath())
+//                .isThumbnail(false)
+//                .build();
+//        productAttachRepository.save(attach);
+//      });
+//    }
+//
+//    return product.getId();
+//  }
 
   @Override
   public List<CategoryResponseDTO> getProductCategories() {
@@ -475,31 +475,26 @@ public class ProductServiceImpl implements ProductService {
   // 관리자 상품리스트 페이지
   @Override
   @Transactional(readOnly = true)
-  public List<ProductListResponseDTO> getAllProductsForAdmin() {
+  public List<AdminProductListDTO> getAllProductsForAdmin() {
     List<Product> products = productRepository.findAll();
-
+    log.info(1);
     return products.stream().map(p -> {
       // 썸네일 URL
       String thumbnailUrl = productAttachRepository.findByProductIdAndIsThumbnailTrue(p.getId())
               .map(a -> "https://kiylab-bucket.s3.ap-northeast-2.amazonaws.com/"
                       + a.getPath() + "/" + a.getUuid())
               .orElse(null);
+    log.info(2);
 
-      // 태그
-      List<String> tags = productTagRepository.findByProductId(p.getId())
-              .stream()
-              .map(tag -> tag.getTagName() + "#" + tag.getTagValue())
-              .toList();
 
-      return ProductListResponseDTO.builder()
-              .productId(p.getId())
-              .thumbnailUrl(thumbnailUrl)
-              .tags(tags)
-              .status(p.getIsUse() ? CommonStatus.ACTIVE : CommonStatus.DISABLED)// 상태표시 추가
-              .productName(p.getName())
-              .category(p.getProductCategory())              // 카테고리명 그대로 표시
-              .modelName(p.getModelName())
+      return AdminProductListDTO.builder()
+              .id(p.getId())
+              .productCategory(p.getProductCategory())
+              .thumbnail(thumbnailUrl)
+              .name(p.getName())
               .price(p.getPrice())
+              .modelName(p.getModelName())
+              .isUse(p.getIsUse())
               .build();
     }).toList();
   }

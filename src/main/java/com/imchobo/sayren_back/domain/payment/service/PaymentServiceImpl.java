@@ -41,6 +41,7 @@ import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.exception.subscribe_round.SubscribeRoundNotFoundException;
 import com.imchobo.sayren_back.domain.subscribe.mapper.SubscribeMapper;
+import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeHistoryRepository;
 import com.imchobo.sayren_back.domain.subscribe.repository.SubscribeRepository;
 import com.imchobo.sayren_back.domain.subscribe.service.SubscribeService;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
@@ -85,6 +86,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final RefundRequestRepository refundRequestRepository;
   private final DeliveryItemRepository deliveryItemRepository;
   private final PaymentHistoryRepository paymentHistoryRepository;
+  private final SubscribeHistoryRepository subscribeHistoryRepository;
 
   // 결제 준비
   // 연계 - 구독 테이블, 구독 회차 테이블 (구독 결제시)
@@ -164,7 +166,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     OrderItem orderItem = payment.getOrderItem();
 
-    // 1. 배송 중, 회수 중이면 삭제 불가
+    // 배송 상태 확인
     List<DeliveryItem> deliveryItems = deliveryItemRepository.findByOrderItem(orderItem);
     if (!deliveryItems.isEmpty()) {
       Delivery delivery = deliveryItems.get(0).getDelivery();
@@ -177,7 +179,7 @@ public class PaymentServiceImpl implements PaymentService {
       }
     }
 
-    // 2. 환불 요청 진행 중이면 삭제 불가
+    // 환불 진행 중인지 확인
     boolean refundInProgress = refundRequestRepository.existsByOrderItemAndStatusIn(
             orderItem,
             List.of(
@@ -189,37 +191,46 @@ public class PaymentServiceImpl implements PaymentService {
       throw new PaymentVerificationFailedException("환불 처리 중인 결제는 삭제할 수 없습니다.");
     }
 
-    // 3. 관련 구독 삭제 (진행 중인 상태 제외)
+    // 환불 내역 삭제
+    refundRepository.deleteAllByPayment(payment);
+    log.info("[DELETE] 환불 내역 삭제 완료 (paymentId={})", paymentId);
+
+    // 결제 이력 삭제
+    paymentHistoryRepository.deleteAllByPayment(payment);
+    log.info("[DELETE] 결제 이력 삭제 완료 (paymentId={})", paymentId);
+
+    // 결제 삭제
+    paymentRepository.delete(payment);
+    log.info("[DELETE] 결제 삭제 완료 (paymentId={})", paymentId);
+
+    // 구독 회차 삭제
     Subscribe subscribe = subscribeRepository.findByOrderItem(orderItem).orElse(null);
     if (subscribe != null) {
-      if (List.of(SubscribeStatus.PREPARING, SubscribeStatus.ACTIVE, SubscribeStatus.OVERDUE)
-              .contains(subscribe.getStatus())) {
-        throw new PaymentVerificationFailedException("진행 중인 구독과 연결된 결제는 삭제할 수 없습니다.");
-      }
 
-      // 회차 먼저 삭제
+      //  구독 회차 삭제
       List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
       if (!rounds.isEmpty()) {
         subscribeRoundRepository.deleteAll(rounds);
         log.info("[DELETE] 구독 회차 {}건 삭제 완료 (subscribeId={})", rounds.size(), subscribe.getId());
       }
 
+      // 구독 히스토리 삭제 (FK 제약 해결)
+      subscribeHistoryRepository.deleteAllBySubscribe(subscribe);
+      log.info("[DELETE] 구독 히스토리 삭제 완료 (subscribeId={})", subscribe.getId());
+
+      //  구독 삭제
+      if (List.of(SubscribeStatus.PREPARING, SubscribeStatus.ACTIVE, SubscribeStatus.OVERDUE)
+              .contains(subscribe.getStatus())) {
+        throw new PaymentVerificationFailedException("진행 중인 구독은 삭제할 수 없습니다.");
+      }
+
       subscribeRepository.delete(subscribe);
       log.info("[DELETE] 구독 삭제 완료 (subscribeId={})", subscribe.getId());
     }
 
-    // 4. 환불 내역 선삭제
-    refundRepository.deleteAllByPayment(payment);
-    log.info("[DELETE] 환불 내역 삭제 완료 (paymentId={})", paymentId);
-
-    // 5. 결제 이력 선삭제 (FK 제약 방지)
-    paymentHistoryRepository.deleteAllByPayment(payment);
-    log.info("[DELETE] 결제 이력 삭제 완료 (paymentId={})", paymentId);
-
-    // 6. 결제 삭제
-    paymentRepository.delete(payment);
-    log.info("[DELETE] 결제 삭제 완료 (paymentId={})", paymentId);
+    log.info("[DELETE] 전체 삭제 프로세스 완료 (paymentId={})", paymentId);
   }
+
 
 
 
