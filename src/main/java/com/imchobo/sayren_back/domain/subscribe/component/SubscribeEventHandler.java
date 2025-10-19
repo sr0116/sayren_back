@@ -17,6 +17,7 @@ import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeActivatedEvent;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeRoundDueEvent;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
+import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedReasonEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
@@ -67,87 +68,63 @@ public class SubscribeEventHandler {
     subscribeHistoryRepository.save(history);
   }
 
-  //  구독 상태 변경 (히스토리 이벤트 핸들러) - 비동기 로그 기록
+  //  구독 상태 변경 (히스토리 이벤트 핸들러)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void handleSubscribeStatusChanged(SubscribeStatusChangedEvent event) {
-    log.info("[EVENT] handleSubscribeStatusChanged triggered → subscribeId={}, transition={}, actor={}",
+  public void handleSubscribeStatusChanged(SubscribeStatusChangedReasonEvent event) {
+    log.info("[EVENT] handleSubscribeStatusChanged triggered → subscribeId={}, transition={}, actor={}, reason={}",
             event.getSubscribeId(),
             event.getTransition(),
-            event.getActor());
+            event.getActor(),
+            event.getReasonCode());
 
-    // transition null 방어 로그
-    if (event.getTransition() == null) {
-      log.error("[FATAL] SubscribeStatusChangedEvent.transition is NULL (subscribeId={})", event.getSubscribeId());
-      return;
-    }
-
-    if (event.getTransition().getStatus() == null || event.getTransition().getReason() == null) {
-      log.error("[FATAL] Transition 내부 필드 null → status={}, reason={}, subscribeId={}",
-              event.getTransition().getStatus(),
-              event.getTransition().getReason(),
-              event.getSubscribeId());
-    }
-
-    // 1) 구독 엔티티 조회
     SubscribeTransition transition = event.getTransition();
     Subscribe subscribe = subscribeRepository.findById(event.getSubscribeId())
-            .orElseThrow(() -> new SubscribeNotFoundException(event.getSubscribeId()));
+            .orElseThrow(() -> new RuntimeException("구독을 찾을 수 없습니다. id=" + event.getSubscribeId()));
 
-    // 2) 이력 생성
+    //  1) 상태 히스토리 생성 (사유 + 상태 + 주체)
     SubscribeHistory history = SubscribeHistory.builder()
             .subscribe(subscribe)
-            .status(event.getTransition().getStatus())
-            .reasonCode(event.getTransition().getReason())
-            .changedBy(event.getActor())
+            .status(transition.getStatus() != null ? transition.getStatus() : subscribe.getStatus())
+            .reasonCode(event.getReasonCode() != null ? event.getReasonCode() : transition.getReason())
+            .changedBy(event.getActor() != null ? event.getActor() : ActorType.SYSTEM)
             .build();
 
-    // 3) 저장
     subscribeHistoryRepository.save(history);
     log.info("[HISTORY] 구독 이력 저장 완료 → subscribeId={}, status={}, reason={}, actor={}",
-            subscribe.getId(),
-            history.getStatus(),
-            history.getReasonCode(),
-            history.getChangedBy());
+            subscribe.getId(), history.getStatus(), history.getReasonCode(), history.getChangedBy());
 
-    // 회차 상태 처리 저장 (회차 이벤트 처리 사용)
+    //  2) 회차 상태 자동 변경 (취소·종료 시)
     switch (transition) {
       case RETURNED_AND_CANCELED, ADMIN_FORCE_END -> {
-        // 회차 상태 변경은 RefundEventHandler가 PaymentStatus 기반으로 처리하므로 여기서는 구독 상태만 기록
-        // 미납·연체 회차를 직접 CANCELED 처리하도록 로직 추가
-          log.info("[ROUND] 구독 종료/취소 감지 → 회차 상태 변경 수행 (subscribeId={})", subscribe.getId());
+        log.info("[ROUND] 구독 종료/취소 감지 → 회차 상태 변경 수행 (subscribeId={})", subscribe.getId());
+        List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
 
-          // 모든 회차 조회 후, 결제 완료된 회차를 제외하고 상태 변경
-          List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
-
-          for (SubscribeRound round : rounds) {
-            PaymentStatus payStatus = round.getPayStatus();
-
-            //  미납·실패·기존 취소·부분환불 회차만 CANCELED 처리
-            if (payStatus == PaymentStatus.PENDING
-                    || payStatus == PaymentStatus.FAILED
-                    || payStatus == PaymentStatus.CANCELED
-                    || payStatus == PaymentStatus.PARTIAL_REFUNDED) {
-              round.setPayStatus(PaymentStatus.CANCELED);
-              round.setFailedAt(LocalDateTime.now());
-            }
+        for (SubscribeRound round : rounds) {
+          PaymentStatus payStatus = round.getPayStatus();
+          if (payStatus == PaymentStatus.PENDING ||
+                  payStatus == PaymentStatus.FAILED ||
+                  payStatus == PaymentStatus.CANCELED ||
+                  payStatus == PaymentStatus.PARTIAL_REFUNDED) {
+            round.setPayStatus(PaymentStatus.CANCELED);
+            round.setFailedAt(LocalDateTime.now());
           }
-
-          // 회차 일괄 저장 추가
-          subscribeRoundRepository.saveAll(rounds);
-          log.info("[ROUND] 구독 종료/취소 → 미납/연체 회차 CANCELED 처리 완료 (총 {}건)", rounds.size());
         }
 
-        case FAIL_PAYMENT -> {
+        subscribeRoundRepository.saveAll(rounds);
+        log.info("[ROUND] 미납/연체 회차 CANCELED 처리 완료 (총 {}건)", rounds.size());
+      }
+
+      case FAIL_PAYMENT -> {
         if (subscribe.getStatus() == SubscribeStatus.CANCELED
                 || subscribe.getStatus() == SubscribeStatus.ENDED) {
-          log.info("[SKIP] 이미 CANCELED 또는 ENDED 상태이므로 FAILED 처리 생략 → subscribeId={}", subscribe.getId());
+          log.info("[SKIP] 이미 종료된 구독이므로 결제 실패 회차 처리 생략 (subscribeId={})", subscribe.getId());
           return;
         }
-
         List<SubscribeRound> rounds = subscribeRoundRepository.findBySubscribeId(subscribe.getId());
-        rounds.forEach(r -> subscribeStatusChanger.changeSubscribeRound(r, SubscribeRoundTransition.PAY_FAIL));
-        log.info("[ROUND] 결제 실패 → 전체 회차 FAILED 처리 완료 - subscribeId={}", subscribe.getId());
+        rounds.forEach(r -> r.setPayStatus(PaymentStatus.FAILED));
+        subscribeRoundRepository.saveAll(rounds);
+        log.info("[ROUND] 결제 실패 → 전체 회차 FAILED 처리 완료 (subscribeId={})", subscribe.getId());
       }
 
       default -> log.debug("[ROUND] 구독 상태 {}는 회차 갱신 불필요", transition);

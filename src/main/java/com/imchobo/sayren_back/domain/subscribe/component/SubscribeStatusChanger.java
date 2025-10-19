@@ -3,8 +3,10 @@ package com.imchobo.sayren_back.domain.subscribe.component;
 
 import com.imchobo.sayren_back.domain.common.en.ActorType;
 
+import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeRoundStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
+import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedReasonEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeTransition;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
@@ -17,8 +19,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.concurrent.CompletableFuture;
 
 @Component
 @RequiredArgsConstructor
@@ -41,6 +41,21 @@ public class SubscribeStatusChanger {
     eventPublisher.publishEvent(new SubscribeStatusChangedEvent(subscribe.getId(), transition, actor));
     log.debug("[PUBLISH] 구독 상태 이벤트 발행 → subscribeId={}, transition={}", subscribe.getId(), transition);
 
+  }
+
+  @Transactional(propagation = Propagation.REQUIRED)
+  public void changeSubscribe(Subscribe subscribe, SubscribeTransition transition, ReasonCode userReason, ActorType actor) {
+    subscribe.setStatus(transition.getStatus());
+    subscribeRepository.saveAndFlush(subscribe);
+
+    eventPublisher.publishEvent(new SubscribeStatusChangedReasonEvent(
+            subscribe.getId(),
+            transition,
+            userReason,
+            actor
+    ));
+    log.info("[PUBLISH] 구독 상태 이벤트(사유 포함) 발행 → subscribeId={}, transition={}, reason={}",
+            subscribe.getId(), transition, userReason);
   }
 
   // 구독 회차 상태 변경 (결제 상태)

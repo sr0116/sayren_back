@@ -38,7 +38,7 @@ public interface SubscribeService {
   void updateStatus(Long subscribeId, SubscribeStatus status);
 
   // (추가) 구독 취소 (사용자 요청)
-  void cancelSubscribe(Long subscribeId);
+  void cancelSubscribe(Long subscribeId, ReasonCode userReason);
 
   // 구독 취소 (관리자 승인 여부)
   void processCancelRequest(Long subscribeId, RefundRequestStatus status, ReasonCode reasonCode);
