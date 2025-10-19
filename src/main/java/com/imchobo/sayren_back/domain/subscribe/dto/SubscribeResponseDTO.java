@@ -29,7 +29,12 @@ public class SubscribeResponseDTO {
   // 멤버 관련
   private String memberName;
   private String memberEmail;
+
+  // 상품 정보
   private String productName;
   private String productCategory;
+  // 썸네일 추가
+  private String productThumbnail;
+
 
 }

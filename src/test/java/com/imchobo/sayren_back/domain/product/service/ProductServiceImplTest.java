@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.product.service;
 
 import com.imchobo.sayren_back.domain.product.dto.ProductListResponseDTO;
+import com.imchobo.sayren_back.domain.product.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class ProductServiceImplTest {
   @Autowired
   private ProductService productService;
-
+  @Autowired
+  private ProductRepository  productRepository;
   @Test
   void revalidate() {
     productService.revalidate(72L);
@@ -22,6 +24,6 @@ class ProductServiceImplTest {
   @Test
   void revalidateAll() {
     productService.revalidateAll();
-//    productService.getAllProducts().forEach(p -> productService.revalidate(p.getProductId()));
+    productRepository.findAll().forEach(p -> productService.revalidate(p.getId()));
   }
 }

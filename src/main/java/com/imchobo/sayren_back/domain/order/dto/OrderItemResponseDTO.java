@@ -17,4 +17,7 @@ public class OrderItemResponseDTO {
   private Long priceSnapshot;   // 주문 시점 가격
   private Long planId;          // 요금제 ID
   private OrderPlanType planType; // 요금제 타입
+
+
+  private String productThumbnail;  // 상품 이미지 URL
 }

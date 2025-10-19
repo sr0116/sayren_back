@@ -24,6 +24,7 @@ public interface RefundMapper {
   @Mapping(source = "id", target = "refundId")
   @Mapping(source = "payment.id", target = "paymentId")
   @Mapping(source = "refundRequest.id", target = "refundRequestId")
+
   RefundResponseDTO toDto(Refund entity);
 
   List<RefundResponseDTO> toResponseDTOs(List<Refund> entities);

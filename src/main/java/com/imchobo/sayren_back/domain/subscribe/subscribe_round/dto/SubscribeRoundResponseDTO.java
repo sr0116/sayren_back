@@ -19,4 +19,6 @@ public class SubscribeRoundResponseDTO {
   private LocalDate dueDate;
   private LocalDateTime paidDate;
   private LocalDateTime regDate;
+
+
 }
