@@ -365,22 +365,38 @@ public class SubscribeServiceImpl implements SubscribeService {
   public void processCancelRequest(Long subscribeId, RefundRequestStatus status, ReasonCode reasonCode) {
     Subscribe subscribe = subscribeRepository.findById(subscribeId)
             .orElseThrow(() -> new SubscribeNotFoundException(subscribeId));
-    // 일단 구독 상태가 구독 중이어야 함
+
+    // ACTIVE 상태만 처리 가능
     if (subscribe.getStatus() != SubscribeStatus.ACTIVE) {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
-    // 관리자가 승인시
+
+    //  관리자 승인 처리
     if (status == RefundRequestStatus.APPROVED) {
-      //환불 요청 자동 생성
+
+      // 계약 만료(EXPIRED): 환불 없이 구독 상태만 종료
+      if (reasonCode == ReasonCode.EXPIRED) {
+        subscribeStatusChanger.changeSubscribe(
+                subscribe,
+                SubscribeTransition.END,       // ENDED 상태로 전환
+                reasonCode,                    // EXPIRED 사유 저장
+                ActorType.ADMIN
+        );
+        log.info("[ADMIN ACTION] 계약 만료 승인 처리 완료 → subscribeId={}, status=ENDED", subscribeId);
+        return;
+      }
+
+      //   일반적인 환불 승인 (취소, 불량, 배송 문제 등)
       RefundRequest request = RefundRequest.builder()
               .orderItem(subscribe.getOrderItem())
               .member(subscribe.getMember())
-              .status(RefundRequestStatus.APPROVED_WAITING_RETURN) // 환불 승인 및 회수 중
+              .status(RefundRequestStatus.APPROVED_WAITING_RETURN) // 회수 대기
               .reasonCode(reasonCode)
               .build();
 
       refundRequestRepository.saveAndFlush(request);
-      // 트랜잭션 커밋 후 이벤트 발행 (핸들러에서 이후 회수/환불 처리)
+
+      // 트랜잭션 커밋 후 이벤트 발행 (회수 및 환불 로직 연계)
       TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
         @Override
         public void afterCommit() {
@@ -396,14 +412,22 @@ public class SubscribeServiceImpl implements SubscribeService {
       });
       return;
     }
-    // 거절시 상태 복원 처리
+
+    // 관리자 거절 처리
     if (status == RefundRequestStatus.REJECTED) {
-      subscribeStatusChanger.changeSubscribe(subscribe, SubscribeTransition.CANCEL_REJECT, ActorType.ADMIN);
+      subscribeStatusChanger.changeSubscribe(
+              subscribe,
+              SubscribeTransition.CANCEL_REJECT,
+              ActorType.ADMIN
+      );
+      log.info("[ADMIN ACTION] 구독 취소 요청 거절 처리 완료 → subscribeId={}", subscribeId);
       return;
     }
-    //  기타 상태 처리 (보류,취소 등)
+
+    //  기타 상태 (보류, 취소 등)
     subscribeCancelHandler.handle(subscribe, status, reasonCode);
   }
+
 
   // 구독 상태 변경 이력 조회
   @Override
