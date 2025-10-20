@@ -2,6 +2,7 @@ package com.imchobo.sayren_back.domain.subscribe.subscribe_round.repository;
 
 
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.subscribe.dto.SubscribeResponseDTO;
 import com.imchobo.sayren_back.domain.subscribe.entity.Subscribe;
 import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
 import org.springframework.data.domain.Page;
@@ -46,6 +47,7 @@ public interface SubscribeRoundRepository extends JpaRepository<SubscribeRound, 
   // 상태 기반 조회 (유예기간 처리용)
   List<SubscribeRound> findByPayStatusIn(List<PaymentStatus> statuses);
 
+  //
 
   // 관리자용 전체 조회
   @Query("SELECT sr FROM SubscribeRound sr " +

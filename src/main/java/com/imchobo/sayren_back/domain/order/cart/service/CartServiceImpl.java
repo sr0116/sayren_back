@@ -49,8 +49,16 @@ public class CartServiceImpl implements CartService {
   }
 
   @Override
-  public void removeItem(Long cartItemId) {
-    cartRepository.deleteById(cartItemId);
+  public void removeItem(Long memberId, Long cartItemId) {
+
+    CartItem cartItem = cartRepository.findById(cartItemId)
+      .orElseThrow(() -> new CartNotFoundException("장바구니 아이템을 찾을 수 없습니다."));
+
+    if (!cartItem.getMember().getId().equals(memberId)) {
+      throw new CartNotFoundException("본인의 장바구니만 삭제할 수 있습니다.");
+    }
+
+    cartRepository.delete(cartItem);
   }
 
   @Override

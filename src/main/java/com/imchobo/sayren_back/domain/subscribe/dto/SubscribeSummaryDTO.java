@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.subscribe.dto;
 
+import com.imchobo.sayren_back.domain.common.en.ReasonCode;
+import com.imchobo.sayren_back.domain.payment.refund.en.RefundRequestStatus;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeStatus;
 import lombok.*;
 
@@ -20,4 +22,6 @@ public class SubscribeSummaryDTO {
   private Long monthlyFeeSnapshot;
   private String productName;
   private String productThumbnail;
+  private ReasonCode reasonCode;
+  private RefundRequestStatus refundRequestStatus;
 }

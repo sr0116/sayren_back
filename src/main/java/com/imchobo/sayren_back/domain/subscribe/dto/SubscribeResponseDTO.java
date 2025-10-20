@@ -26,6 +26,7 @@ public class SubscribeResponseDTO {
   private LocalDate startDate; // 구독 시작일
   private LocalDate endDate;
 
+
   // 멤버 관련
   private String memberName;
   private String memberEmail;
