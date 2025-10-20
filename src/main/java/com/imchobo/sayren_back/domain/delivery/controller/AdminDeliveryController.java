@@ -22,7 +22,7 @@ public class AdminDeliveryController {
     return ResponseEntity.ok(deliveryService.getAllList(pageRequestDTO));
   }
 
-  // 상태 변경 요청 (READY → SHIPPING → DELIVERED → RETURNED)
+  // 상태 변경 요청 (READY > SHIPPING > DELIVERED > RETURNED)
   @PostMapping("/changed-status")
   public ResponseEntity<?> changedDeliveryStatus(@RequestBody DeliveryStatusChangeDTO dto) {
     deliveryService.changedStatus(dto);

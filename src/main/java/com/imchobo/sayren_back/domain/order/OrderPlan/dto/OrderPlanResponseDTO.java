@@ -11,10 +11,10 @@ import lombok.*;
 @Builder
 public class OrderPlanResponseDTO {
 
-  // 요금제 ID (PK)
+  // 요금제 ID
   private Long planId;
 
-  // 요금제 타입 (예: PURCHASE, RENTAL)
+  // 요금제 타입
   private OrderPlanType type;
 
   // 기간(개월 수)

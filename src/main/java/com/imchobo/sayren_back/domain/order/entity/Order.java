@@ -25,13 +25,13 @@ public class Order extends BaseEntity {
   @Column(name = "order_id")
   private Long id;
 
-  //  주문자 (Member)
-  @ManyToOne(fetch = FetchType.LAZY) // 여러 주문이 하나의 회원에 속함
+  //  주문자
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "member_id", nullable = false)
   private Member member;
 
-  //  배송지 (Address)
-  @ManyToOne(fetch = FetchType.LAZY) // 여러 주문이 하나의 주소를 가질 수 있음
+  //  배송지
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "address_id", nullable = false)
   private Address address;
 

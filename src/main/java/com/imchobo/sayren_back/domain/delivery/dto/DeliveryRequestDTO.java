@@ -6,6 +6,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class DeliveryRequestDTO {
-    private Long addressId;   // 배송지 ID (필수)
+    private Long addressId;   // 배송지 ID
     private String type;      // DELIVERY / RETURN
 }

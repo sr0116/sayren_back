@@ -6,10 +6,6 @@ import com.imchobo.sayren_back.domain.delivery.en.DeliveryType;
 import com.imchobo.sayren_back.domain.delivery.entity.Delivery;
 import com.imchobo.sayren_back.domain.member.entity.Member;
 import org.springframework.stereotype.Component;
-
-
- //Delivery 엔티티 생성 책임 전담
-
 @Component
 public class DeliveryFactory {
 

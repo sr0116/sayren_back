@@ -16,7 +16,7 @@ public interface AddressMapper {
 
     AddressMapper INSTANCE = Mappers.getMapper(AddressMapper.class);
 
-    // DTO → Entity 변환
+    // DTO > Entity 변환
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "member", source = "member")
     @Mapping(target = "name", source = "dto.name")
@@ -27,13 +27,13 @@ public interface AddressMapper {
     @Mapping(target = "memo", source = "dto.memo")
     Address toEntity(AddressRequestDTO dto, Member member);
 
-    // Entity → ResponseDTO 변환
+    // Entity > ResponseDTO 변환
     AddressResponseDTO toResponseDTO(Address entity);
 
-    // Entity 리스트 → ResponseDTO 리스트 변환
+    // Entity 리스트 > ResponseDTO 리스트 변환
     List<AddressResponseDTO> toResponseDTOs(List<Address> entities);
 
-    // 수정용 (기존 Entity에 DTO 값 덮어쓰기)
+    // (기존 Entity에 DTO 값 덮어쓰기)
     @Mapping(target = "member", ignore = true) // 수정 시 회원정보 변경 금지
     void updateEntityFromDto(AddressRequestDTO dto, @MappingTarget Address entity);
 }
