@@ -108,6 +108,12 @@ public class SubscribeEventHandler {
     log.info("[HISTORY] 구독 이력 기록 완료 → subscribeId={}, status={}, reason={}, actor={}",
             subscribeId, transition.getStatus(), reason, actor);
 
+    if (reason == ReasonCode.EXPIRED) {
+      log.info("[SKIP] 계약 만료(EXPIRED) 구독은 회차 상태 변경을 건너뜁니다. (subscribeId={})", subscribeId);
+      return;
+    }
+
+
     // 구독 취소 또는 종료 시 회차 상태 자동 갱신
     switch (transition) {
       case RETURNED_AND_CANCELED, ADMIN_FORCE_END -> {

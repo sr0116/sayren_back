@@ -371,22 +371,49 @@ public class SubscribeServiceImpl implements SubscribeService {
       throw new SubscribeStatusInvalidException(subscribe.getStatus().name());
     }
 
-    //  관리자 승인 처리
+    // 관리자 승인 처리
     if (status == RefundRequestStatus.APPROVED) {
 
-      // 계약 만료(EXPIRED): 환불 없이 구독 상태만 종료
+      // (A) 계약 만료(EXPIRED): 구독 종료 + 환불 요청 생성
       if (reasonCode == ReasonCode.EXPIRED) {
+        // 1) 구독 상태를 ENDED로 전환
         subscribeStatusChanger.changeSubscribe(
                 subscribe,
-                SubscribeTransition.END,       // ENDED 상태로 전환
-                reasonCode,                    // EXPIRED 사유 저장
+                SubscribeTransition.END,
+                reasonCode,
                 ActorType.ADMIN
         );
-        log.info("[ADMIN ACTION] 계약 만료 승인 처리 완료 → subscribeId={}, status=ENDED", subscribeId);
+
+        // 2) 환불 요청 테이블 생성 (보증금 환불용)
+        RefundRequest refundRequest = RefundRequest.builder()
+                .orderItem(subscribe.getOrderItem())
+                .member(subscribe.getMember())
+                .status(RefundRequestStatus.APPROVED_WAITING_RETURN) // 회수 완료 후 환불 대기
+                .reasonCode(ReasonCode.EXPIRED)
+                .build();
+
+        refundRequestRepository.saveAndFlush(refundRequest);
+
+        // 3) 환불 이벤트 발행 (RefundEventHandler → RefundService 연계)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            eventPublisher.publishEvent(new RefundRequestEvent(
+                    subscribe.getOrderItem().getId(),
+                    subscribe.getId(),
+                    RefundRequestStatus.APPROVED_WAITING_RETURN,
+                    ReasonCode.EXPIRED,
+                    ActorType.ADMIN
+            ));
+            log.info("[EVENT][AFTER_COMMIT] 계약 만료 환불 이벤트 발행 → subscribeId={}, reason=EXPIRED", subscribeId);
+          }
+        });
+
+        log.info("[ADMIN ACTION] 계약 만료 승인 + 환불 요청 생성 완료 → subscribeId={}, status=ENDED", subscribeId);
         return;
       }
 
-      //   일반적인 환불 승인 (취소, 불량, 배송 문제 등)
+      // (B) 일반적인 환불 승인 (취소, 불량, 배송 문제 등)
       RefundRequest request = RefundRequest.builder()
               .orderItem(subscribe.getOrderItem())
               .member(subscribe.getMember())
