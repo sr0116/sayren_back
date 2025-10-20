@@ -26,18 +26,22 @@ public class LikeServiceImpl implements LikeService{
     private final MemberRepository memberRepository;
 
     @Override
+    @Transactional
     public LikeResponseDTO clickLike(LikeRequestDTO dto) {
-        MemberAuthDTO auth = SecurityUtil.getMemberAuthDTO();
-        Member member = memberRepository.findById(auth.getId())
-                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
-
         if (dto.getBoardId() == null) {
             throw new IllegalArgumentException("게시글 ID가 필요합니다.");
         }
 
+        // 로그인한 유저 가져오기
+        MemberAuthDTO auth = SecurityUtil.getMemberAuthDTO();
+        Member member = memberRepository.findById(auth.getId())
+                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+        // 게시글 조회
         Board board = boardRepository.findById(dto.getBoardId())
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
+        // 기존 좋아요 여부 확인
         Optional<Like> existing = likeRepository.findByMemberAndBoard(member, board);
 
         if (existing.isPresent()) {

@@ -19,16 +19,14 @@ public class UserLikeController {
     private final LikeService likeService;
 
     @PostMapping("/like")
-    public ResponseEntity<LikeResponseDTO> toggleLike(
-            @RequestBody LikeRequestDTO dto) {
-
+    public ResponseEntity<LikeResponseDTO> toggleLike(@RequestBody LikeRequestDTO dto) {
         LikeResponseDTO result = likeService.clickLike(dto);
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * 좋아요(찜) 목록 조회
-     */
+
+    // 좋아요(찜) 목록 조회
+
     @GetMapping("/like/list")
     public ResponseEntity<List<Board>> getMyLikedBoards() {
         List<Board> likedBoards = likeService.getMyLikedBoards();
