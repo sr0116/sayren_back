@@ -59,30 +59,34 @@ public class RefundRequestServiceImpl implements RefundRequestService {
   @Transactional
   @Override
   public RefundRequestResponseDTO createRefundRequest(RefundRequestDTO dto) {
-    // 현재 로그인 멤버
     Member member = SecurityUtil.getMemberEntity();
-    // 결제 정보 조회
+
     Payment payment = paymentRepository.findById(dto.getPaymentId())
             .orElseThrow(() -> new PaymentNotFoundException(dto.getPaymentId()));
 
-    // 이미 환불 요청이 있는지 체크
-    boolean exists = refundRequestRepository.existsByOrderItemAndStatusIn(
-            payment.getOrderItem(),
-            List.of(RefundRequestStatus.PENDING, RefundRequestStatus.APPROVED)
-    );
-    if (exists) {
+    // 복수 데이터 조회로 변경
+    List<RefundRequest> existingList = refundRequestRepository.findAllByOrderItem(payment.getOrderItem());
+
+    // 거절되지 않은 요청이 하나라도 있으면 재요청 불가
+    boolean hasActive = existingList.stream()
+            .anyMatch(r -> !r.getStatus().equals(RefundRequestStatus.REJECTED));
+    if (hasActive) {
       throw new RefundRequestAlreadyExistsException(dto.getPaymentId());
     }
 
-    // 엔티티 변환 저장
+    //  REJECTED 요청이 있으면 그대로 두고 신규 생성
+    log.info("[REFUND] 기존 거절된 요청 {}건 감지 → 신규 요청 생성 허용 (orderItemId={})",
+            existingList.size(), payment.getOrderItem().getId());
+
+    // 신규 요청 생성
     RefundRequest entity = refundRequestMapper.toEntity(dto);
     entity.setMember(member);
     entity.setOrderItem(payment.getOrderItem());
-    entity.setStatus(RefundRequestStatus.PENDING); // 기본값
-    entity.setReasonCode(dto.getReasonCode()); // 기본값 세팅해둠
+    entity.setStatus(RefundRequestStatus.PENDING);
+    entity.setReasonCode(dto.getReasonCode());
 
     RefundRequest saved = refundRequestRepository.save(entity);
-    // 사용자 요청 이벤트 발행 (actor=USER)
+
     Long subscribeId = subscribeRepository.findByOrderItem(payment.getOrderItem())
             .map(Subscribe::getId)
             .orElse(null);
@@ -94,6 +98,9 @@ public class RefundRequestServiceImpl implements RefundRequestService {
             dto.getReasonCode(),
             ActorType.USER
     ));
+
+    log.info("[REFUND] 신규 환불 요청 생성 완료 (refundRequestId={}, orderItemId={}, memberId={})",
+            saved.getId(), payment.getOrderItem().getId(), member.getId());
 
     return refundRequestMapper.toResponseDTO(saved);
   }

@@ -27,8 +27,8 @@ public interface RefundRequestRepository extends JpaRepository<RefundRequest, Lo
 
   Optional<RefundRequest> findFirstByOrderItemOrderByRegDateDesc(OrderItem orderItem);
 
-
-  Optional<Object> findByOrderItem(OrderItem orderItem);
+  Optional<RefundRequest> findByOrderItem(OrderItem orderItem);
+  List<RefundRequest> findAllByOrderItem(OrderItem orderItem);
 
   // 관리자용 환불 요청 전체 조회(회원 정보까지)
   @Query("SELECT r FROM RefundRequest r " +
