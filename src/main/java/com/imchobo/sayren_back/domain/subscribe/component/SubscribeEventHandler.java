@@ -5,6 +5,9 @@ import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import com.imchobo.sayren_back.domain.delivery.component.event.DeliveryStatusChangedEvent;
 import com.imchobo.sayren_back.domain.delivery.en.DeliveryStatus;
 import com.imchobo.sayren_back.domain.delivery.repository.DeliveryItemRepository;
+import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.notification.dto.NotificationCreateDTO;
+import com.imchobo.sayren_back.domain.notification.en.NotificationType;
 import com.imchobo.sayren_back.domain.notification.service.NotificationService;
 import com.imchobo.sayren_back.domain.payment.component.event.PaymentStatusChangedEvent;
 import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
@@ -12,6 +15,7 @@ import com.imchobo.sayren_back.domain.payment.en.PaymentTransition;
 import com.imchobo.sayren_back.domain.payment.entity.Payment;
 import com.imchobo.sayren_back.domain.payment.repository.PaymentRepository;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeActivatedEvent;
+import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeRoundDueEvent;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedEvent;
 import com.imchobo.sayren_back.domain.subscribe.component.event.SubscribeStatusChangedReasonEvent;
 import com.imchobo.sayren_back.domain.subscribe.en.SubscribeRoundTransition;
@@ -233,5 +237,57 @@ public class SubscribeEventHandler {
               eventPublisher.publishEvent(new SubscribeActivatedEvent(subscribe.getId(), start));
               log.info("[DELIVERY] 구독 활성화 완료 → subscribeId={}, start={}, end={}", subscribe.getId(), start, end);
             });
+  }
+
+
+  // 회차 알림 이벤트 처리
+  @Transactional
+  @EventListener
+  public void onSubscribeRoundDue(SubscribeRoundDueEvent event) {
+    SubscribeRound round = event.getRound();
+    Subscribe subscribe = round.getSubscribe();
+    Member member = subscribe.getMember();
+
+    NotificationCreateDTO dto = new NotificationCreateDTO();
+    dto.setMemberId(member.getId());
+    dto.setType(NotificationType.SUBSCRIBE_ROUND);
+    String productName = subscribe.getOrderItem().getProduct().getName();
+    Long subscribeId = subscribe.getId();
+    int roundNo = round.getRoundNo();
+    Long roundId = round.getId();
+
+    switch (event.getPhase()) {
+      case "DUE" -> {
+        dto.setTitle("구독 결제일 안내");
+        dto.setMessage(String.format("[%s] %d회차 결제일이 도래했습니다. 결제를 진행해주세요.",
+                productName, roundNo));
+        dto.setLinkUrl(String.format("/mypage/subscribe/round/%d", roundId));
+      }
+
+      case "WARNING" -> {
+        dto.setTitle("결제 유예기간 만료 예정");
+        dto.setMessage(String.format("[%s] %d회차 결제 유예기간이 내일 만료됩니다. 결제를 완료해주세요.",
+                productName, roundNo));
+        dto.setLinkUrl(String.format("/mypage/subscribe/%d/rounds/%d", subscribeId, roundNo));
+      }
+
+      case "OVERDUE" -> {
+        dto.setTitle("연체 확정 - 서비스 중단");
+        dto.setMessage(String.format("[%s] %d회차 결제가 유예기간을 초과했습니다. 구독이 중단되었습니다.",
+                productName, roundNo));
+        dto.setLinkUrl(String.format("/mypage/subscribe/%d/rounds/%d", subscribeId, roundNo));
+      }
+    }
+
+    notificationService.send(dto);
+
+    log.info(
+            "[EVENT] phase={} 결제 예정 알림 생성 완료 → memberId={}, subscribeId={}, roundId={}, roundNo={}",
+            event.getPhase(),
+            member.getId(),
+            subscribeId,
+            roundId,
+            roundNo
+    );
   }
 }
