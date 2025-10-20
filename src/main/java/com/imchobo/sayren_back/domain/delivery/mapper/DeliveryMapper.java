@@ -10,7 +10,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = MappingUtil.class)
 public interface DeliveryMapper {
 
-    //  Entity → DTO (조회용)
+    //  Entity > DTO (조회용)
     @Mapping(source = "id", target = "deliveryId")
     @Mapping(source = "member.id", target = "memberId")
     @Mapping(source = "address.id", target = "addressId")
@@ -18,7 +18,7 @@ public interface DeliveryMapper {
     @Mapping(source = "status", target = "status", qualifiedByName = "mapDeliveryStatusToString")
     DeliveryResponseDTO toResponseDTO(Delivery entity);
 
-    // DTO → Entity (생성용)
+    // DTO > Entity (생성용)
     @Mapping(source = "addressId", target = "address.id")
     @Mapping(source = "type", target = "type", qualifiedByName = "mapStringToDeliveryType")
     Delivery toEntity(DeliveryRequestDTO dto);

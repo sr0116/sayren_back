@@ -99,12 +99,8 @@ public class OrderServiceImpl implements OrderService {
       Long firstItemId = savedOrder.getOrderItems().get(0).getId();
       log.info("[단일 상품 주문 완료] orderId={}, orderItemId={}", savedOrder.getId(), firstItemId);
 
-      //  OrderResponseDTO에 추가 세팅
-      OrderResponseDTO responseDTO = orderMapper.toResponseDTO(savedOrder);
-      // responseDTO 안에 orderItemId 필드 추가 (세터 사용)
-      // → DTO에 세터 이미 존재하므로 가능
-      // 단, orderItems 내부에 값은 이미 포함되어 있음
 
+      OrderResponseDTO responseDTO = orderMapper.toResponseDTO(savedOrder);
       //  첫 OrderItemId를 responseDTO 상위에도 세팅
       responseDTO.setOrderItems(responseDTO.getOrderItems());
       responseDTO.setRegDate(savedOrder.getRegDate());
@@ -223,10 +219,6 @@ public class OrderServiceImpl implements OrderService {
     Order order = orderRepository.findById(orderId)
       .orElseThrow(() -> new OrderNotFoundException(orderId));
 
-    // Lazy 로딩된 컬렉션 및 연관 엔티티 강제 초기화
-    // - orderItems: 주문에 포함된 상품들
-    // - histories: 주문 상태 이력
-    // - product, orderPlan: 각 주문상품이 참조하는 상품/요금제 정보
     order.getOrderItems().forEach(item -> {
       if (item.getProduct() != null) {
         item.getProduct().getName(); // 상품 엔티티 로딩
@@ -237,7 +229,6 @@ public class OrderServiceImpl implements OrderService {
     });
     order.getHistories().size(); // 주문 이력 강제 로드
 
-    // DTO 변환 (Mapper 정상 작동)
     return orderMapper.toResponseDTO(order);
   }
 

@@ -7,10 +7,10 @@ import java.util.Optional;
 
 public interface AddressRepository extends JpaRepository<Address, Long> {
 
-    // 회원별 주소 목록 (최신 등록순)
+    // 회원별 주소 목록
     List<Address> findByMemberIdOrderByIdDesc(Long memberId);
 
-    // 기본 배송지 조회 (isDefault = true)
+    // 기본 배송지 조회
     Optional<Address> findByMemberIdAndIsDefaultTrue(Long memberId);
 
     // 특정 회원이 기본 배송지를 이미 가지고 있는지 확인

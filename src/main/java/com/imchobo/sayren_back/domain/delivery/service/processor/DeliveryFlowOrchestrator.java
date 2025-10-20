@@ -9,12 +9,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-
-/**
- * Delivery 상태 전환 전체 플로우 관리
- * - 서비스 단에서 호출하여 상태 변경 + 이벤트 발행
- * - 별도 DeliveryHistoryRecorder 는 존재하지 않음 (테이블 정의서 기준)
- */
 @Component
 @RequiredArgsConstructor
 public class DeliveryFlowOrchestrator {
@@ -28,13 +22,13 @@ public class DeliveryFlowOrchestrator {
     DeliveryStatus next,
     Map<String, Object> metadata) {
 
-    // 1. 상태 전환 검증
+    //  상태 전환 검증
     validator.ensureTransition(delivery, expected, next);
 
-    // 2. 상태 변경
+    // 상태 변경
     delivery.setStatus(next);
 
-    // 3. 구독 연결용 orderItemId 추출 (첫 번째 아이템 기준)
+    //  구독 연결용 orderItemId 추출 (첫 번째 아이템 기준)
     Long orderItemId = null;
     if (delivery.getDeliveryItems() != null && !delivery.getDeliveryItems().isEmpty()) {
       DeliveryItem firstItem = delivery.getDeliveryItems().get(0);
@@ -43,7 +37,7 @@ public class DeliveryFlowOrchestrator {
       }
     }
 
-    // 4. 심플 이벤트 발행
+    //  심플 이벤트 발행
     StatusChangedEvent event = new StatusChangedEvent(
       delivery.getId(),
       orderItemId,

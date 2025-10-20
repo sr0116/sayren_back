@@ -11,8 +11,8 @@ public class DeliveryResponseDTO {
   private Long deliveryId;
   private Long memberId;
   private Long addressId;
-  private String type;     // enum → String
-  private String status;   // enum → String
+  private String type;
+  private String status;
   private LocalDateTime regDate;
   private LocalDateTime modDate;
 }

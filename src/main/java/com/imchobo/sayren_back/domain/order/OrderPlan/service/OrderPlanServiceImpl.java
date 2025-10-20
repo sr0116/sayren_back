@@ -30,7 +30,7 @@ public class OrderPlanServiceImpl implements OrderPlanService {
     // DTO >Entity 변환
     OrderPlan entity = orderPlanMapper.toEntity(dto);
 
-    // 중복 체크 (type + month)
+    // 중복 체크
     boolean exists = orderPlanRepository.existsByTypeAndMonth(entity.getType(), entity.getMonth());
     if (exists) {
       throw new IllegalArgumentException(
@@ -50,7 +50,7 @@ public class OrderPlanServiceImpl implements OrderPlanService {
     OrderPlan plan = orderPlanRepository.findById(id)
       .orElseThrow(() -> new EntityNotFoundException("요금제 없음: id=" + id));
 
-    // 중복 체크 (수정하려는 type + month가 이미 존재하는지)
+    // 중복 체크
     boolean exists = orderPlanRepository.existsByTypeAndMonth(dto.getType(), dto.getMonth());
     if (exists && !(plan.getType().equals(dto.getType()) && plan.getMonth().equals(dto.getMonth()))) {
       throw new IllegalArgumentException(
@@ -93,6 +93,7 @@ public class OrderPlanServiceImpl implements OrderPlanService {
     return orderPlanRepository.findById(id)
       .map(orderPlanMapper::toResponseDTO)
       .orElseThrow(() -> new EntityNotFoundException("요금제 없음: id=" + id));
+
   }
 
 

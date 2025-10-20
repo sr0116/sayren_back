@@ -14,7 +14,7 @@ public interface CartService {
   List<CartItemResponseDTO> getCartItems();
 
   // 장바구니 단일 아이템 삭제
-  void removeItem(Long memberId, Long cartItemId);
+  void removeItem(Long cartItemId);
 
 
   // 회원 장바구니 전체 비우기

@@ -33,5 +33,5 @@ public class OrderItem {
 
   @Column(nullable = false)
   private Long productPriceSnapshot;
-//   주문 시점 상품 가격 (스냅샷)
+
 }
