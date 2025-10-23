@@ -23,8 +23,8 @@ services:
       REDIS_PORT: 6379
       TZ: Asia/Seoul
     volumes:
-      #  로컬에서 EC2 컨테이너로 secret 동기화
-      - ./src/main/resources/secret:/app/secret
+      # ✅ EC2 로컬 폴더와 컨테이너 secret 동기화
+      - /home/ubuntu/sayren_secret:/app/secret
     depends_on:
       - redis
     restart: always
