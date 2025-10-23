@@ -3,38 +3,40 @@ name: CI/CD for Sayren Backend (EC2 Build & Deploy)
 on:
   push:
     branches:
-      - feature/payment-module  # ✅ 브랜치명 유지
+      - feature/payment-module  # 🔹 배포 트리거 브랜치 (필요시 main으로 변경)
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ GitHub 코드 체크아웃
+      # 1️⃣ GitHub에서 코드 가져오기
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ SSH 연결 (EC2 개인키 사용)
+      # 2️⃣ EC2 SSH 설정
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      # 3️⃣ EC2에서 배포 실행
+      # 3️⃣ EC2 내부에서 배포 명령 실행
       - name: Deploy to EC2 via SSH
         run: |
-          echo " Connecting to EC2..."
+          echo "🚀 Connecting to EC2..."
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/sayren_back
-            echo "🔹 Pulling latest code..."
-            git pull origin feature/payment-module
 
-            echo "🔹 Building project..."
+            echo "🔹 최신 코드 Pull"
+            git fetch --all
+            git reset --hard origin/feature/payment-module
+
+            echo "🔹 Gradle 빌드 중..."
             ./gradlew clean build -x test
 
-            echo "🔹 Restarting Docker containers..."
+            echo "🔹 Docker 컨테이너 재시작"
             sudo docker-compose down
             sudo docker-compose up -d --build
 
-            echo "✅ Deployment completed successfully!"
+            echo "✅ 배포 완료!"
           EOF
