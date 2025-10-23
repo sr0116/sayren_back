@@ -1,56 +1,40 @@
-name: CI/CD for Sayren Backend (Gradle + Redis Compose)
+name: CI/CD for Sayren Backend (EC2 Build & Deploy)
 
 on:
   push:
     branches:
-      - feature/payment-module
+      - feature/payment-module  # ✅ 브랜치명 유지
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout source
-      - name: Checkout source
+      # 1️⃣ GitHub 코드 체크아웃
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Set up JDK 21
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      # 2️⃣ SSH 연결 (EC2 개인키 사용)
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          distribution: temurin
-          java-version: 21
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      # 3️⃣ Grant execute permission for Gradlew
-      - name: Grant execute permission for Gradlew
-        run: chmod +x gradlew
-
-      # 4️⃣ Build with Gradle (skip tests)
-      - name: Build with Gradle (skip tests)
-        run: ./gradlew clean build -x test
-
-      # 5️⃣ Verify build output
-      - name: Verify build output
-        run: ls -al build/libs
-
-      # 6️⃣ Build Docker Compose Images (latest command)
-      - name: Build Docker Compose Images
-        run: docker compose build
-
-      # 7️⃣ Login to Docker Hub
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      # 8️⃣ Push Backend Image to Docker Hub
-      - name: Push Backend Image to Docker Hub
+      # 3️⃣ EC2에서 배포 실행
+      - name: Deploy to EC2 via SSH
         run: |
-          docker build -t sayren-backend:latest .
-          docker tag sayren-backend:latest ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest
+          echo " Connecting to EC2..."
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/sayren_back
+            echo "🔹 Pulling latest code..."
+            git pull origin feature/payment-module
 
-      # 9️⃣ Display Docker Compose Services (optional check)
-      - name: Display Docker Compose Services
-        run: docker compose config
+            echo "🔹 Building project..."
+            ./gradlew clean build -x test
+
+            echo "🔹 Restarting Docker containers..."
+            sudo docker-compose down
+            sudo docker-compose up -d --build
+
+            echo "✅ Deployment completed successfully!"
+          EOF
