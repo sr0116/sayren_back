@@ -45,9 +45,9 @@ public class CartController {
       //장바구니 단일 아이템 삭제
 
     @DeleteMapping("/delete-item/{cartItemId}")
-    public ResponseEntity<?> deleteItem(@PathVariable Long cartItemId, Authentication auth) {
-        Long memberId = Long.parseLong(auth.getName());
-        cartService.removeItem(memberId, cartItemId);
+    public ResponseEntity<?> deleteItem(@PathVariable Long cartItemId) {
+        log.info(cartItemId);
+        cartService.removeItem(cartItemId);
         return ResponseEntity.ok(Map.of("message", "success"));
     }
 

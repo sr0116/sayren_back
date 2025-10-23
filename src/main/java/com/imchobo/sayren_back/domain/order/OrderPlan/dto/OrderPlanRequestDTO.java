@@ -11,7 +11,7 @@ import lombok.*;
 @Builder
 public class OrderPlanRequestDTO {
 
-  // 요금제 타입 (예: PURCHASE, RENTAL)
+  // 요금제 타입
   private OrderPlanType type;
 
   // 기간(개월 수)

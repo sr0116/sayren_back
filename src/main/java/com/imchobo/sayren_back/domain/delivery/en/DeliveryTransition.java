@@ -3,9 +3,6 @@ import com.imchobo.sayren_back.domain.common.en.ReasonCode;
 import lombok.Getter;
 
 
- //배송 상태 전환 + 실패/취소/예외 사유 Enum
- //PaymentTransition 과 동일한 스타일
-
 @Getter
 public enum DeliveryTransition {
 
@@ -25,11 +22,6 @@ public enum DeliveryTransition {
     this.reason = reason;
   }
    //외부에서 문자열 기반 이벤트가 들어올 때
-
-//    이걸 바로 DeliveryTransition으로 바꿔야 할 때.
-
-//    이런 경우는 fromEvent 같은 매핑 메서드가 있어야 문자열 > Enum 변환가능
-
   public static DeliveryTransition fromEvent(String eventName) {
     switch (eventName.toLowerCase()) {
       case "create": return CREATE_READY;
