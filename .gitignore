@@ -37,3 +37,6 @@ out/
 .vscode/
 
 secret
+src/main/resources/secret/
+!src/main/resources/secret/sample-*.yml
+
