@@ -3,9 +3,6 @@ name: CI/CD for Sayren Backend (Gradle + Redis Compose)
 on:
   push:
     branches:
-      - feature/payment-module  # 배포 대상 브랜치
-  pull_request:
-    branches:
       - feature/payment-module
 
 jobs:
@@ -13,47 +10,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ 소스 코드 체크아웃
+      # 1️⃣ Checkout source
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # 2️⃣ JDK 설정
+      # 2️⃣ Set up JDK 21
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      # 3️⃣ Gradle 실행 권한 부여
+      # 3️⃣ Grant execute permission for Gradlew
       - name: Grant execute permission for Gradlew
         run: chmod +x gradlew
 
-      # 4️⃣ Gradle 빌드 (테스트 제외)
+      # 4️⃣ Build with Gradle (skip tests)
       - name: Build with Gradle (skip tests)
         run: ./gradlew clean build -x test
 
-      # 5️⃣ 빌드 결과 확인
+      # 5️⃣ Verify build output
       - name: Verify build output
         run: ls -al build/libs
 
-      # 6️⃣ Docker Compose 이미지 빌드 (Redis 포함)
+      # 6️⃣ Build Docker Compose Images (latest command)
       - name: Build Docker Compose Images
-        run: docker-compose build
+        run: docker compose build
 
-      # 7️⃣ DockerHub 로그인
+      # 7️⃣ Login to Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 8️⃣ 백엔드 이미지 빌드 & 푸시
+      # 8️⃣ Push Backend Image to Docker Hub
       - name: Push Backend Image to Docker Hub
         run: |
           docker build -t sayren-backend:latest .
           docker tag sayren-backend:latest ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest
 
-      # 9️⃣ 배포 후 로그 확인용 출력
+      # 9️⃣ Display Docker Compose Services (optional check)
       - name: Display Docker Compose Services
-        run: docker-compose config
+        run: docker compose config
