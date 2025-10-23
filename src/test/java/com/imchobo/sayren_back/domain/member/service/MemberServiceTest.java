@@ -19,13 +19,36 @@ class MemberServiceTest {
   @Test
   @DisplayName("회원가입 테스트")
   void register() {
+
+//    String email = "user1@gmail.com";
+//    String password = "password";
+//    String name = "유저1";
+//    boolean serviceAgree = true;
+//    boolean privacyAgree = true;
+//    MemberSignupDTO dto = new MemberSignupDTO(email, password, name, serviceAgree, privacyAgree);
+//    memberService.register(dto);
+//    log.info(memberService.findByEmail(email));
     String email = "user1@gmail.com";
     String password = "password";
     String name = "유저1";
     boolean serviceAgree = true;
     boolean privacyAgree = true;
-    MemberSignupDTO dto = new MemberSignupDTO(email, password, name, serviceAgree, privacyAgree);
+    MemberSignupDTO dto = new MemberSignupDTO(email, password, name, serviceAgree, privacyAgree, "");
     memberService.register(dto);
     log.info(memberService.findByEmail(email));
+  }
+
+
+  @Test
+  @DisplayName("핸드폰 번호 수정 테스트")
+  void modifyTel() {
+    
+  }
+
+
+  @Test
+  @DisplayName("멤버 상세정보가져오기")
+  void getMemberInfo() {
+    memberService.getMemberInfo(1L);
   }
 }

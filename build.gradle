@@ -34,9 +34,20 @@ dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-security'
   implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
   developmentOnly 'org.springframework.boot:spring-boot-devtools'
-  implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.11'
+  implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
   implementation 'org.springframework.boot:spring-boot-starter-mail:3.5.5'
 
+  // 암호화 해시
+  implementation 'commons-codec:commons-codec:1.19.0'
+
+  // 구글 authenticator
+  implementation 'com.warrenstrange:googleauth:1.5.0'
+
+  // 버전 비교용 라이브러리
+  implementation 'org.apache.maven:maven-artifact:3.9.9'
+
+  // 유저 접속 정보 파싱 라이브러리
+  implementation 'com.github.ua-parser:uap-java:1.6.1'
 
   // = Logging ===
   implementation 'org.springframework.boot:spring-boot-starter-log4j2'
@@ -78,6 +89,9 @@ dependencies {
 
   // ======================================
   implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+  // ==== Mail ========
+  implementation 'org.springframework.boot:spring-boot-starter-mail:3.5.5'
 }
 
 tasks.named('test') {

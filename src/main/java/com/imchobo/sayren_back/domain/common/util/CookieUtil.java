@@ -10,6 +10,34 @@ import org.springframework.stereotype.Component;
 public class CookieUtil {
   @Value("${jwt.refresh-expiration-days}")
   private long expireDays;
+  @Value("${jwt.expiration-minutes}")
+  private long expirationMinutes;
+
+  public void addAccsessCookie(HttpServletResponse response, String accessToken) {
+    ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie
+      .from("SR_ACCESS", accessToken)
+      .httpOnly(true)
+      .secure(false)
+      .path("/")
+      .maxAge(expirationMinutes * 60)
+      .sameSite("Lax");
+
+    response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString());
+  }
+
+  public void deleteAccessTokenCookie(HttpServletResponse response) {
+    ResponseCookie cookie = ResponseCookie
+      .from("SR_ACCESS", "")
+      .httpOnly(true)
+      .secure(false)
+      .path("/")
+      .sameSite("Lax")
+      .maxAge(0)
+      .build();
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+  }
+
+
   // 리프레쉬 쿠키 생성
   public void addRefreshTokenCookie(HttpServletResponse response,
                                     String refreshToken,

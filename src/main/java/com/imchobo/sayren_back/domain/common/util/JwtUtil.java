@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.domain.common.util;
 
+import com.imchobo.sayren_back.domain.member.exception.UnauthorizedException;
+import com.imchobo.sayren_back.domain.member.recode.TokenMeta;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -46,12 +50,10 @@ public class JwtUtil {
     long expireSeconds = expireMinutes * 60;
 
     Map<String, Object> claims = new HashMap<>();
-    claims.put("name", member.getRealName());
     claims.put("status", member.getStatus());
     claims.put("roles", member.getRoles());
-    claims.put("emailVerified", member.getEmailVerified());
 
-    return generateToken(claims, member.getEmail(), expireSeconds);
+    return generateToken(claims, String.valueOf(member.getId()), expireSeconds);
   }
 
   // RefreshToken은 멤버 pk 가지고 있음.
@@ -92,5 +94,24 @@ public class JwtUtil {
       return false;
     }
   }
+
+  public TokenMeta getMemberIdAndTtl(String token) {
+    Claims claims = getClaims(token);
+    Long memberId = Long.parseLong(claims.getSubject());
+    long ttlMillis = claims.getExpiration().getTime() - System.currentTimeMillis();
+    if (ttlMillis <= 0) {
+      throw new UnauthorizedException("Token already expired");
+    }
+
+    return new TokenMeta(memberId, ttlMillis);
+  }
+
+  public LocalDateTime ttlToLocalDateTime(long ttlMillis) {
+    return LocalDateTime.ofInstant(
+      Instant.ofEpochMilli(System.currentTimeMillis() + ttlMillis),
+      ZoneId.systemDefault()
+    );
+  }
+
 
 }

@@ -6,7 +6,11 @@ spring:
       - optional:classpath:secret/db.yml
       - optional:classpath:secret/jwt.yml
       - optional:classpath:secret/oauth.yml
+      - optional:classpath:secret/portone.yml
       - optional:classpath:secret/mail.yml
+      - optional:classpath:secret/solapi.yml
+      - optional:classpath:secret/redis.yml
+      - optional:classpath:secret/next.yml
   jpa:
     hibernate:
       ddl-auto: none
@@ -14,6 +18,7 @@ spring:
       hibernate:
         format_sql: true
     show_sql: true
+
 logging:
   level:
     org.springframework.security: DEBUG

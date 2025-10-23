@@ -1,6 +1,7 @@
 package com.imchobo.sayren_back.domain.member.dto;
 
 import com.imchobo.sayren_back.domain.member.en.Provider;
+import com.imchobo.sayren_back.domain.member.recode.SocialUser;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -12,12 +13,10 @@ import java.util.Map;
 
 @Getter
 @Setter
+@ToString
 public class SocialSignupRequestDTO {
-  @NotEmpty(message = "소셜 프로필 정보가 필요합니다")
-  private Map<String, Object> attributes;
-
-  @NotNull(message = "소셜 로그인 제공자 정보가 필요합니다")
-  private Provider provider;
+  @NotNull(message = "소셜 프로필 정보가 필요합니다")
+  private SocialUser socialUser;
 
   @AssertTrue(message = "서비스 이용약관에 동의해야 합니다")
   private boolean serviceAgree;

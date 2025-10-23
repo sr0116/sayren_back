@@ -1,0 +1,97 @@
+package com.imchobo.sayren_back.domain.payment.repository;
+
+
+import com.imchobo.sayren_back.domain.member.entity.Member;
+import com.imchobo.sayren_back.domain.order.entity.OrderItem;
+import com.imchobo.sayren_back.domain.payment.en.PaymentStatus;
+import com.imchobo.sayren_back.domain.payment.entity.Payment;
+import com.imchobo.sayren_back.domain.subscribe.subscribe_round.entity.SubscribeRound;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
+
+
+  @Query("SELECT DISTINCT p FROM Payment p " +
+          "JOIN FETCH p.orderItem oi " +
+          "JOIN FETCH oi.order o " +
+          "JOIN FETCH oi.orderPlan op " +
+          "JOIN FETCH oi.product pr " +
+          "WHERE p.id = :paymentId")
+  Optional<Payment> findWithOrderAndPlan(Long paymentId);
+
+  // 회차 기준 결제 조회
+  List<Payment> findBySubscribeRound(SubscribeRound round);
+
+  // 회차 기준 결제 전체 삭제 (필요 시 cascade 전용)
+  @Modifying
+  @Query("DELETE FROM Payment p WHERE p.subscribeRound = :round")
+  void deleteAllBySubscribeRound(@Param("round") SubscribeRound round);
+
+  // 결제 상세 (Order + Items + Plan까지 ) -> 나중에 서비스 코드 findWithOrderAndPlan 대신에 이걸로 수정
+  @EntityGraph(attributePaths = {
+          "orderItem",
+          "orderItem.order",
+          "orderItem.orderPlan",
+          "orderItem.product"
+  })
+  Optional<Payment> findById(Long paymentId);
+ // 일단 환불에서 사용중
+ List<Payment> findByOrderItem(OrderItem orderItem);
+
+// 1회차 결제(보증금) 조회
+  @Query("""
+         SELECT p FROM Payment p
+         WHERE p.orderItem = :orderItem
+           AND p.subscribeRound IS NOT NULL
+           AND p.subscribeRound.roundNo = 1
+         """)
+  Optional<Payment> findDepositPayment(@Param("orderItem") OrderItem orderItem);
+
+
+ // 관리자용 멤버 전체 조회
+  @Query("SELECT p FROM Payment p " +
+          "JOIN FETCH p.member m " +
+          "JOIN FETCH p.orderItem oi " +
+          "JOIN FETCH oi.order o " +
+          "JOIN FETCH oi.orderPlan op " +
+          "JOIN FETCH oi.product pr " +
+          "ORDER BY p.regDate DESC")
+  List<Payment> findAllWithMemberAndOrder();
+
+// 최신 결제
+  @Query("SELECT p FROM Payment p WHERE p.orderItem = :orderItem ORDER BY p.regDate DESC")
+  List<Payment> findAllByOrderItemOrderByRegDateDesc(@Param("orderItem") OrderItem orderItem);
+
+  // 결제 삭제
+
+  // 기본 CRUD, 결제 상태로 조회
+  List<Payment> findByPaymentStatus(PaymentStatus status);
+
+  // 포트원 검증용
+  Optional<Payment> findByMerchantUid(String merchantUid);
+
+  // 검증 조회용
+  boolean existsByMerchantUid(String merchantUid);
+
+  // 정렬 조회 (관리자용)
+  List<Payment> findAllByOrderByIdDesc();
+
+  // 멤버별 결제 조회
+  List<Payment> findByMemberOrderByRegDateDesc(Member member);
+
+  @Query("SELECT p FROM Payment p WHERE p.orderItem = :orderItem ORDER BY p.id DESC LIMIT 1")
+  Optional<Payment> findLatestByOrderItem(@Param("orderItem") OrderItem orderItem);
+
+  Optional<Payment> findTopByOrderItemOrderByIdDesc(OrderItem orderItem);
+
+  List<Payment> findByOrderItemId(Long orderItemId);
+
+
+}

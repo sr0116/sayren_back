@@ -2,7 +2,12 @@ package com.imchobo.sayren_back.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.imchobo.sayren_back.domain.common.util.CookieUtil;
+import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.domain.member.dto.MemberLoginResponseDTO;
+import com.imchobo.sayren_back.domain.member.mapper.MemberMapper;
+import com.imchobo.sayren_back.domain.member.repository.MemberProviderRepository;
+import com.imchobo.sayren_back.domain.member.service.MemberLoginHistoryService;
+import com.imchobo.sayren_back.domain.member.service.MemberTokenService;
 import com.imchobo.sayren_back.security.dto.MemberAuthDTO;
 import com.imchobo.sayren_back.domain.common.util.JwtUtil;
 import com.imchobo.sayren_back.security.util.SecurityUtil;
@@ -14,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
@@ -26,21 +32,15 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
   private final CookieUtil cookieUtil;
   private final JwtUtil jwtUtil;
   private final ObjectMapper objectMapper;
+  private final MemberMapper memberMapper;
+  private final MemberTokenService memberTokenService;
+  private final MemberLoginHistoryService  memberLoginHistoryService;
 
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
     MemberAuthDTO memberAuthDTO = SecurityUtil.getMemberAuthDTO();
-
-    String accessToken = jwtUtil.generateAccessToken(memberAuthDTO);
-    String refreshToken = jwtUtil.generateRefreshToken(memberAuthDTO);
-
-    cookieUtil.addRefreshTokenCookie(response, refreshToken, true);
-    cookieUtil.addLoginCookie(response, true);
-
-    MemberLoginResponseDTO loginResponseDTO = new MemberLoginResponseDTO(accessToken, "로그인 성공");
-
-    String json = objectMapper.writeValueAsString(loginResponseDTO);
-
+    String json = objectMapper.writeValueAsString(memberTokenService.saveToken(memberAuthDTO, response, true));
+    memberLoginHistoryService.saveLoginHistory(memberAuthDTO.getId(), request);
     response.setContentType("text/html;charset=UTF-8");
     response.getWriter().write(
             "<script>" +
@@ -49,4 +49,5 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
                     "</script>"
     );
   }
+
 }

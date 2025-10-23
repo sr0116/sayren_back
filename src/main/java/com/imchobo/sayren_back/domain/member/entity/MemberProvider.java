@@ -6,13 +6,18 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "tbl_member_provider")
+@Table(
+  name = "tbl_member_provider",
+  uniqueConstraints = {
+    @UniqueConstraint(name = "uk_provider_email", columnNames = {"provider", "email"}),
+  }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
+@ToString(exclude = {"member"})
 public class MemberProvider extends BaseEntity {
 
   @Id
@@ -31,6 +36,6 @@ public class MemberProvider extends BaseEntity {
   @Column(nullable = false, unique = true, length = 255)
   private String providerUid;
 
-  @Column(nullable = false, unique = true, length = 255)
+  @Column(nullable = false, length = 255)
   private String email;
 }
