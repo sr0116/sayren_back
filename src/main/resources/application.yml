@@ -4,6 +4,7 @@ spring:
   config:
     import:
       - optional:classpath:secret/db.yml
+      - optional:file:/app/secret/jwt.yml
       - optional:classpath:secret/jwt.yml
       - optional:classpath:secret/oauth.yml
       - optional:classpath:secret/portone.yml
