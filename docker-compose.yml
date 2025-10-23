@@ -21,6 +21,11 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # JWT 시크릿 직접 전달 (혹시 secret 폴더 import 실패 대비용)
+      JWT_SECRET: security-jwt-study-key-this-is-key
+    volumes:
+      # secret 폴더를 컨테이너 내부에도 마운트 (Spring이 실제 읽을 수 있도록)
+      - ./src/main/resources/secret:/app/resources/secret
     depends_on:
       - redis
     restart: always
