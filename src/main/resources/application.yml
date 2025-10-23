@@ -1,10 +1,11 @@
 spring:
   application:
     name: sayren_back
+
   config:
     import:
+      # ✅ 1️⃣ 로컬 개발용 (IntelliJ 실행 시 classpath)
       - optional:classpath:secret/db.yml
-      - optional:file:/app/secret/jwt.yml
       - optional:classpath:secret/jwt.yml
       - optional:classpath:secret/oauth.yml
       - optional:classpath:secret/portone.yml
@@ -12,6 +13,17 @@ spring:
       - optional:classpath:secret/solapi.yml
       - optional:classpath:secret/redis.yml
       - optional:classpath:secret/next.yml
+
+      # ✅ 2️⃣ 서버(Docker) 배포용 (컨테이너 내 /app/secret/)
+      - optional:file:/app/secret/db.yml
+      - optional:file:/app/secret/jwt.yml
+      - optional:file:/app/secret/oauth.yml
+      - optional:file:/app/secret/portone.yml
+      - optional:file:/app/secret/mail.yml
+      - optional:file:/app/secret/solapi.yml
+      - optional:file:/app/secret/redis.yml
+      - optional:file:/app/secret/next.yml
+
   jpa:
     hibernate:
       ddl-auto: none
