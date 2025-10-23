@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   nginx:
     image: nginx:1.25-alpine
@@ -21,7 +23,7 @@ services:
       REDIS_PORT: 6379
       TZ: Asia/Seoul
     volumes:
-      - ./src/main/resources/secret:/app/resources/secret
+      - ./src/main/resources/secret:/app/secret
     depends_on:
       - redis
     restart: always
