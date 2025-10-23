@@ -1,8 +1,8 @@
-name: CI/CD for Sayren Backend (Gradle)
+name: CI/CD for Sayren Backend (Gradle + Redis Compose)
 
 on:
   push:
-    branches: [ feature/payment-module ]   
+    branches: [ feature/payment-module ]
 
 jobs:
   build-and-deploy:
@@ -22,12 +22,18 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle (skip tests)
-        run: ./gradlew build -x test
+        run: ./gradlew clean build -x test
 
-      - name: Build Docker Image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest .
+      - name: Verify build output
+        run: ls -al build/libs
 
-      - name: Push Docker Image to Docker Hub
+      - name: Build Docker Compose Images
+        run: docker compose -f docker-compose.yml build
+
+      - name: Login to Docker Hub
+        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Push Backend Image to Docker Hub
         run: |
-          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker tag sayren_backend:latest ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest
