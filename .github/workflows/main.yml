@@ -10,20 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ GitHub에서 코드 가져오기
+      #  GitHub에서 코드 가져오기
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ EC2 SSH 설정
+      #  EC2 SSH 설정
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      # 3️⃣ EC2 내부에서 배포 명령 실행
+      #  EC2 내부에서 배포 명령 실행
       - name: Deploy to EC2 via SSH
         run: |
-          echo "🚀 Connecting to EC2..."
+          echo " Connecting to EC2..."
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/sayren_back
 
@@ -38,5 +38,5 @@ jobs:
             sudo docker-compose down
             sudo docker-compose up -d --build
 
-            echo "✅ 배포 완료!"
+            echo " 배포 완료!"
           EOF
