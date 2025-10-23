@@ -1,30 +1,34 @@
-HELP.md
-.gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+### OS / IDE / Build ###
+.DS_Store
+.idea/
+.vscode/
 *.iml
 *.ipr
+*.iws
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+bin/
+build/
+.gradle/
+target/
+
+### Spring ###
+*.log
+*.pid
+*.tmp
+*.bak
+*.swp
+!gradle/wrapper/gradle-wrapper.jar
+
+### IntelliJ ###
+.classpath
+.project
+.factorypath
+.settings/
+.springBeans
+.sts4-cache
+
+### VSCode ###
+.vscode/
 
 ### NetBeans ###
 /nbproject/private/
@@ -33,10 +37,23 @@ out/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
-.vscode/
+### Test / Coverage ###
+test-output/
+*.hprof
+*.orig
 
-secret
+### Secret ###
+# secret 폴더 전체를 git에서 제외
 src/main/resources/secret/
+
+# 샘플 예시 파일만 허용 (예: sample-db.yml 등)
 !src/main/resources/secret/sample-*.yml
 
+### Local properties ###
+application-local.yml
+application-dev.yml
+
+### OS ###
+Thumbs.db
+ehthumbs.db
+Desktop.ini
