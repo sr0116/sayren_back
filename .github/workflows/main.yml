@@ -2,25 +2,29 @@ name: CI/CD for Sayren Backend (Gradle + Redis Compose)
 
 on:
   push:
-    branches: [ feature/payment-module ]  # 네 작업 브랜치 기준
+    branches:
+      - feature/payment-module  # 배포 대상 브랜치
+  pull_request:
+    branches:
+      - feature/payment-module
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ 소스코드 체크아웃
+      # 1️⃣ 소스 코드 체크아웃
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # 2️⃣ JDK 21 설정
+      # 2️⃣ JDK 설정
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
+          java-version: 21
 
-      # 3️⃣ Gradlew 실행 권한 부여
+      # 3️⃣ Gradle 실행 권한 부여
       - name: Grant execute permission for Gradlew
         run: chmod +x gradlew
 
@@ -32,16 +36,24 @@ jobs:
       - name: Verify build output
         run: ls -al build/libs
 
-      # 6️⃣ Docker Compose 빌드 (백엔드 + Redis)
+      # 6️⃣ Docker Compose 이미지 빌드 (Redis 포함)
       - name: Build Docker Compose Images
-        run: docker compose -f docker-compose.yml build
+        run: docker-compose build
 
-      # 7️⃣ Docker Hub 로그인
+      # 7️⃣ DockerHub 로그인
       - name: Login to Docker Hub
-        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 8️⃣ 백엔드 이미지 푸시 (실제 compose가 생성한 이름 기반)
+      # 8️⃣ 백엔드 이미지 빌드 & 푸시
       - name: Push Backend Image to Docker Hub
         run: |
-          docker tag sayren_back-backend:latest ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest
+          docker build -t sayren-backend:latest .
+          docker tag sayren-backend:latest ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/sayren-backend:latest
+
+      # 9️⃣ 배포 후 로그 확인용 출력
+      - name: Display Docker Compose Services
+        run: docker-compose config
