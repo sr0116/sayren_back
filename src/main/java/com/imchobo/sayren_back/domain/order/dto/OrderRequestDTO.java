@@ -18,5 +18,5 @@ public class OrderRequestDTO {
   private Long productId;
 
   // 배송지
-  private Long addressId;    // 기존 배송지 ID (선택)
+  private Long addressId;    // 기존 배송지 ID
 }

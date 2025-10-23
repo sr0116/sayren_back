@@ -15,5 +15,5 @@ public class CartItemResponseDTO {
   private String productName; // 상품명
   private Long planId;       // 요금제 PK (일반구매면 null)
   private String planType;   // PURCHASE/RENTAL
-  private Long price;        // 상품 단가 (스냅샷 or 현재가)
+  private Long price;        // 상품 단가
 }

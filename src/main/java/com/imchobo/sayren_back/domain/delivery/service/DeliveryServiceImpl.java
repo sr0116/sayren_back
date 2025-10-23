@@ -55,7 +55,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         Member member = SecurityUtil.getMemberEntity();
         log.info("[배송 생성 요청] memberId={}, addressId={}", member.getId(), dto.getAddressId());
 
-        // 전체조회(어드민)
+        // 전체조회
 
         Address address = addressRepository.findById(dto.getAddressId())
           .orElseThrow(() -> new EntityNotFoundException("주소 없음: id=" + dto.getAddressId()));
