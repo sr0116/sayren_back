@@ -3,7 +3,7 @@ name: CI/CD for Sayren Backend (EC2 Build & Deploy)
 on:
   push:
     branches:
-      - feature/payment-module  # 🔹 배포 트리거 브랜치 (필요시 main으로 변경)
+      - feature/payment-module  
 
 jobs:
   deploy:
