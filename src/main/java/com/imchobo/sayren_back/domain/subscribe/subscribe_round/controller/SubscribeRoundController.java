@@ -12,6 +12,5 @@ public class SubscribeRoundController {
 
   private final SubscribeRoundService subscribeRoundService;
 
-  // 특정 구독 회차 전체 조회
 
 }
