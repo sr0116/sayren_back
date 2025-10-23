@@ -20,7 +20,7 @@ import java.util.List;
 public class AdminSubscribeController {
   private final SubscribeService subscribeService;
 
-  //  관리자: 전체 구독 목록 조회
+  //  관리자: 전체 구독 목록 조회_
   @GetMapping
   public ResponseEntity<List<SubscribeResponseDTO>> getAll() {
     List<SubscribeResponseDTO> list = subscribeService.getAllForAdmin();
