@@ -67,6 +67,7 @@ public class SecurityConfig {
                   new CustomAuthorizationRequestResolver(clientRegistrationRepository, redisUtil)
           )
         )
+
         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
         .successHandler(oAuthSuccessHandler)
         .failureHandler(oAuthFailureHandler))
