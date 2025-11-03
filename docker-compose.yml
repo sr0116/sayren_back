@@ -1,0 +1,78 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: sayren-nginx
+    restart: always
+    ports:
+      - "8800:80"
+    depends_on:
+      - backend
+    #    - frontend
+    volumes:
+      # Nginx 설정파일 매핑 (이미 존재하는 conf 사용)
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - sayren-net
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sayren-backend
+    restart: always
+    ports:
+      - "8801:8080"
+    environment:
+      TZ: Asia/Seoul
+      SPRING_CONFIG_LOCATION: classpath:/application.yml
+      # ❌ prod 프로필 아님, 네가 말한 대로 기본(yml)만 사용
+      SPRING_PROFILES_ACTIVE: default
+    volumes:
+      # ✅ /home/ubuntu/secret 폴더를 /app/secret 으로 매핑
+      - /home/ubuntu/secret:/app/secret:ro
+    depends_on:
+      - redis
+    networks:
+      - sayren-net
+
+        # frontend:
+        # build:
+        #  context: ../sayren_front
+        #  dockerfile: Dockerfile
+        #  args:
+        #    SKIP_BUILD_FETCH: "true"
+        # container_name: sayren-front
+        # restart: always
+        # ports:
+        #  - "3001:3000"
+        # environment:
+        # NODE_ENV: production
+        # SKIP_BUILD_FETCH: "true"
+      # NEXT_PUBLIC_API_BASE_URL: http://sayren-backend:8080
+      #  NEXT_PUBLIC_SPRING_API_BASE_URL: http://sayren-backend:8080
+      #   NEXT_PUBLIC_API_PROXY_PREFIX: /api/proxy
+      # depends_on:
+      #   - backend
+      #  networks:
+    #     - sayren-net
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: sayren-redis
+    restart: always
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sayren-net
+
+networks:
+  sayren-net:
+    name: sayren-net
+    driver: bridge
+
+volumes:
+  redis_data:

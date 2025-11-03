@@ -11,6 +11,15 @@ spring:
       - optional:classpath:secret/solapi.yml
       - optional:classpath:secret/redis.yml
       - optional:classpath:secret/next.yml
+
+      - optional:file:/app/secret/db.yml
+      - optional:file:/app/secret/jwt.yml
+      - optional:file:/app/secret/oauth.yml
+      - optional:file:/app/secret/portone.yml
+      - optional:file:/app/secret/mail.yml
+      - optional:file:/app/secret/solapi.yml
+      - optional:file:/app/secret/redis.yml
+      - optional:file:/app/secret/next.yml
   jpa:
     hibernate:
       ddl-auto: none

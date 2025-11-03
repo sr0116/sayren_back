@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -55,53 +56,69 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
-      .cors(Customizer.withDefaults())
-      .csrf(AbstractHttpConfigurer::disable) // REST API라면 CSRF 비활성화
-      .authorizeHttpRequests(auth -> auth
-              .requestMatchers("/api/user/**", "/api/auth/**", "/oauth2/**", "/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll() // 누구나 접근 가능
-              .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용
-              .anyRequest().authenticated() // 나머지는 로그인 필요
-      )
-      .formLogin(AbstractHttpConfigurer::disable) // 기본 로그인 폼 안씀
-      .oauth2Login(oauth2 -> oauth2
-        .authorizationEndpoint(auth -> auth
-          .authorizationRequestResolver(
-                  new CustomAuthorizationRequestResolver(clientRegistrationRepository, redisUtil)
-          )
-        )
-        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-        .successHandler(oAuthSuccessHandler)
-        .failureHandler(oAuthFailureHandler))
-      .httpBasic(AbstractHttpConfigurer::disable) // Basic 인증도 안씀
-      .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .cors(Customizer.withDefaults())
+            .csrf(AbstractHttpConfigurer::disable) // REST API라면 CSRF 비활성화
+            .authorizeHttpRequests(auth -> auth
+                    .requestMatchers(
+                            "/api/user/**",
+                            "/api/auth/**",
+                            "/oauth2/**",
+                            "/swagger-ui/**",
+                            "/api-docs/**",
+                            "/v3/api-docs/**"
+                    ).permitAll() // 누구나 접근 가능
+                    // user product (25.11.03 추가)
+                    .requestMatchers(HttpMethod.GET, "/api/user/**").permitAll()
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용
+                    .anyRequest().authenticated() // 나머지는 로그인 필요
+            )
+            .formLogin(AbstractHttpConfigurer::disable) // 기본 로그인 폼 없음
+            .oauth2Login(oauth2 -> oauth2
+                    .authorizationEndpoint(auth2 -> auth2
+                            .authorizationRequestResolver(
+                                    new CustomAuthorizationRequestResolver(clientRegistrationRepository, redisUtil)
+                            )
+                    )
+                    .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                    .successHandler(oAuthSuccessHandler)
+                    .failureHandler(oAuthFailureHandler)
+            )
+            .httpBasic(AbstractHttpConfigurer::disable) // Basic 인증 안씀
+            .sessionManagement(sessionManagement ->
+                    sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
 
 
+
+
+  /**
+   * CORS 정책 설정
+   */
   @Bean
-  CorsConfigurationSource corsConfigurationSource() {
-    // CORS 정책 객체 생성
+  public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
 
-    // 주소 설정
-    configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+    configuration.setAllowedOrigins(List.of(
+            "http://localhost:3000",
+            "http://15.165.159.88:3000",
+            "http://15.165.159.88:8800",
+            "http://15.165.159.88:8080",
+            "http://sayren-backend:8080"
+    ));
 
-    // 쿠키, Authorization 같은 자격 증명 정보를 포함한 요청 허용
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+    configuration.setAllowedHeaders(List.of("*"));
+    configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
     configuration.setAllowCredentials(true);
 
-    // 브라우저가 요청할 때 추가하는 모든 커스텀 헤더를 허용 ("Authorization", "Content-Type" 이런식으로 사용하기도 함)
-    configuration.setAllowedHeaders(List.of("*"));
-
-    // CORS 매핑 소스 생성 (URL 패턴별로 CORS 정책을 등록하는 역할)
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-
-    // 모든 경로("/**")에 대해 위에서 정의한 configuration 적용
     source.registerCorsConfiguration("/**", configuration);
 
-    // Spring Security filter chain에서 참조할 수 있도록 Bean 반환
     return source;
   }
+
 }
