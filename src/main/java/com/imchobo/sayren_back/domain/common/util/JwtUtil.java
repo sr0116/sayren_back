@@ -8,6 +8,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -28,11 +29,13 @@ public class JwtUtil {
   public JwtUtil(@Value("${jwt.secret}") String secret) {
     key = Keys.hmacShaKeyFor(secret.getBytes());
   }
+
   @Value("${jwt.expiration-minutes}")
   private long expireMinutes;
 
   @Value("${jwt.refresh-expiration-days}")
   private long expireDays;
+
 
   public String generateToken(Map<String, Object> claims, String subject, long expireSeconds) {
     Instant now = Instant.now();
@@ -76,6 +79,16 @@ public class JwtUtil {
     if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
       return bearerToken.substring(7);
     }
+
+    // CSRF에서 호출 시 SR_ACCESS 쿠키 함께 조회하는 로직 추가
+    if (request.getCookies() != null) {
+      for (Cookie cookie : request.getCookies()) {
+        if ("SR_ACCESS".equals(cookie.getName())) {
+          return cookie.getValue();
+        }
+      }
+    }
+
     return null;
   }
 
