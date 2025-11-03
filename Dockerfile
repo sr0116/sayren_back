@@ -1,4 +1,3 @@
-  GNU nano 7.2                                              Dockerfile
 # 1. JDK 21 기반 이미지 사용
 FROM eclipse-temurin:21-jdk
 

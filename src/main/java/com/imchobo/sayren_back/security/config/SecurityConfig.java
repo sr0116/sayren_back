@@ -1,5 +1,7 @@
 package com.imchobo.sayren_back.security.config;
 
+
+import org.springframework.http.HttpMethod;
 import com.imchobo.sayren_back.domain.common.util.RedisUtil;
 import com.imchobo.sayren_back.security.filter.JwtAuthenticationFilter;
 import com.imchobo.sayren_back.security.handler.OAuth2FailureHandler;
@@ -11,7 +13,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -29,7 +30,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
-
 
 
 @Configuration
@@ -53,6 +53,7 @@ public class SecurityConfig {
     return config.getAuthenticationManager();
   }
 
+
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
@@ -67,7 +68,6 @@ public class SecurityConfig {
                             "/api-docs/**",
                             "/v3/api-docs/**"
                     ).permitAll() // 누구나 접근 가능
-                    // user product (25.11.03 추가)
                     .requestMatchers(HttpMethod.GET, "/api/user/**").permitAll()
                     .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용
                     .anyRequest().authenticated() // 나머지는 로그인 필요
@@ -91,8 +91,6 @@ public class SecurityConfig {
 
     return http.build();
   }
-
-
 
 
   /**
