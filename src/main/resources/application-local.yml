@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: sayren_back
+
+  config:
+    import:
+      - "optional:classpath:secret/db.yml"
+      - "optional:classpath:secret/jwt.yml"
+      - "optional:classpath:secret/mail.yml"
+      - "optional:classpath:secret/next.yml"
+      - "optional:classpath:secret/portone.yml"
+      - "optional:classpath:secret/solapi.yml"
+      - "optional:classpath:secret/oauth.yml"
+app:
+  backend:
+    base-url: "http://localhost:8080"
+  frontend:
+    base-url: "http://localhost:3000"
+  oauth:
+    base-url: "http://localhost:8080"
