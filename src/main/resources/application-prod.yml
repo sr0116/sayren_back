@@ -2,16 +2,24 @@ spring:
   application:
     name: sayren_back
 
+  data:
+    redis:
+      host: sayren-redis
+      port: 6379
+      timeout: 2000
+
   config:
     import:
+      # 공통 시크릿
       - "optional:classpath:secret/db.yml"
       - "optional:classpath:secret/jwt.yml"
       - "optional:classpath:secret/mail.yml"
-      - "optional:classpath:secret/next.yml"
       - "optional:classpath:secret/portone.yml"
       - "optional:classpath:secret/solapi.yml"
-      - "optional:classpath:secret/oauth.yml"
+
+      # prod 전용 시크릿
       - "optional:classpath:secret-prod/oauth.yml"
+      - "optional:classpath:secret-prod/next.yml"
 
 app:
   backend:
