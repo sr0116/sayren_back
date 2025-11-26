@@ -13,6 +13,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class SayrenBackApplication {
   public static void main(String[] args) {
     SpringApplication.run(SayrenBackApplication.class, args);
-
+    System.out.println("세이렌 시작");
   }
 }
