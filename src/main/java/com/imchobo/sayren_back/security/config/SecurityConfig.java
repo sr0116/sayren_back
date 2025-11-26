@@ -61,10 +61,13 @@ public class SecurityConfig {
                     .requestMatchers(
                             "/api/user/**",
                             "/api/auth/**",
+                            "/api/product/**",   // ← ★★★ 추가
+                            "/api/rental/**",    // ← 필요하면 이것도
                             "/oauth2/**",
                             "/swagger-ui/**",
                             "/api-docs/**",
-                            "/v3/api-docs/**"
+                            "/v3/api-docs/**",
+                            "/product/**"
                     ).permitAll()
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
@@ -99,6 +102,7 @@ public class SecurityConfig {
     // **로컬 + 프론트 배포 + 백엔드 배포 모두 허용**
     config.setAllowedOrigins(List.of(
             "http://localhost:3000",
+            "http://localhost:8080",
             "https://sayren.imchobo.com",
             "https://api.sayren.imchobo.com"
     ));

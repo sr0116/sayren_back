@@ -1,0 +1,40 @@
+
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./        # sayren_back 폴더
+      dockerfile: Dockerfile
+    container_name: sayren-backend
+    ports:
+      - "8801:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      - redis
+    volumes:
+      - ./src/main/resources/secret:/app/resources/secret
+      - ./src/main/resources/secret-prod:/app/resources/secret-prod
+    restart: always
+    networks:
+      - sayren-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: sayren-redis
+    ports:
+      - "8803:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: always
+    networks:
+      - sayren-net
+
+networks:
+  sayren-net:
+    driver: bridge
+
+
+
+
+

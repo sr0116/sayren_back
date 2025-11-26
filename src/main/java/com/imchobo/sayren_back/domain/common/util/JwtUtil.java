@@ -8,6 +8,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -71,13 +72,26 @@ public class JwtUtil {
             .getPayload();
   }
 
-  public String resolveToken(HttpServletRequest request) { // 토큰 파싱
+  public String resolveToken(HttpServletRequest request) {
+
+    // 1) Authorization header 우선
     String bearerToken = request.getHeader("Authorization");
     if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
       return bearerToken.substring(7);
     }
+
+    // 2) 쿠키에서 SR_ACCESS 읽기
+    if (request.getCookies() != null) {
+      for (Cookie cookie : request.getCookies()) {
+        if ("SR_ACCESS".equals(cookie.getName())) {
+          return cookie.getValue();
+        }
+      }
+    }
+
     return null;
   }
+
 
   public boolean isValidToken(String token) {
     try {
