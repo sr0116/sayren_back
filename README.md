@@ -9,6 +9,12 @@
 ![JWT](https://img.shields.io/badge/JWT-Authentication-000000?style=flat)
 ![Docker](https://img.shields.io/badge/Docker-Deploy-2496ED?style=flat&logo=docker&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20RDS%20%7C%20S3-FF9900?style=flat&logo=amazonaws&logoColor=white)
+---
+
+## 테스트 계정
+
+- kysy0000@naver.com
+- 12345678
 
 ---
 
