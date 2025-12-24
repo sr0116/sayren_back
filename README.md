@@ -16,6 +16,10 @@
 - kysy0000@naver.com
 - 12345678
 
+## 관리자 계정
+- sayren2025@gmail.com
+- 12345678
+
 ---
 
 ## Overview
